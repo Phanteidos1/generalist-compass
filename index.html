@@ -323,6 +323,19 @@ details.kitd[open] .kit{margin-top:16px}
 #fbMore{display:flex;flex-direction:column;gap:10px}
 #fbMore[hidden]{display:none}
 #step2 p,#step2 .label,#step2 .note,#step2 .type,#step2 .tagline,#step2 h3,#step2 .fitchips span,#step3 p,#step3 li,.bubble{unicode-bidi:plaintext;text-align:start}
+.action.wide{grid-column:1/-1;border-color:var(--needle);background:var(--needle-soft)}
+.action.wide .ico{background:var(--surface);color:var(--needle)}
+.jobs input{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;width:100%;margin-top:6px}
+.joblist{display:flex;flex-direction:column;gap:12px}
+.job{border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.job .jt{font-family:var(--display);font-size:17px;font-weight:700;unicode-bidi:plaintext}
+.job .jm{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 12px}
+.job .fit{font-size:15px;unicode-bidi:plaintext}
+.job .fit b{color:var(--good)}
+.job .jrow{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.job a.apply{font-weight:700;color:var(--accent)}
+.credit{font-size:13px;color:var(--muted)}
+.credit a{color:var(--accent)}
 footer{font-size:13px;color:var(--muted);text-align:center}
 </style>
 
@@ -580,10 +593,22 @@ footer{font-size:13px;color:var(--muted);text-align:center}
 
     <h2 class="sech">What next?</h2>
     <div class="actions">
+      <button type="button" class="action wide" data-open="jobsCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg></span><b>Live jobs for you</b><small>Fresh remote openings that fit your type, each with a side door</small></button>
       <button type="button" class="action" data-open="shareCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span><b>Ask someone for help</b><small>A one-page report, made for them</small></button>
       <button type="button" class="action" data-open="talk"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><b>Talk back</b><small>Correct it, push back, ask more</small></button>
       <button type="button" class="action" id="toScanTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span><b>Check a job</b><small>Paste a job post, get your fit</small></button>
       <button type="button" class="action" id="ownReportTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15l3 3 3-3"/></svg></span><b>Download my report</b><small>Everything above, as a PDF</small></button>
+    </div>
+
+    <div class="card jobs" id="jobsCard" hidden>
+      <span class="tag">Live jobs</span>
+      <h3>Remote openings that fit you, posted this week</h3>
+      <div><label class="q" for="baseIn">Where are you based? <span class="hint">(so we skip jobs you can't take)</span></label>
+      <input id="baseIn" type="text" placeholder="e.g. Thailand, Belgium" autocomplete="country-name"></div>
+      <div class="row"><button class="btn" id="findJobs" type="button">Find my jobs</button></div>
+      <div class="status" id="statusJobs" role="status"></div>
+      <div class="joblist" id="jobList"></div>
+      <p class="credit" id="jobCredit" hidden>Job listings via <a href="https://himalayas.app" target="_blank" rel="noopener">Himalayas</a> and <a href="https://jobicy.com" target="_blank" rel="noopener">Jobicy</a>. Apply on their pages.</p>
     </div>
 
     <div class="card share" id="shareCard" hidden>
@@ -726,7 +751,7 @@ footer{font-size:13px;color:var(--muted);text-align:center}
 
   // ---------- storage (convenience only) ----------
   const load = () => { try { return JSON.parse(localStorage.getItem("gc-state-2")||"null"); } catch(e){ return null; } };
-  const save = () => { try { localStorage.setItem("gc-state-2", JSON.stringify({profile:S.profile,stuck:S.stuck,prefs:S.prefs,map:S.example?null:S.map,name:S.name||"",helper:S.example?null:(S.helper||null),chat:S.example?[]:(S.chat||[]).slice(-20)})); } catch(e){} };
+  const save = () => { try { localStorage.setItem("gc-state-2", JSON.stringify({profile:S.profile,stuck:S.stuck,prefs:S.prefs,map:S.example?null:S.map,name:S.name||"",base:S.base||"",helper:S.example?null:(S.helper||null),chat:S.example?[]:(S.chat||[]).slice(-20)})); } catch(e){} };
 
   // ---------- helpers ----------
   const clear = el => { while(el.firstChild) el.removeChild(el.firstChild); };
@@ -1382,6 +1407,67 @@ ${talk ? "\nWhat they added in conversation (overrides the reading where they di
     $("fbMore").hidden = true; $("fbThanks").hidden = false; $("fbText").value = "";
   };
 
+  // ---------- live jobs ----------
+  const onWebsite = !(window.claude && typeof window.claude.use === "function");
+  $("findJobs").onclick = async () => {
+    const st = $("statusJobs"), list = $("jobList");
+    if (!S.map){ setStatus(st, "Get your results first in step 1.", "err"); return; }
+    if (!onWebsite){ setStatus(st, "Live jobs work on the website version of Generalist Compass.", "err"); return; }
+    if (busy) return;
+    busy = true; $("findJobs").disabled = true; clear(list); $("jobCredit").hidden = true;
+    const base = $("baseIn").value.trim(); S.base = base; save();
+    const queries = [...new Set([str(S.map.search), ...arr(S.map.titles)].map(q => q.trim()).filter(Boolean))].slice(0, 3);
+    setStatus(st, "Searching fresh openings", "thinking");
+    try {
+      const r = await fetch("/api/jobs", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({queries})});
+      const data = await r.json().catch(() => ({}));
+      const jobs = Array.isArray(data.jobs) ? data.jobs : [];
+      if (!r.ok || !jobs.length){ setStatus(st, "No fresh openings found for your directions right now. Try again tomorrow.", "err"); return; }
+      setStatus(st, "Picking the ones that fit you", "thinking");
+      const brief = jobs.map((j,i) => `${i}. ${j.title} | ${j.company} | ${j.location} | ${j.excerpt}`).join("\n");
+      const picks = await sample.json(`You are a headhunter for generalists. From the job list below, pick up to 5 openings that genuinely fit this person, best first. Reply with ONLY a JSON array like:
+[{"i":0,"fit":"...","door":"...","message":"..."}]
+
+Rules:
+- i = the job's number in the list.
+- Skip jobs whose location restrictions exclude where they live (${base || "unknown; prefer Worldwide jobs"}).
+- fit: max 18 words, why this job suits their type and story.
+- door: max 22 words, a way in besides the apply button (who to contact, what to show).
+- message: max 55 words, a short note to that person, first person, leading with the problem they can solve. No cliches.
+- If nothing fits, reply [].
+- Language: write in the language of their story.
+
+The person (JSON):
+${cut(JSON.stringify({type:S.map.archetype, thread:S.map.thread, edge:S.map.edge, thrive:S.map.thrive, avoid:S.map.avoid, prefs:S.prefs}), 4000)}
+
+Jobs:
+${cut(brief, 14000)}`, { cache:false });
+      const chosen = (Array.isArray(picks) ? picks : []).filter(p => jobs[Number(p.i)]).slice(0, 5);
+      if (!chosen.length){ setStatus(st, "Nothing this week fits you well enough to show. That's useful too: use your side doors, and check back in a few days.", ""); return; }
+      setStatus(st, "");
+      chosen.forEach(p => {
+        const j = jobs[Number(p.i)];
+        const c = document.createElement("div"); c.className = "job";
+        const t = document.createElement("div"); t.className = "jt"; t.textContent = j.title;
+        const m = document.createElement("div"); m.className = "jm";
+        const age = j.date ? Math.max(0, Math.round((Date.now() - Date.parse(j.date)) / 864e5)) : null;
+        [j.company, j.location, age === null ? "" : (age === 0 ? "Posted today" : "Posted " + age + (age === 1 ? " day ago" : " days ago"))].filter(Boolean).forEach(x => { const sp = document.createElement("span"); sp.textContent = x; m.append(sp); });
+        const f = document.createElement("p"); f.className = "fit"; const fb = document.createElement("b"); fb.textContent = "Why you: "; f.append(fb, str(p.fit));
+        const d = document.createElement("details"); d.className = "script";
+        const sm = document.createElement("summary"); sm.textContent = "The side door";
+        const dp = document.createElement("p"); dp.textContent = str(p.door); dp.style.marginTop = "8px";
+        const note = document.createElement("div"); note.className = "note"; note.textContent = str(p.message);
+        d.append(sm, dp, note);
+        const row = document.createElement("div"); row.className = "jrow";
+        const a = document.createElement("a"); a.className = "apply"; a.href = j.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "View job on " + j.source + " →";
+        row.append(a);
+        c.append(t, m, f, d, row); list.append(c);
+      });
+      $("jobCredit").hidden = false;
+    } catch(e){ setStatus(st, errText(e), "err"); }
+    finally { busy = false; $("findJobs").disabled = false; }
+  };
+
   // ---------- voice ----------
   function dictationTip(){
     const ua = navigator.userAgent || "";
@@ -1435,6 +1521,7 @@ ${talk ? "\nWhat they added in conversation (overrides the reading where they di
     if (Array.isArray(saved.prefs)){ S.prefs = saved.prefs; setChips("prefs", S.prefs); }
     if (saved.map && Array.isArray(saved.map.routes)){ S.map = saved.map; renderMap(S.map); }
     if (saved.name){ S.name = saved.name; $("myName").value = saved.name; }
+    if (saved.base){ S.base = saved.base; $("baseIn").value = saved.base; }
     if (saved.helper && saved.helper.who){ S.helper = saved.helper; $("openHelper").hidden = false; }
     if (Array.isArray(saved.chat)){ S.chat = saved.chat.filter(t => t && (t.role==="user"||t.role==="assistant") && t.content); renderChat(); }
   }
