@@ -1,0 +1,6 @@
+{
+  "name": "generalist-compass",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=18" }
+}
