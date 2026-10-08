@@ -336,6 +336,35 @@ details.kitd[open] .kit{margin-top:16px}
 .job a.apply{font-weight:700;color:var(--accent)}
 .credit{font-size:13px;color:var(--muted)}
 .credit a{color:var(--accent)}
+.agroup{display:flex;flex-direction:column;gap:10px}
+.glabel{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.radar input,.page input{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;width:100%;margin-top:6px}
+.howto{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.filepick{display:inline-flex;align-items:center;gap:10px;align-self:flex-start;cursor:pointer;font-weight:700;color:var(--accent);border:1px dashed var(--accent);border-radius:12px;padding:12px 16px}
+.filepick input{position:absolute;opacity:0;width:1px;height:1px}
+.filepick:focus-within{outline:2px solid var(--needle);outline-offset:2px}
+.linkbox{display:flex;gap:10px;align-items:center}
+.linkbox input{flex:1;min-width:0;font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.job .src{font-size:13px;color:var(--accent);font-weight:700}
+.person-ln{font-size:13px;color:var(--accent);font-weight:700}
+/* Compass Page (public view) */
+#pageView{display:flex;flex-direction:column;gap:22px}
+.cp-hero{background:var(--ink);color:var(--bg);border-radius:22px;padding:30px 28px;display:flex;flex-direction:column;gap:12px}
+.cp-hero .kicker{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--needle)}
+.cp-hero .nm{font-family:var(--display);font-size:clamp(34px,8vw,52px);font-weight:700;line-height:1;letter-spacing:-.02em}
+.cp-badge{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;background:var(--needle);color:#18202B;font-weight:700;font-size:14px;padding:6px 12px 6px 8px;border-radius:999px}
+.cp-badge svg{width:20px;height:20px}
+.cp-hero .hl{font-size:19px;line-height:1.45;opacity:.95;unicode-bidi:plaintext}
+.cp-sec h3{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.cp-proof{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:520px){.cp-proof{grid-template-columns:1fr}}
+.cp-proof div{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.cp-proof b{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--needle);margin-bottom:4px}
+.cp-proof p,.cp-sec p{unicode-bidi:plaintext}
+.cp-cta{background:var(--accent-soft);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:10px}
+.cp-cta .btn{align-self:flex-start;text-decoration:none}
+.cp-made{font-size:13px;color:var(--muted);text-align:center}
+.cp-made a{color:var(--accent);font-weight:700}
 footer{font-size:13px;color:var(--muted);text-align:center}
 </style>
 
@@ -356,6 +385,9 @@ footer{font-size:13px;color:var(--muted);text-align:center}
     <button id="nav2" type="button" disabled>2 · Your way in</button>
     <button id="nav3" type="button" disabled>3 · Check a job</button>
   </nav>
+
+  <!-- PUBLIC COMPASS PAGE -->
+  <section id="pageView" hidden></section>
 
   <!-- HOME -->
   <section id="home" hidden>
@@ -592,12 +624,61 @@ footer{font-size:13px;color:var(--muted);text-align:center}
     </div>
 
     <h2 class="sech">What next?</h2>
+    <div class="agroup"><span class="glabel">Find opportunities</span>
     <div class="actions">
-      <button type="button" class="action wide" data-open="jobsCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg></span><b>Live jobs for you</b><small>Fresh remote openings that fit your type, each with a side door</small></button>
+      <button type="button" class="action wide" data-open="radarCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12 18 6"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><b>Hidden jobs radar</b><small>Companies that just raised money or are expanding, and will soon need someone like you</small></button>
+      <button type="button" class="action" data-open="netCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><circle cx="12" cy="5" r="2.5"/><path d="M7 16.5 10.5 7M17 16.5 13.5 7M7.5 18h9"/></svg></span><b>Network X-ray</b><small>Who you already know who can open doors</small></button>
+      <button type="button" class="action" data-open="jobsCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg></span><b>Live jobs</b><small>Remote openings this week that fit you</small></button>
+    </div></div>
+    <div class="agroup"><span class="glabel">Show who you are</span>
+    <div class="actions">
+      <button type="button" class="action" data-open="pageCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></span><b>Your Compass Page</b><small>One link that tells your story, instead of a CV</small></button>
       <button type="button" class="action" data-open="shareCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span><b>Ask someone for help</b><small>A one-page report, made for them</small></button>
+      <button type="button" class="action" id="ownReportTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15l3 3 3-3"/></svg></span><b>Download my report</b><small>Everything above, as a PDF</small></button>
+    </div></div>
+    <div class="agroup"><span class="glabel">Go deeper</span>
+    <div class="actions">
       <button type="button" class="action" data-open="talk"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><b>Talk back</b><small>Correct it, push back, ask more</small></button>
       <button type="button" class="action" id="toScanTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span><b>Check a job</b><small>Paste a job post, get your fit</small></button>
-      <button type="button" class="action" id="ownReportTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15l3 3 3-3"/></svg></span><b>Download my report</b><small>Everything above, as a PDF</small></button>
+    </div></div>
+
+    <div class="card radar" id="radarCard" hidden>
+      <span class="tag">Hidden jobs radar</span>
+      <h3>Jobs before they're posted</h3>
+      <p class="hint">We search this month's news for companies that just raised money, entered a new market or launched something, and pick the ones that will need someone like you.</p>
+      <div><label class="q" for="radarFocus">Anything to focus on? <span class="hint">(optional)</span></label>
+      <input id="radarFocus" type="text" placeholder="e.g. Europe, Israel, e-commerce, gaming" autocomplete="off"></div>
+      <div class="row"><button class="btn" id="runRadar" type="button">Scan for hidden jobs</button></div>
+      <div class="status" id="statusRadar" role="status"></div>
+      <div class="joblist" id="radarList"></div>
+    </div>
+
+    <div class="card net" id="netCard" hidden>
+      <span class="tag">Network X-ray</span>
+      <h3>The doors you already have</h3>
+      <details class="more"><summary>How to get your LinkedIn contacts file</summary>
+        <ol class="howto"><li>On LinkedIn, open <b>Me</b>, then <b>Settings &amp; Privacy</b>, then <b>Data privacy</b>.</li><li>Click <b>Get a copy of your data</b>, tick only <b>Connections</b>, and request it.</li><li>You get an email, usually within minutes. Download and unzip it.</li><li>Pick the file <b>Connections.csv</b> below.</li></ol>
+      </details>
+      <label class="filepick"><input id="netFile" type="file" accept=".csv,text/csv"><span>Choose Connections.csv</span></label>
+      <p class="hint">The file is read in your browser. Only names, roles and companies of your most relevant contacts are sent to the AI. Nothing is stored.</p>
+      <div class="status" id="statusNet" role="status"></div>
+      <div class="joblist" id="netList"></div>
+    </div>
+
+    <div class="card page" id="pageCard" hidden>
+      <span class="tag">Your Compass Page</span>
+      <h3>One link that tells your story</h3>
+      <p class="hint">Put it in your LinkedIn profile, your email signature, or send it to a founder instead of a CV.</p>
+      <div class="pair">
+        <div><label class="q" for="pgName">Your full name</label><input id="pgName" type="text" placeholder="e.g. Mike Peeters" autocomplete="name"></div>
+        <div><label class="q" for="pgContact">How to reach you</label><input id="pgContact" type="text" placeholder="LinkedIn link or email" autocomplete="off"></div>
+      </div>
+      <div class="row"><button class="btn" id="makePage" type="button">Create my page</button></div>
+      <div class="status" id="statusPage" role="status"></div>
+      <div id="pageOut" hidden>
+        <div class="linkbox"><input id="pageLink" type="text" readonly aria-label="Your page link"><button class="ghost" id="copyPageLink" type="button">Copy link</button></div>
+        <div class="row"><a class="link" id="openPage" href="#" target="_blank" rel="noopener">Open my page</a></div>
+      </div>
     </div>
 
     <div class="card jobs" id="jobsCard" hidden>
@@ -751,7 +832,7 @@ footer{font-size:13px;color:var(--muted);text-align:center}
 
   // ---------- storage (convenience only) ----------
   const load = () => { try { return JSON.parse(localStorage.getItem("gc-state-2")||"null"); } catch(e){ return null; } };
-  const save = () => { try { localStorage.setItem("gc-state-2", JSON.stringify({profile:S.profile,stuck:S.stuck,prefs:S.prefs,map:S.example?null:S.map,name:S.name||"",base:S.base||"",helper:S.example?null:(S.helper||null),chat:S.example?[]:(S.chat||[]).slice(-20)})); } catch(e){} };
+  const save = () => { try { localStorage.setItem("gc-state-2", JSON.stringify({profile:S.profile,stuck:S.stuck,prefs:S.prefs,map:S.example?null:S.map,name:S.name||"",base:S.base||"",page:S.page||null,helper:S.example?null:(S.helper||null),chat:S.example?[]:(S.chat||[]).slice(-20)})); } catch(e){} };
 
   // ---------- helpers ----------
   const clear = el => { while(el.firstChild) el.removeChild(el.firstChild); };
@@ -1468,6 +1549,217 @@ ${cut(brief, 14000)}`, { cache:false });
     finally { busy = false; $("findJobs").disabled = false; }
   };
 
+  // ---------- hidden jobs radar ----------
+  $("runRadar").onclick = async () => {
+    const st = $("statusRadar"), list = $("radarList");
+    if (!S.map){ setStatus(st, "Get your results first in step 1.", "err"); return; }
+    if (!onWebsite){ setStatus(st, "The radar searches the live web, so it works on the website version of Generalist Compass.", "err"); return; }
+    if (busy) return;
+    busy = true; $("runRadar").disabled = true; clear(list);
+    setStatus(st, "Scanning this month's news. This takes up to a minute", "thinking");
+    try {
+      const person = {type:S.map.archetype, thread:S.map.thread, edge:S.map.edge, thrive:S.map.thrive, avoid:S.map.avoid, prefs:S.prefs, base:S.base||"", story: cut(S.example ? EXAMPLE_PROFILE : S.profile, 1500)};
+      const r = await fetch("/api/radar", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({person, focus: $("radarFocus").value.trim()})});
+      const data = await r.json().catch(() => ({}));
+      const cos = Array.isArray(data.companies) ? data.companies : [];
+      if (!r.ok){ setStatus(st, data.error || "The scan didn't work this time. Try again in a minute.", "err"); return; }
+      if (!cos.length){ setStatus(st, "No strong matches this time. Try a different focus, like a region or an industry.", ""); return; }
+      setStatus(st, "");
+      cos.forEach(x => {
+        const c = document.createElement("div"); c.className = "job";
+        const t = document.createElement("div"); t.className = "jt"; t.textContent = str(x.company);
+        const m = document.createElement("div"); m.className = "jm"; [str(x.date), str(x.who)].filter(Boolean).forEach(v => { const sp=document.createElement("span"); sp.textContent=v; m.append(sp); });
+        const ev = document.createElement("p"); ev.textContent = str(x.event);
+        const f = document.createElement("p"); f.className = "fit"; const fb = document.createElement("b"); fb.textContent = "Why now: "; f.append(fb, str(x.why));
+        const d = document.createElement("details"); d.className = "script";
+        const sm = document.createElement("summary"); sm.textContent = "The message to send";
+        const note = document.createElement("div"); note.className = "note"; note.textContent = str(x.message);
+        d.append(sm, note);
+        const a = document.createElement("a"); a.className = "src"; a.href = str(x.source); a.target = "_blank"; a.rel = "noopener"; a.textContent = "Read the news →";
+        c.append(t, m, ev, f, d, a); list.append(c);
+      });
+    } catch(e){ setStatus(st, "The scan didn't work this time. Try again in a minute.", "err"); }
+    finally { busy = false; $("runRadar").disabled = false; }
+  };
+
+  // ---------- network x-ray ----------
+  function parseCsv(text){
+    const rows = []; let row = [], cur = "", q = false;
+    for (let i = 0; i < text.length; i++){
+      const ch = text[i];
+      if (q){ if (ch === '"'){ if (text[i+1] === '"'){ cur += '"'; i++; } else q = false; } else cur += ch; }
+      else if (ch === '"') q = true;
+      else if (ch === ","){ row.push(cur); cur = ""; }
+      else if (ch === "\n" || ch === "\r"){ if (ch === "\r" && text[i+1] === "\n") i++; row.push(cur); rows.push(row); row = []; cur = ""; }
+      else cur += ch;
+    }
+    if (cur || row.length){ row.push(cur); rows.push(row); }
+    return rows;
+  }
+  const SENIOR = /\b(founder|co-?founder|ceo|cto|coo|cfo|chief|owner|president|partner|managing director|general manager|head of|vp|vice president|director|investor|venture|angel|recruit|talent|headhunt|business development|partnership|growth|expansion|country manager)\b/i;
+  $("netFile").onchange = async () => {
+    const st = $("statusNet"), list = $("netList"), file = $("netFile").files && $("netFile").files[0];
+    if (!file) return;
+    if (!S.map){ setStatus(st, "Get your results first in step 1.", "err"); return; }
+    if (!sample){ setStatus(st, "This works when the page is opened in Claude or on the website.", "err"); return; }
+    if (busy) return;
+    clear(list);
+    let rows;
+    try { rows = parseCsv(await file.text()); } catch(e){ setStatus(st, "Couldn't read that file. Pick the Connections.csv from your LinkedIn download.", "err"); return; }
+    const hi = rows.findIndex(r => r.some(c => /first name/i.test(c)) && r.some(c => /company/i.test(c)));
+    if (hi < 0){ setStatus(st, "That doesn't look like LinkedIn's Connections.csv. Check the file name and try again.", "err"); return; }
+    const H = rows[hi].map(h => h.trim().toLowerCase());
+    const col = n => H.findIndex(h => h === n);
+    const iF = col("first name"), iL = col("last name"), iU = col("url"), iC = col("company"), iP = col("position");
+    const words = [...arr(S.map.titles), str(S.map.search), ...arr(S.map.thrive)].join(" ").toLowerCase().split(/[^a-zÀ-ɏ֐-׿]+/).filter(w => w.length > 3);
+    const people = rows.slice(hi+1).map(r => ({first: (r[iF]||"").trim(), last: (r[iL]||"").trim(), url: (r[iU]||"").trim(), company: (r[iC]||"").trim(), position: (r[iP]||"").trim()})).filter(p => p.first && (p.company || p.position));
+    if (!people.length){ setStatus(st, "No contacts found in that file.", "err"); return; }
+    const score = p => { const t = (p.position + " " + p.company).toLowerCase(); let s = SENIOR.test(t) ? 3 : 0; words.forEach(w => { if (t.includes(w)) s += 1; }); return s; };
+    const ranked = people.map((p,i) => ({p, s: score(p), i})).sort((a,b) => b.s - a.s).slice(0, 250);
+    busy = true;
+    setStatus(st, "Looking through " + people.length + " contacts", "thinking");
+    const brief = ranked.map((x,k) => `${k}. ${x.p.first} ${x.p.last} | ${x.p.position} | ${x.p.company}`).join("\n");
+    try {
+      const picks = await sample.json(`You help a generalist find work through the people they already know. From their LinkedIn contacts below, pick up to 10 who could most realistically open a door, best first: founders and leaders at companies where this person fits, people in industries they're aiming for, investors and recruiters who place such people. Reply with ONLY a JSON array like:
+[{"i":0,"why":"...","ask":"...","message":"..."}]
+
+Rules:
+- i = the contact's number in the list.
+- why: max 18 words, why this contact matters for this person's goals.
+- ask: max 14 words, the one specific thing to ask them (an intro, advice, a coffee, a role).
+- message: max 55 words, warm and short, first person, to that contact by first name. They are already connected, so it can be friendly.
+- Never invent facts about a contact beyond their role and company.
+- Write in the language of the person's story.
+
+The person (JSON):
+${cut(JSON.stringify({type:S.map.archetype, thread:S.map.thread, edge:S.map.edge, thrive:S.map.thrive, prefs:S.prefs}), 3000)}
+
+Contacts:
+${cut(brief, 20000)}`, { cache:false });
+      const chosen = (Array.isArray(picks) ? picks : []).filter(x => ranked[Number(x.i)]).slice(0, 10);
+      if (!chosen.length){ setStatus(st, "No clear door-openers found in this list. Your side doors are still the best route.", ""); return; }
+      setStatus(st, chosen.length + " people in your network who can open doors");
+      chosen.forEach(x => {
+        const p = ranked[Number(x.i)].p;
+        const c = document.createElement("div"); c.className = "job";
+        const t = document.createElement("div"); t.className = "jt"; t.textContent = p.first + " " + p.last;
+        const m = document.createElement("div"); m.className = "jm"; [p.position, p.company].filter(Boolean).forEach(v => { const sp=document.createElement("span"); sp.textContent=v; m.append(sp); });
+        const f = document.createElement("p"); f.className = "fit"; const fb = document.createElement("b"); fb.textContent = "Why them: "; f.append(fb, str(x.why));
+        const ak = document.createElement("p"); const ab = document.createElement("b"); ab.textContent = "Ask for: "; ak.append(ab, str(x.ask));
+        const d = document.createElement("details"); d.className = "script";
+        const sm = document.createElement("summary"); sm.textContent = "The message to send";
+        const note = document.createElement("div"); note.className = "note"; note.textContent = str(x.message);
+        d.append(sm, note);
+        c.append(t, m, f, ak, d);
+        if (/^https?:\/\//.test(p.url)){ const a = document.createElement("a"); a.className = "person-ln"; a.href = p.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Open on LinkedIn →"; c.append(a); }
+        list.append(c);
+      });
+    } catch(e){ setStatus(st, errText(e), "err"); }
+    finally { busy = false; $("netFile").value = ""; }
+  };
+
+  // ---------- compass page ----------
+  const b64u = bytes => { let s = ""; bytes.forEach(b => s += String.fromCharCode(b)); return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); };
+  const unb64u = str => { const s = atob(str.replace(/-/g,"+").replace(/_/g,"/")); return Uint8Array.from(s, c => c.charCodeAt(0)); };
+  async function packPage(obj){
+    const raw = new TextEncoder().encode(JSON.stringify(obj));
+    if (window.CompressionStream){
+      try { const cs = new Blob([raw]).stream().pipeThrough(new CompressionStream("deflate-raw")); return "cp." + b64u(new Uint8Array(await new Response(cs).arrayBuffer())); } catch(e){}
+    }
+    return "cq." + b64u(raw);
+  }
+  async function unpackPage(tok){
+    const [kind, data] = [tok.slice(0,2), tok.slice(3)];
+    let bytes = unb64u(data);
+    if (kind === "cp"){ const ds = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw")); bytes = new Uint8Array(await new Response(ds).arrayBuffer()); }
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+  function renderPage(pg){
+    const v = $("pageView"); clear(v);
+    const hero = document.createElement("div"); hero.className = "cp-hero";
+    const k = document.createElement("div"); k.className = "kicker"; k.textContent = "Generalist Compass";
+    const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = str(pg.name);
+    hero.append(k, nm);
+    if (ARCH[str(pg.type)]){ const bd = document.createElement("span"); bd.className = "cp-badge"; bd.innerHTML = embSvg(str(pg.type)); bd.append(str(pg.type)); hero.append(bd); }
+    const hl = document.createElement("p"); hl.className = "hl"; hl.textContent = str(pg.headline); hero.append(hl);
+    v.append(hero);
+    const sec = (title, el) => { const d = document.createElement("div"); d.className = "cp-sec"; const h = document.createElement("h3"); h.textContent = title; d.append(h, el); v.append(d); };
+    if (pg.story){ const p = document.createElement("p"); p.style.fontSize = "17px"; p.textContent = str(pg.story); sec(pg.l_story || "The story", p); }
+    if (Array.isArray(pg.proof) && pg.proof.length){ const g = document.createElement("div"); g.className = "cp-proof"; pg.proof.slice(0,4).forEach(x => { const d = document.createElement("div"); const b = document.createElement("b"); b.textContent = str(x.label); const p = document.createElement("p"); p.textContent = str(x.text); d.append(b, p); g.append(d); }); sec(pg.l_proof || "The proof", g); }
+    if (pg.looking){ const p = document.createElement("p"); p.style.fontSize = "17px"; p.textContent = str(pg.looking); sec(pg.l_looking || "What I'm looking for", p); }
+    const cta = document.createElement("div"); cta.className = "cp-cta";
+    const ch = document.createElement("b"); ch.textContent = pg.l_cta || "Let's talk"; ch.style.fontFamily = "var(--display)"; ch.style.fontSize = "20px";
+    cta.append(ch);
+    const contact = str(pg.contact).trim();
+    if (contact){
+      const isMail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
+      const href = isMail ? "mailto:" + contact : (/^https?:\/\//.test(contact) ? contact : "https://" + contact);
+      const a = document.createElement("a"); a.className = "btn"; a.href = href; a.target = "_blank"; a.rel = "noopener"; a.textContent = isMail ? "Email me" : "Connect with me";
+      const show = document.createElement("p"); show.className = "hint"; show.textContent = contact;
+      cta.append(a, show);
+    }
+    v.append(cta);
+    const made = document.createElement("p"); made.className = "cp-made";
+    const ml = document.createElement("a"); ml.href = location.pathname; ml.textContent = "Find your own generalist type";
+    made.append("Made with Generalist Compass. ", ml);
+    v.append(made);
+  }
+  function showPageView(){
+    ["home","step1","step2","step3","viewer"].forEach(id => $(id).hidden = true);
+    document.querySelector("nav.steps").hidden = true;
+    const ft = document.querySelector("footer"); if (ft) ft.hidden = true;
+    $("pageView").hidden = false; window.scrollTo(0,0);
+  }
+  $("makePage").onclick = async () => {
+    const st = $("statusPage");
+    if (!S.map){ setStatus(st, "Get your results first in step 1.", "err"); return; }
+    if (!sample){ setStatus(st, "This works when the page is opened in Claude or on the website.", "err"); return; }
+    const name = $("pgName").value.trim();
+    if (!name){ setStatus(st, "Add your name first.", "err"); return; }
+    if (busy) return;
+    busy = true; $("makePage").disabled = true; $("pageOut").hidden = true;
+    setStatus(st, "Writing your page", "thinking");
+    try {
+      const pg = await sample.json(`Write the text for a one-page personal website that a generalist will share instead of a CV. Reply with ONLY a JSON object like:
+{"headline":"...","story":"...","proof":[{"label":"...","text":"..."}],"looking":"...","l_story":"...","l_proof":"...","l_looking":"...","l_cta":"..."}
+
+Rules:
+- First person. Reads like a person with a story, not a CV. Specific places and real results. Short sentences. No jargon, no bragging, no em dashes.
+- headline: one sentence, max 20 words, the thread of their story and the value they bring.
+- story: 3 sentences, max 60 words, the arc that connects their different chapters.
+- proof: 3 or 4 items, one per chapter. label = "Place, field" in 2 to 4 words. text = max 22 words with a concrete result.
+- looking: 2 sentences, max 40 words: the kind of company and moment they want, and must-haves.
+- l_story, l_proof, l_looking, l_cta: the section titles "The story", "The proof", "What I'm looking for", "Let's talk", translated into the language of their story.
+- Never invent facts. Write in the language of their story.
+
+Their story:
+"""
+${cut(S.example ? EXAMPLE_PROFILE : S.profile, 6000)}
+"""
+
+Their reading (JSON):
+${cut(JSON.stringify({type:S.map.archetype, thread:S.map.thread, edge:S.map.edge, thrive:S.map.thrive, pitch:S.map.pitch}), 5000)}
+${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the reading):\n" + cut(S.chat.map(t => (t.role === "user" ? "Them: " : "Mentor: ") + t.content).join("\n\n"), 4000) : ""}`, { cache:false });
+      if (!pg || !pg.headline) throw {code:"invalid_json"};
+      const page = {...pg, name, contact: $("pgContact").value.trim(), type: (S.map.archetype && S.map.archetype.type) || ""};
+      S.page = page; save();
+      const tok = await packPage(page);
+      const link = location.origin + location.pathname + "#" + tok;
+      $("pageLink").value = onWebsite ? link : "Your shareable link works on the website version.";
+      $("openPage").href = onWebsite ? link : "#";
+      $("openPage").onclick = onWebsite ? null : (e => { e.preventDefault(); renderPage(page); showPageView(); });
+      $("openPage").textContent = onWebsite ? "Open my page" : "Preview my page";
+      $("openPage").removeAttribute(onWebsite ? "data-x" : "target");
+      $("pageOut").hidden = false; setStatus(st, "");
+    } catch(e){ setStatus(st, errText(e), "err"); }
+    finally { busy = false; $("makePage").disabled = false; }
+  };
+  $("copyPageLink").onclick = () => {
+    const el = $("pageLink"), b = $("copyPageLink");
+    const done = () => { b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy link", 1600); };
+    try { navigator.clipboard.writeText(el.value).then(done, () => { el.select(); }); } catch(e){ el.select(); }
+  };
+
   // ---------- voice ----------
   function dictationTip(){
     const ua = navigator.userAgent || "";
@@ -1526,7 +1818,11 @@ ${cut(brief, 14000)}`, { cache:false });
     if (Array.isArray(saved.chat)){ S.chat = saved.chat.filter(t => t && (t.role==="user"||t.role==="assistant") && t.content); renderChat(); }
   }
   if (S.map) $("continueBtn").hidden = false;
-  go(0);
+  if (S.page){ $("pgName").value = S.page.name || ""; $("pgContact").value = S.page.contact || ""; }
+  const hashTok = (location.hash || "").slice(1);
+  if (/^c[pq]\.[A-Za-z0-9_-]+$/.test(hashTok)){
+    unpackPage(hashTok).then(pg => { renderPage(pg); showPageView(); document.title = (pg.name ? pg.name + " · " : "") + "Generalist Compass"; }).catch(() => go(0));
+  } else go(0);
 
   if (window.claude && typeof window.claude.use === "function"){
     window.claude.use("sample").then(fn => { sample = fn; sampleReady = true; }, () => { sampleReady = true; });
