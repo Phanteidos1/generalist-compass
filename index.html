@@ -227,6 +227,82 @@ details.script summary{cursor:pointer;color:var(--accent);font-weight:700;font-s
 .faq{display:flex;flex-direction:column;gap:10px}
 .faq p{font-size:15px}
 @media (prefers-reduced-motion:reduce){.scene{transition:none}}
+.ico{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent);flex:none}
+.ico svg{width:24px;height:24px}
+.ico.good{background:color-mix(in srgb, var(--good) 14%, transparent);color:var(--good)}
+.ico.warn{background:color-mix(in srgb, var(--warn) 16%, transparent);color:var(--warn)}
+.ico.target{background:var(--accent);color:var(--on-accent);width:56px;height:56px;border-radius:50%}
+.ico.target svg{width:30px;height:30px}
+.ico.small{width:36px;height:36px;border-radius:10px}
+.ico.big{width:56px;height:56px;border-radius:16px}
+.ico.big svg{width:28px;height:28px}
+.archgrid{display:flex;gap:18px;align-items:center}
+.emblem{width:96px;height:96px;flex:none;border-radius:24px;background:var(--surface);border:2px solid var(--needle);color:var(--needle);display:flex;align-items:center;justify-content:center}
+.emblem svg{width:58px;height:58px}
+.archtext{display:flex;flex-direction:column;gap:4px;min-width:0}
+@media (max-width:420px){.emblem{width:72px;height:72px;border-radius:18px}.emblem svg{width:42px;height:42px}}
+.secondrow{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.secondrow b{color:var(--ink)}
+.mini{width:30px;height:30px;border-radius:9px;background:var(--surface);border:1px solid var(--line);color:var(--accent);display:flex;align-items:center;justify-content:center}
+.mini svg{width:18px;height:18px}
+details.more summary,details.kitd summary{cursor:pointer;color:var(--accent);font-weight:700;font-size:15px;list-style:none}
+details.more summary::-webkit-details-marker,details.kitd summary::-webkit-details-marker{display:none}
+details.more summary::after{content:" +"}
+details.more[open] summary::after{content:" \2212"}
+details.more p{margin-top:8px}
+details.kitd summary{display:flex;gap:14px;align-items:center;color:var(--ink)}
+details.kitd summary b{display:block;font-family:var(--display);font-size:17px}
+details.kitd summary small{display:block;color:var(--muted);font-weight:400;font-size:14px}
+details.kitd[open] .kit{margin-top:16px}
+.threadcard .story{font-size:24px}
+.bubble-say{position:relative;background:var(--bg);border:1px solid var(--line);border-radius:16px 16px 16px 4px;padding:12px 16px;margin-top:4px}
+.bubble-say .saylabel{display:block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.bubble-say p{font-style:italic}
+.mirror{gap:8px}
+.mirror .label{font-size:20px}
+.reframe{display:flex;gap:14px;align-items:flex-start}
+.reframe .ico{background:var(--surface);color:var(--needle)}
+.fitgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:520px){.fitgrid{grid-template-columns:1fr}}
+.fithead{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;margin-bottom:10px}
+.fithead svg{width:20px;height:20px;padding:3px;border-radius:50%}
+.fithead.good svg{background:color-mix(in srgb, var(--good) 16%, transparent);color:var(--good)}
+.fithead.bad svg{background:color-mix(in srgb, var(--crit) 14%, transparent);color:var(--crit)}
+.fitchips{display:flex;flex-direction:column;gap:8px}
+.fitchips span{font-size:14px;padding:8px 12px;border-radius:10px;background:var(--bg);border-left:3px solid var(--good)}
+.fitchips.no span{border-left-color:var(--crit)}
+.sech{margin-top:8px}
+.doors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:600px){.doors{grid-template-columns:1fr}}
+.doorcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.doorbtn{font:inherit;color:inherit;background:none;border:0;padding:0;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:10px}
+.doorart{height:92px;border-radius:12px;background:var(--bg);display:flex;align-items:flex-end;justify-content:center;overflow:hidden;perspective:300px}
+.doorart .frame{width:52px;height:76px;border:3px solid var(--line);border-bottom:0;border-radius:6px 6px 0 0;position:relative;background:var(--needle)}
+.doorart .leaf{position:absolute;inset:0;background:var(--accent);border-radius:3px 3px 0 0;transform-origin:left center;transition:transform .5s ease;display:flex;align-items:center;justify-content:center;color:var(--on-accent);font-family:var(--display);font-weight:700;font-size:26px}
+.doorcard.open .leaf{transform:rotateY(-70deg)}
+@media (prefers-reduced-motion:reduce){.doorart .leaf{transition:none}}
+.doorcard h3{font-size:17px}
+.doorcard .doorbody{display:flex;flex-direction:column;gap:8px;font-size:14px}
+.doorcard:not(.open) .doorbody{display:none}
+.doorcard .tapme{font-size:13px;color:var(--accent);font-weight:700}
+.doorcard.open .tapme{display:none}
+.movegrid{display:flex;gap:16px;align-items:flex-start}
+.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:520px){.actions{grid-template-columns:1fr}}
+.action{font:inherit;color:var(--ink);text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;column-gap:12px;cursor:pointer;align-items:center}
+.action .ico{grid-row:1/3}
+.action b{font-family:var(--display);font-size:16px}
+.action small{color:var(--muted);font-size:13px}
+.action[aria-expanded="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.how{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:640px){.how{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.howstep{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.howstep b{font-family:var(--display);font-size:16px}
+.howstep p{font-size:14px;color:var(--muted)}
+.typ .emb{width:44px;height:44px;border-radius:12px;background:var(--needle-soft);color:var(--needle);display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+.typ .emb svg{width:28px;height:28px}
+.share textarea{min-height:80px}
+.sheet .notecard{background:var(--p-mist);border-radius:14px;padding:18px 22px;font-size:15px;line-height:1.6;white-space:pre-wrap}
 footer{font-size:13px;color:var(--muted);text-align:center}
 </style>
 
@@ -307,15 +383,15 @@ footer{font-size:13px;color:var(--muted);text-align:center}
 
     <h2>The 8 generalist types</h2>
     <p class="lead" style="margin-top:-10px">Everyone gets one main type and a second one. None is better than another; each fits a different kind of work.</p>
-    <div class="types">
-      <div class="typ"><b>The Opener</b><p>Starts things from zero: new markets, launches, first deals. Bored once it runs.</p><span>Thrives in: young companies launching something new</span></div>
-      <div class="typ"><b>The Connector</b><p>Puts people and opportunities together, and deals happen. Reads people fast.</p><span>Thrives in: partnerships, business development, sales</span></div>
-      <div class="typ"><b>The Translator</b><p>Bridges worlds: cultures, industries, languages, teams. Explains the complex simply.</p><span>Thrives in: international teams, product and customer roles</span></div>
-      <div class="typ"><b>The Fixer</b><p>Walks into chaos and makes it work. Calm when things break.</p><span>Thrives in: turnarounds, operations, crisis moments</span></div>
-      <div class="typ"><b>The Operator</b><p>Turns ideas into systems that run without them. Spots the bottleneck.</p><span>Thrives in: scaling companies, operations, chief of staff</span></div>
-      <div class="typ"><b>The Explorer</b><p>Learns fast across fields and spots angles others miss. Tests before committing.</p><span>Thrives in: research, strategy, new ventures</span></div>
-      <div class="typ"><b>The Storyteller</b><p>Shapes how people see something, and they follow. Builds a brand or a room.</p><span>Thrives in: marketing, community, content, events</span></div>
-      <div class="typ"><b>The Strategist</b><p>Sees the pattern and decides where to go. A calm risk-taker.</p><span>Thrives in: founder's office, strategy, investing</span></div>
+    <div class="types" id="typesGrid">
+      <div class="typ" data-type="The Opener"><span class="emb"></span><b>The Opener</b><p>Starts things from zero: new markets, launches, first deals. Bored once it runs.</p><span>Thrives in: young companies launching something new</span></div>
+      <div class="typ" data-type="The Connector"><span class="emb"></span><b>The Connector</b><p>Puts people and opportunities together, and deals happen. Reads people fast.</p><span>Thrives in: partnerships, business development, sales</span></div>
+      <div class="typ" data-type="The Translator"><span class="emb"></span><b>The Translator</b><p>Bridges worlds: cultures, industries, languages, teams. Explains the complex simply.</p><span>Thrives in: international teams, product and customer roles</span></div>
+      <div class="typ" data-type="The Fixer"><span class="emb"></span><b>The Fixer</b><p>Walks into chaos and makes it work. Calm when things break.</p><span>Thrives in: turnarounds, operations, crisis moments</span></div>
+      <div class="typ" data-type="The Operator"><span class="emb"></span><b>The Operator</b><p>Turns ideas into systems that run without them. Spots the bottleneck.</p><span>Thrives in: scaling companies, operations, chief of staff</span></div>
+      <div class="typ" data-type="The Explorer"><span class="emb"></span><b>The Explorer</b><p>Learns fast across fields and spots angles others miss. Tests before committing.</p><span>Thrives in: research, strategy, new ventures</span></div>
+      <div class="typ" data-type="The Storyteller"><span class="emb"></span><b>The Storyteller</b><p>Shapes how people see something, and they follow. Builds a brand or a room.</p><span>Thrives in: marketing, community, content, events</span></div>
+      <div class="typ" data-type="The Strategist"><span class="emb"></span><b>The Strategist</b><p>Sees the pattern and decides where to go. A calm risk-taker.</p><span>Thrives in: founder's office, strategy, investing</span></div>
     </div>
 
     <div class="maker">
@@ -326,20 +402,12 @@ footer{font-size:13px;color:var(--muted);text-align:center}
       <p>So I built the tool I wish I'd had. If your path looks scattered from the outside, this is for you.</p>
     </div>
 
-    <h2>Everything it does</h2>
-    <div class="feats">
-      <div class="feat"><b>Talk instead of typing</b><p>Dictate your story or your replies. Most people say more out loud.</p></div>
-      <div class="feat"><b>Your generalist type</b><p>One of 8 types, like The Opener or The Translator, with what makes you rare.</p></div>
-      <div class="feat"><b>The thread</b><p>The one line that makes a scattered path make sense, plus how to answer "what do you do?"</p></div>
-      <div class="feat"><b>Edge and blind spot</b><p>What sets you apart, what's holding you back, and a reframe that loosens it.</p></div>
-      <div class="feat"><b>Where you thrive</b><p>The kind of company, stage and boss that fits you, and what to walk away from.</p></div>
-      <div class="feat"><b>Pitch kit</b><p>A LinkedIn headline, About section and 30-second intro, ready to paste.</p></div>
-      <div class="feat"><b>Three side doors</b><p>Routes in that skip the application pile, each with a first step and a message.</p></div>
-      <div class="feat"><b>One move a week</b><p>A single action, so you never stare at a blank page.</p></div>
-      <div class="feat"><b>Talk back</b><p>Correct it, argue with it, ask more. Then update your results with what you said.</p></div>
-      <div class="feat"><b>Check a job</b><p>Paste a post. Get a fit score, the problem behind the role, and a way in through a person.</p></div>
-      <div class="feat"><b>Ask for help</b><p>A designed one-page report for a friend, with clear asks and a paragraph they can forward.</p></div>
-      <div class="feat"><b>Your full report</b><p>Everything it found about you, as a PDF you can keep.</p></div>
+    <h2>How it works</h2>
+    <div class="how">
+      <div class="howstep"><span class="ico big"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span><b>Tell it</b><p>Type or talk. No forms.</p></div>
+      <div class="howstep"><span class="ico big"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg></span><b>Get your type</b><p>And the thread in your story.</p></div>
+      <div class="howstep"><span class="ico big"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M3 21h18M12 12h1"/></svg></span><b>Open side doors</b><p>Ways in, with messages ready.</p></div>
+      <div class="howstep"><span class="ico big"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span><b>Get help</b><p>A report your friends can forward.</p></div>
     </div>
 
     <div class="faq">
@@ -400,75 +468,107 @@ footer{font-size:13px;color:var(--muted);text-align:center}
   <!-- STEP 2 -->
   <section id="step2" hidden>
     <div id="flag2" class="example-flag" hidden>Example profile, not yours. Go back to step 1 to try your own.</div>
-    <div class="row" style="justify-content:flex-end"><button class="ghost" id="ownReportTop" type="button">Download my report</button></div>
+    <button class="ghost" id="ownReportTop" type="button" hidden>Download my report</button>
 
     <div class="card arch" id="archCard" data-about="My generalist type" hidden>
-      <span class="tag">Your generalist type</span>
-      <div class="type" id="archType"></div>
-      <p class="tagline" id="archTag"></p>
+      <div class="archgrid">
+        <div class="emblem" id="archEmblem"></div>
+        <div class="archtext">
+          <span class="tag">Your generalist type</span>
+          <div class="type" id="archType"></div>
+          <p class="tagline" id="archTag"></p>
+        </div>
+      </div>
       <div class="traits" id="archTraits"></div>
-      <p id="archWhy"></p>
-      <p class="second" id="archSecond"></p>
+      <div class="secondrow" id="archSecondRow" hidden><span class="mini" id="archSecondEmb"></span><span id="archSecond"></span></div>
+      <details class="more"><summary>Why this type?</summary><p id="archWhy"></p></details>
     </div>
 
-    <div class="card" data-about="The thread in your story">
+    <div class="card threadcard" data-about="The thread in your story">
       <span class="tag">The thread in your story</span>
       <p class="story" id="thread"></p>
-      <p class="say" id="say"></p>
+      <div class="bubble-say" id="sayWrap"><span class="saylabel">When someone asks what you do</span><p id="say"></p></div>
     </div>
 
     <div class="pair">
-      <div class="card mirror" data-about="Your edge">
+      <div class="card mirror edge" data-about="Your edge">
+        <div class="ico good"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
         <span class="tag">Your edge</span>
         <div class="label" id="edgeName"></div>
         <p id="edgeWhy"></p>
       </div>
-      <div class="card mirror" data-about="What's holding you back">
+      <div class="card mirror trap" data-about="What's holding you back">
+        <div class="ico warn"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><path d="M12 8v13M5 15a7 7 0 0 0 14 0M5 15H3M19 15h2"/></svg></div>
         <span class="tag">What's holding you back</span>
         <div class="label" id="trapName"></div>
         <p id="trapWhy"></p>
       </div>
     </div>
-    <div class="reframe"><b>Try seeing it this way</b><span id="reframe"></span></div>
+    <div class="reframe"><div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg></div><div><b>Try seeing it this way</b><span id="reframe"></span></div></div>
 
-    <div class="pair">
-      <div class="card" data-about="Where I'll thrive"><h3>You'll thrive where</h3><ul class="plain" id="thrive"></ul></div>
-      <div class="card" data-about="What to walk away from"><h3>Walk away from</h3><ul class="plain no" id="avoid"></ul></div>
+    <div class="card" data-about="Where I'll thrive">
+      <span class="tag">Where you fit</span>
+      <div class="fitgrid">
+        <div><div class="fithead good"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>You'll thrive</div><div class="fitchips yes" id="thrive"></div></div>
+        <div><div class="fithead bad"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Walk away from</div><div class="fitchips no" id="avoid"></div></div>
+      </div>
+    </div>
+
+    <h2 class="sech">Three side doors for you</h2>
+    <p class="lead" style="margin-top:-12px">Skip the application pile. Tap a door to open it.</p>
+    <div class="routes doors" id="routes"></div>
+
+    <div class="card move" data-about="My one move this week">
+      <div class="movegrid"><div class="ico target"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg></div>
+      <div><span class="tag">Your one move this week</span><p class="big" id="move"></p><p class="hint" id="moveWhy"></p></div></div>
     </div>
 
     <div class="card" id="kitCard" data-about="My pitch kit" hidden>
-      <span class="tag">Your pitch kit</span>
-      <h3>Say who you are, ready to paste</h3>
-      <div class="kit">
-        <div class="piece"><div class="copyrow"><span class="label">LinkedIn headline</span><button class="link kitcopy" type="button" data-src="kitHead">Copy</button></div><div class="note" id="kitHead"></div></div>
-        <div class="piece"><div class="copyrow"><span class="label">LinkedIn About</span><button class="link kitcopy" type="button" data-src="kitAbout">Copy</button></div><div class="note" id="kitAbout"></div></div>
-        <div class="piece"><div class="copyrow"><span class="label">30-second intro (say it out loud)</span><button class="link kitcopy" type="button" data-src="kitIntro">Copy</button></div><div class="note" id="kitIntro"></div></div>
-      </div>
+      <details class="kitd">
+        <summary><span class="ico small"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/></svg></span><span><b>Your pitch kit</b><small>LinkedIn headline, About and a 30-second intro, ready to paste</small></span></summary>
+        <div class="kit">
+          <div class="piece"><div class="copyrow"><span class="label">LinkedIn headline</span><button class="link kitcopy" type="button" data-src="kitHead">Copy</button></div><div class="note" id="kitHead"></div></div>
+          <div class="piece"><div class="copyrow"><span class="label">LinkedIn About</span><button class="link kitcopy" type="button" data-src="kitAbout">Copy</button></div><div class="note" id="kitAbout"></div></div>
+          <div class="piece"><div class="copyrow"><span class="label">30-second intro (say it out loud)</span><button class="link kitcopy" type="button" data-src="kitIntro">Copy</button></div><div class="note" id="kitIntro"></div></div>
+        </div>
+      </details>
     </div>
 
-    <h2>Three side doors for you</h2>
-    <p class="lead" style="margin-top:-10px">Skip the application pile. These routes work better for people with a mixed path.</p>
-    <div class="routes" id="routes"></div>
-
-    <div class="card move" data-about="My one move this week">
-      <span class="tag">Your one move this week</span>
-      <p class="big" id="move"></p>
-      <p id="moveWhy"></p>
+    <h2 class="sech">What next?</h2>
+    <div class="actions">
+      <button type="button" class="action" data-open="shareCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span><b>Ask someone for help</b><small>A one-page report, made for them</small></button>
+      <button type="button" class="action" data-open="talk"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><b>Talk back</b><small>Correct it, push back, ask more</small></button>
+      <button type="button" class="action" id="toScanTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span><b>Check a job</b><small>Paste a job post, get your fit</small></button>
+      <button type="button" class="action" id="ownReportTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15l3 3 3-3"/></svg></span><b>Download my report</b><small>Everything above, as a PDF</small></button>
     </div>
 
-    <div class="card share" id="shareCard">
+    <div class="card share" id="shareCard" hidden>
       <span class="tag">Ask for help</span>
-      <h3>Turn this into a one-page report for someone who can help</h3>
-      <p class="hint">A friend, a mentor, someone with a network. You get a designed page about you, with clear asks and a paragraph they can forward.</p>
+      <h3>Who are you sending it to?</h3>
+      <p class="hint">The report, its tone and its asks are written for this one person.</p>
       <div class="pair">
         <div><label class="q" for="myName">Your first name</label><input id="myName" type="text" placeholder="e.g. Mike" autocomplete="given-name"></div>
-        <div><label class="q" for="helper">Who is it for? <span class="hint">(optional)</span></label><input id="helper" type="text" placeholder="e.g. Barak, knows founders in tech" autocomplete="off"></div>
+        <div><label class="q" for="helper">Their name</label><input id="helper" type="text" placeholder="e.g. Barak" autocomplete="off"></div>
       </div>
-      <div class="row"><button class="btn" id="makeReport" type="button">Write my report</button><button class="link" id="openHelper" type="button" hidden>Open my last report</button></div>
+      <div>
+        <div class="q" style="margin-bottom:8px">They are my...</div>
+        <div class="chips" id="relation">
+          <button type="button" class="chip" aria-pressed="false" data-v="best friend">Best friend</button>
+          <button type="button" class="chip" aria-pressed="false" data-v="family member">Family</button>
+          <button type="button" class="chip" aria-pressed="false" data-v="friend">Friend</button>
+          <button type="button" class="chip" aria-pressed="false" data-v="former colleague">Ex-colleague</button>
+          <button type="button" class="chip" aria-pressed="false" data-v="mentor">Mentor</button>
+          <button type="button" class="chip" aria-pressed="false" data-v="contact I don't know well">Loose contact</button>
+          <button type="button" class="chip" aria-pressed="false" data-v="recruiter">Recruiter</button>
+        </div>
+      </div>
+      <div><label class="q" for="helperInfo">Anything about them? <span class="hint">(optional, makes it much better)</span></label>
+      <textarea id="helperInfo" class="reply-box" placeholder="e.g. Works in fintech in Tel Aviv, knows a lot of founders, we did the army together"></textarea></div>
+      <div class="row"><button class="btn" id="makeReport" type="button">Write their report</button><button class="link" id="openHelper" type="button" hidden>Open my last report</button></div>
       <div class="status" id="statusReport" role="status"></div>
     </div>
 
-    <div class="card talk" id="talk">
+    <div class="card talk" id="talk" hidden>
       <span class="tag">Talk back</span>
       <h3>Does this feel right? Push back.</h3>
       <p class="hint">Correct what's off, disagree, or ask about anything above. Your mentor answers, and you can update your results with what you said.</p>
@@ -498,8 +598,8 @@ footer{font-size:13px;color:var(--muted);text-align:center}
     <p class="quiet" id="titlesLine"></p>
 
     <div class="row">
-      <button class="btn" id="toScan" type="button">Found a job? Check it</button>
-      <button class="ghost" id="ownReport" type="button">Download my report</button>
+      <button class="btn" id="toScan" type="button" hidden>Found a job? Check it</button>
+      <button class="ghost" id="ownReport" type="button" hidden>Download my report</button>
       <button class="link" id="redo" type="button">Edit my story</button>
     </div>
   </section>
@@ -652,6 +752,17 @@ footer{font-size:13px;color:var(--muted);text-align:center}
   $("nav3").onclick = () => S.map && go(3);
   $("redo").onclick = () => go(1);
   $("toScan").onclick = () => go(3);
+  $("toScanTile").onclick = () => go(3);
+  $("ownReportTile").onclick = () => S.map && openViewer("own");
+  document.querySelectorAll(".action[data-open]").forEach(btn => {
+    btn.setAttribute("aria-expanded","false");
+    btn.onclick = () => {
+      const panel = $(btn.dataset.open), open = panel.hidden;
+      document.querySelectorAll(".action[data-open]").forEach(o => { $(o.dataset.open).hidden = true; o.setAttribute("aria-expanded","false"); });
+      panel.hidden = !open; btn.setAttribute("aria-expanded", String(open));
+      if (open) panel.scrollIntoView({behavior:"smooth", block:"start"});
+    };
+  });
 
   // ---------- chips ----------
   function wireChips(id, key){
@@ -667,6 +778,15 @@ footer{font-size:13px;color:var(--muted);text-align:center}
     document.querySelectorAll("#"+id+" .chip").forEach(c => c.setAttribute("aria-pressed", String(vals.includes(c.dataset.v))));
   }
   wireChips("stuck","stuck"); wireChips("prefs","prefs");
+  S.relation = [];
+  document.querySelectorAll("#relation .chip").forEach(c => {
+    c.onclick = () => {
+      const on = c.getAttribute("aria-pressed") !== "true";
+      document.querySelectorAll("#relation .chip").forEach(x => x.setAttribute("aria-pressed","false"));
+      c.setAttribute("aria-pressed", String(on));
+      S.relation = on ? [c.dataset.v] : [];
+    };
+  });
 
   // ---------- archetypes ----------
   const ARCH = {
@@ -688,8 +808,11 @@ footer{font-size:13px;color:var(--muted);text-align:center}
     $("archTag").textContent = t.tag;
     const tr = $("archTraits"); clear(tr); t.traits.forEach(x => { const sp=document.createElement("span"); sp.textContent=x; tr.append(sp); });
     $("archWhy").textContent = str(a.why);
+    $("archEmblem").innerHTML = embSvg(str(a.type));
     const sec = $("archSecond"); clear(sec);
-    if (ARCH[str(a.second)] && a.second !== a.type){ const b=document.createElement("b"); b.textContent=str(a.second); sec.append("With a strong streak of ", b, "."); }
+    const has2 = ARCH[str(a.second)] && a.second !== a.type;
+    $("archSecondRow").hidden = !has2;
+    if (has2){ const b=document.createElement("b"); b.textContent=str(a.second); sec.append("With a strong streak of ", b); $("archSecondEmb").innerHTML = embSvg(str(a.second)); }
   }
   function renderKit(m){
     const k = m.pitch || {};
@@ -705,36 +828,60 @@ footer{font-size:13px;color:var(--muted);text-align:center}
     };
   });
 
+  // ---------- emblems ----------
+  const EMB = {
+    "The Opener":'<path d="M6 21V4h9v17"/><path d="M15 4l4 2v15l-4-2"/><path d="M3 21h18"/><path d="M11.5 12.5h.5"/>',
+    "The Connector":'<circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><circle cx="12" cy="5" r="2.5"/><path d="M7 16.5 10.5 7M17 16.5 13.5 7M7.5 18h9"/>',
+    "The Translator":'<path d="M3 5h10v7H7l-4 3z"/><path d="M11 15v2h6l4 3V10h-5"/>',
+    "The Fixer":'<path d="M14.7 6.3a4 4 0 0 0 5 5L21 13l-8 8-3-3 8-8-1.3-1.3a4 4 0 0 1-5-5L15 6z"/><path d="M3 21l6-6"/>',
+    "The Operator":'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
+    "The Explorer":'<path d="M3 20 9 9l4 6 3-4 5 9z"/><path d="M14 4v6M14 4l4 1.5-4 1.5"/>',
+    "The Storyteller":'<path d="M12 3l2.2 5.8L20 9.5l-4.5 4 1.4 6L12 16.6 7.1 19.5l1.4-6L4 9.5l5.8-.7z"/>',
+    "The Strategist":'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12 21 3M17 3h4v4"/>'
+  };
+  const embSvg = t => EMB[t] ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + EMB[t] + '</svg>' : "";
+  document.querySelectorAll("#typesGrid .typ").forEach(el => { el.querySelector(".emb").innerHTML = embSvg(el.dataset.type); });
+
   // ---------- render step 2 ----------
   function renderMap(m){
     renderArch(m); renderKit(m);
     $("flag2").hidden = !S.example;
     $("thread").textContent = str(m.thread);
-    const say = $("say"); clear(say);
-    if (m.say){ const b=document.createElement("b"); b.textContent="When someone asks what you do: "; say.append(b, "“" + str(m.say) + "”"); }
+    $("say").textContent = m.say ? "\u201C" + str(m.say) + "\u201D" : "";
+    $("sayWrap").hidden = !m.say;
     $("edgeName").textContent = str(m.edge && m.edge.name);
     $("edgeWhy").textContent = str(m.edge && m.edge.why);
     $("trapName").textContent = str(m.trap && m.trap.name);
     $("trapWhy").textContent = str(m.trap && m.trap.why);
     $("reframe").textContent = str(m.reframe);
-    const th = $("thrive"); clear(th); arr(m.thrive).slice(0,3).forEach(t => th.append(li(t)));
-    const av = $("avoid"); clear(av); arr(m.avoid).slice(0,2).forEach(t => av.append(li(t)));
+    const chipEl = t => { const e = document.createElement("span"); e.textContent = t; return e; };
+    const th = $("thrive"); clear(th); arr(m.thrive).slice(0,3).forEach(t => th.append(chipEl(t)));
+    const av = $("avoid"); clear(av); arr(m.avoid).slice(0,2).forEach(t => av.append(chipEl(t)));
 
     const r = $("routes"); clear(r);
     (Array.isArray(m.routes) ? m.routes : []).slice(0,3).forEach((x, i) => {
-      const c = document.createElement("div"); c.className = "route"; c.dataset.about = "Side door " + (i+1) + " (" + str(x.name) + ")";
-      const n = document.createElement("div"); n.className = "n"; n.textContent = "SIDE DOOR " + (i+1);
+      const c = document.createElement("div"); c.className = "doorcard"; c.dataset.about = "Side door " + (i+1) + " (" + str(x.name) + ")";
+      const btn = document.createElement("button"); btn.type = "button"; btn.className = "doorbtn"; btn.setAttribute("aria-expanded","false");
+      const art = document.createElement("div"); art.className = "doorart";
+      const fr = document.createElement("div"); fr.className = "frame";
+      const leaf = document.createElement("div"); leaf.className = "leaf"; leaf.textContent = String(i+1);
+      fr.append(leaf); art.append(fr);
       const h = document.createElement("h3"); h.textContent = str(x.name);
+      const tap = document.createElement("span"); tap.className = "tapme"; tap.textContent = "Open this door";
+      btn.append(art, h, tap);
+      btn.onclick = () => { const o = !c.classList.contains("open"); c.classList.toggle("open", o); btn.setAttribute("aria-expanded", String(o)); };
+      const body = document.createElement("div"); body.className = "doorbody";
       const why = document.createElement("p"); why.textContent = str(x.why);
       const first = document.createElement("p"); first.className = "first";
       const b = document.createElement("b"); b.textContent = "Start: "; first.append(b, str(x.first));
-      c.append(n, h, why, first);
+      body.append(why, first);
       if (x.script){
         const d = document.createElement("details"); d.className = "script";
-        const s = document.createElement("summary"); s.textContent = "Show the message to send";
+        const sm = document.createElement("summary"); sm.textContent = "The message to send";
         const note = document.createElement("div"); note.className = "note"; note.textContent = str(x.script);
-        d.append(s, note); c.append(d);
+        d.append(sm, note); body.append(d);
       }
+      c.append(btn, body);
       r.append(c);
     });
     addReplyLinks();
@@ -786,19 +933,19 @@ Reply with ONLY a JSON object in exactly this shape:
 {"archetype":{"type":"...","second":"...","why":"..."},"pitch":{"headline":"...","about":"...","intro":"..."},"thread":"...","say":"...","edge":{"name":"...","why":"..."},"trap":{"name":"...","why":"..."},"reframe":"...","thrive":["...","...","..."],"avoid":["...","..."],"routes":[{"name":"...","why":"...","first":"...","script":"..."}],"move":{"action":"...","why":"..."},"titles":["...","...","..."],"search":"..."}
 
 Field rules:
-- archetype: "type" and "second" must each be exactly one of: ${ARCH_NAMES.join(", ")}. type = the one that fits them best, second = a different one that also clearly shows. why = max 30 words on why type fits, citing their story.
+- archetype: "type" and "second" must each be exactly one of: ${ARCH_NAMES.join(", ")}. type = the one that fits them best, second = a different one that also clearly shows. why = max 25 words on why type fits, citing their story.
 - pitch.headline: a LinkedIn headline, max 200 characters, that names what they do for a company, not a list of past jobs.
 - pitch.about: a LinkedIn About section, first person, max 110 words, opening with the thread of their story and ending with what they're looking for.
 - pitch.intro: a 30-second spoken intro, first person, max 75 words, natural to say out loud.
-- thread: one sentence, max 22 words, second person, naming the through-line of their path.
-- say: how they answer "what do you do?" in first person, max 30 words, plain and confident.
-- edge: name = a 2 to 4 word label for their rare combination; why = max 30 words.
-- trap: what is most likely holding them back right now, said with care, not judgement. name = 2 to 5 words; why = max 35 words.
-- reframe: max 40 words, a new way to see their situation that makes it lighter.
-- thrive: exactly 3 conditions (company stage, kind of work, kind of boss) where they'd flourish.
-- avoid: exactly 2 environments that would drain them.
-- routes: exactly 3 side doors. name = short imperative; why = max 30 words on why it suits them; first = one concrete first step; script = a ready-to-send message, max 70 words, with [brackets] for blanks.
-- move: the single most useful action for this week, doable in under an hour, plus why in one sentence.
+- thread: one sentence, max 18 words, second person, naming the through-line of their path.
+- say: how they answer "what do you do?" in first person, max 25 words, plain and confident.
+- edge: name = a 2 to 4 word label for their rare combination; why = max 20 words.
+- trap: what is most likely holding them back right now, said with care, not judgement. name = 2 to 5 words; why = max 22 words.
+- reframe: max 25 words, a new way to see their situation that makes it lighter.
+- thrive: exactly 3 short conditions, max 8 words each (company stage, kind of work, kind of boss).
+- avoid: exactly 2 short environments that would drain them, max 8 words each.
+- routes: exactly 3 side doors. name = short imperative, max 5 words; why = max 20 words on why it suits them; first = one concrete first step, max 15 words; script = a ready-to-send message, max 70 words, with [brackets] for blanks.
+- move: the single most useful action for this week, doable in under an hour, max 18 words, plus why in one sentence of max 15 words.
 - titles: 3 job titles, only as a fallback for browsing. search: 2 to 4 words for a job board.
 - Plain, warm, direct words. No jargon, no flattery, no invented facts.
 
@@ -892,6 +1039,8 @@ ${cut(job, 10000)}
       b.onclick = () => {
         const box = $("reply");
         box.value = "About “" + card.dataset.about + "”: ";
+        $("talk").hidden = false; $("shareCard").hidden = true;
+        document.querySelectorAll(".action[data-open]").forEach(o => o.setAttribute("aria-expanded", String(o.dataset.open === "talk")));
         $("talk").scrollIntoView({behavior:"smooth", block:"center"});
         setTimeout(() => { box.focus(); box.setSelectionRange(box.value.length, box.value.length); }, 350);
       };
@@ -1001,6 +1150,7 @@ ${cut(JSON.stringify(S.map), 8000)}`;
     const n = myName() || "Me";
     const a = (S.map && S.map.archetype) || {};
     let h = `<div class="mast"><b>${MARK}Generalist Compass</b><span>${esc(today())}</span></div>`;
+    if (r.note) h += `<div class="blk notecard" style="margin-top:20px">${esc(r.note)}</div>`;
     h += `<div class="blk hero-ink" style="margin-top:22px"><div class="kicker">${esc(r.to ? "For " + r.to : "In one page")}</div><div class="big">${esc(n)}</div>${ARCH[str(a.type)] ? `<span class="tag2">${esc(a.type)}</span>` : ""}<p>${esc(r.who)}</p></div>`;
     const proof = Array.isArray(r.proof) ? r.proof.slice(0,4) : [];
     if (proof.length) h += `<div class="blk"><h4>The proof</h4><div class="proof">${proof.map(p=>`<div class="panel"><div class="place">${esc(p.label)}</div><p style="margin-top:4px">${esc(p.text)}</p></div>`).join("")}</div></div>`;
@@ -1022,7 +1172,7 @@ ${cut(JSON.stringify(S.map), 8000)}`;
     return L.join("\n").replace(/\n{3,}/g, "\n\n").trim();
   }
   function helperText(r){
-    const L = ["WHO I AM", str(r.who), "", "THE PROOF", ...(r.proof||[]).map(p => "- " + str(p.label) + ": " + str(p.text)), "", "WHAT I'M LOOKING FOR", str(r.looking), "", "HOW YOU CAN HELP", ...(r.asks||[]).map(x => "- " + str(x.title) + " " + str(x.text)), "", "A PARAGRAPH YOU CAN FORWARD", str(r.forward)];
+    const L = [...(r.note ? [str(r.note), ""] : []), "WHO I AM", str(r.who), "", "THE PROOF", ...(r.proof||[]).map(p => "- " + str(p.label) + ": " + str(p.text)), "", "WHAT I'M LOOKING FOR", str(r.looking), "", "HOW YOU CAN HELP", ...(r.asks||[]).map(x => "- " + str(x.title) + " " + str(x.text)), "", "A PARAGRAPH YOU CAN FORWARD", str(r.forward)];
     return L.join("\n");
   }
   function fitSheet(){
@@ -1103,19 +1253,29 @@ ${cut(JSON.stringify(S.map), 8000)}`;
     setStatus(st, "Writing your report", "thinking");
     const who = $("helper").value.trim();
     const talk = (S.chat || []).map(t => (t.role === "user" ? "Them: " : "Mentor: ") + t.content).join("\n\n");
-    const prompt = `Write a one-page report that this person will send to someone who wants to help them find work${who ? " (" + who + ")" : ""}. It is laid out as a designed page, so reply with ONLY a JSON object in exactly this shape:
-{"who":"...","proof":[{"label":"...","text":"..."}],"looking":"...","asks":[{"title":"...","text":"..."}],"forward":"..."}
+    const rel = (S.relation && S.relation[0]) || "";
+    const info = $("helperInfo").value.trim();
+    const prompt = `Write a one-page report that this person will send to someone who can help them find work. It is laid out as a designed page, so reply with ONLY a JSON object in exactly this shape:
+{"note":"...","who":"...","proof":[{"label":"...","text":"..."}],"looking":"...","asks":[{"title":"...","text":"..."}],"forward":"..."}
 
-Voice: first person (except "forward"). It should read like a person with a story, not a CV. Use specific scenes, places and real results. Short sentences. A little poetic is good, flowery is not. No jargon, no bragging, no em dashes.
+WHO IT'S FOR (tailor everything to this person):
+- Name: ${who || "not given"}
+- Relationship: ${rel || "not given"}
+- What we know about them: ${info || "nothing more"}
+
+Tone by relationship: a best friend or family gets warm, casual and direct, like a text between close people. A friend or ex-colleague gets friendly and natural. A mentor gets respectful and open. A loose contact or recruiter gets polite, brief and professional, and says why they're reaching out. Match the asks to what this helper can actually do from their world: if we know their industry, city or network, name the kinds of people or companies in it they could introduce.
+
+Voice: first person (except "forward"). It should read like a person with a story, not a CV. Specific scenes, places and real results. Short sentences. A little poetic is good, flowery is not. No jargon, no bragging, no em dashes.
 
 Fields:
-- who: 2 to 3 sentences that capture who they are through the thread of their story, ideally naming the places and worlds they've moved through. Make the reader feel they know them.
-- proof: 3 or 4 items, one per chapter of their life. label = "Place, field" in 2 to 4 words (like "Antwerp, diamonds"). text = max 30 words with a concrete result.
-- looking: 2 sentences: the kind of company and moment where they'd thrive, plus must-haves like remote work.
-- asks: exactly 3. title = max 8 words, a direct, easy ask to the helper. text = max 30 words making it concrete. Avoid vague category lists; ask for one specific kind of person or action.
+- note: a short personal message to send WITH the report, addressed to ${who || "them"} by name, in the tone above. 2 to 4 sentences, max 60 words. It explains in plain words what you're asking and why them.
+- who: 2 sentences that capture who they are through the thread of their story, naming the places and worlds they've moved through.
+- proof: 3 or 4 items, one per chapter of their life. label = "Place, field" in 2 to 4 words (like "Antwerp, diamonds"). text = max 25 words with a concrete result.
+- looking: 2 short sentences: the kind of company and moment where they'd thrive, plus must-haves like remote work.
+- asks: exactly 3, tailored to this helper. title = max 8 words, a direct, easy ask. text = max 25 words making it concrete.
 - forward: 3 sentences in third person, using the name ${myName() ? '"' + myName() + '"' : "they"}, that the helper can paste straight into a message to their network. End with a clear reason to take a 15-minute call.
 
-Never invent facts beyond what is below.
+Never invent facts about either person beyond what is below.
 
 Their story:
 """
@@ -1128,7 +1288,7 @@ ${talk ? "\nWhat they added in conversation (overrides the reading where they di
     try {
       const r = await sample.json(prompt, { cache:false });
       if (!r || !r.who) throw {code:"invalid_json"};
-      r.to = who; S.helper = r; save();
+      r.to = who; r.rel = rel; S.helper = r; save();
       setStatus(st, ""); $("openHelper").hidden = false;
       openViewer("helper");
     } catch(e){ setStatus(st, errText(e), "err"); }
