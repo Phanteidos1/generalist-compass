@@ -30,10 +30,10 @@ export default async function handler(req, res) {
 
   const prompt = `Today is ${today}. You are a headhunter who finds jobs before they are posted.
 
-Use web search to find 3 real companies that, in the last 60 days, raised funding, announced expansion into a new country or market, launched a new product line, or opened a new office, AND that would plausibly need someone like the person below in the next few months. Prefer young or mid-sized companies (under about 500 people), where one person can make a difference.
+Use web search to find 5 real companies that, in the last 60 days, raised funding, announced expansion into a new country or market, launched a new product line, or opened a new office, AND that would plausibly need someone like the person below in the next few months. Prefer young or mid-sized companies (under about 500 people), where one person can make a difference.
 ${f ? "Focus on: " + f + "\n" : ""}${way ? `
 The person chose ONE way in: "${way}".
-Pick companies where THIS way in is most likely to work, not just any company that fits. For example:
+Prefer companies where THIS way in is most likely to work. If you cannot find 5 like that, fill the list with the next best companies that fit the person. Always return 5. For example:
 - a project or trial: companies with a concrete, time-bound need right now (a launch date, a new market opening, an event).
 - pitching a problem: companies whose news creates a visible new problem (entering a country, a new product line, fast hiring).
 - going through people: founder-led companies small enough that a warm intro reaches the decision maker.
@@ -47,6 +47,7 @@ Reply with ONLY a JSON array, no prose, like:
 [{"company":"...","event":"...","date":"...","source":"https://...","why":"...","who":"...","message":"...","intro":"..."}]
 
 Rules:
+- Return exactly 5 companies, best first.
 - Only companies you actually found in search results. Never invent a company, a person or a fact.
 - source = the URL of the article or page where you found the news.
 - event: what happened, max 20 words. date: when, as specific as the source allows.
@@ -62,7 +63,7 @@ Rules:
       headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
       body: JSON.stringify({
         model: "claude-sonnet-5-5",
-        max_tokens: 4000,
+        max_tokens: 6000,
         tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 6 }],
         messages: [{ role: "user", content: prompt }],
       }),
@@ -80,6 +81,7 @@ Rules:
       return res.status(502).json({ error: "The search came back without results. Try again." });
     }
     const clean = list.filter(x => x && x.company && /^https?:\/\//.test(String(x.source || ""))).slice(0, 3);
+    console.log("Radar: model returned", list.length, "kept", clean.length);
     return res.status(200).json({ companies: clean });
   } catch (e) {
     console.log("Radar failure", String(e));
