@@ -26,16 +26,25 @@ export default async function handler(req, res) {
   const p = JSON.stringify(person || {}).slice(0, 5000);
   const f = String(focus || "").slice(0, 200);
   const today = new Date().toISOString().slice(0, 10);
+  const way = String((person && person.chosen_way_in) || "").slice(0, 300);
 
   const prompt = `Today is ${today}. You are a headhunter who finds jobs before they are posted.
 
-Use web search to find 5 real companies that, in the last 60 days, raised funding, announced expansion into a new country or market, launched a new product line, or opened a new office, AND that would plausibly need someone like the person below in the next few months. Prefer young or mid-sized companies (under about 500 people), where one person can make a difference.
-${f ? "Focus on: " + f + "\n" : ""}
+Use web search to find 3 real companies that, in the last 60 days, raised funding, announced expansion into a new country or market, launched a new product line, or opened a new office, AND that would plausibly need someone like the person below in the next few months. Prefer young or mid-sized companies (under about 500 people), where one person can make a difference.
+${f ? "Focus on: " + f + "\n" : ""}${way ? `
+The person chose ONE way in: "${way}".
+Pick companies where THIS way in is most likely to work, not just any company that fits. For example:
+- a project or trial: companies with a concrete, time-bound need right now (a launch date, a new market opening, an event).
+- pitching a problem: companies whose news creates a visible new problem (entering a country, a new product line, fast hiring).
+- going through people: founder-led companies small enough that a warm intro reaches the decision maker.
+- anything else: reason about what makes that way in land, and pick for it.
+The message must USE that way in (for example, propose the specific project, or name the problem and a first step).
+` : ""}
 The person (JSON):
 ${p}
 
 Reply with ONLY a JSON array, no prose, like:
-[{"company":"...","event":"...","date":"...","source":"https://...","why":"...","who":"...","message":"..."}]
+[{"company":"...","event":"...","date":"...","source":"https://...","why":"...","who":"...","message":"...","intro":"..."}]
 
 Rules:
 - Only companies you actually found in search results. Never invent a company, a person or a fact.
@@ -44,6 +53,7 @@ Rules:
 - why: max 22 words on why this moment creates a need this person fits.
 - who: the role to contact, plus the person's name only if the source names them.
 - message: max 60 words, first person, to that contact, leading with their news and the problem they now have. No cliches.
+- intro: max 45 words, first person, to a friend of the person, asking if they know anyone at the company, saying in plain words what the company just did and how the person could help. Use [name] for the friend.
 - Write the text values in the language of the person's story.`;
 
   try {
@@ -69,7 +79,7 @@ Rules:
       console.log("Radar: no JSON. stop:", data.stop_reason, "text:", lastText.slice(0, 400));
       return res.status(502).json({ error: "The search came back without results. Try again." });
     }
-    const clean = list.filter(x => x && x.company && /^https?:\/\//.test(String(x.source || ""))).slice(0, 5);
+    const clean = list.filter(x => x && x.company && /^https?:\/\//.test(String(x.source || ""))).slice(0, 3);
     return res.status(200).json({ companies: clean });
   } catch (e) {
     console.log("Radar failure", String(e));
