@@ -366,6 +366,19 @@ details.kitd[open] .kit{margin-top:16px}
 .cp-made{font-size:13px;color:var(--muted);text-align:center}
 .cp-made a{color:var(--accent);font-weight:700}
 footer{font-size:13px;color:var(--muted);text-align:center}
+.stepno{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.pathstep{display:flex;flex-direction:column;gap:16px;padding-top:12px;border-top:1px solid var(--line)}
+.pathnext{display:flex;justify-content:center;padding:8px 0}
+.btn.big{font-size:17px;padding:15px 28px;border-radius:12px}
+.pushrow{margin-top:-4px}
+.doorcard .choose{margin-top:4px;align-self:flex-start}
+.doorcard.chosen{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.doors.picked .doorcard:not(.chosen){opacity:.55}
+.doorcard.chosen .choose{background:var(--good)}
+details.tools{border-top:1px solid var(--line);padding-top:16px}
+details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16px}
+.job .intro{margin-top:4px}
+.card.again{gap:6px}
 </style>
 
 <div class="wrap">
@@ -383,7 +396,7 @@ footer{font-size:13px;color:var(--muted);text-align:center}
     <button id="nav0" type="button">Home</button>
     <button id="nav1" type="button" aria-current="step">1 · You</button>
     <button id="nav2" type="button" disabled>2 · Your way in</button>
-    <button id="nav3" type="button" disabled>3 · Check a job</button>
+    <button id="nav3" type="button" disabled hidden>3 · Check a job</button>
   </nav>
 
   <!-- PUBLIC COMPASS PAGE -->
@@ -543,6 +556,7 @@ footer{font-size:13px;color:var(--muted);text-align:center}
     <div id="flag2" class="example-flag" hidden>Example profile, not yours. Go back to step 1 to try your own.</div>
     <button class="ghost" id="ownReportTop" type="button" hidden>Download my report</button>
 
+    <span class="stepno">Step 2 of 5 · Your reading</span>
     <div class="card arch" id="archCard" data-about="My generalist type" hidden>
       <div class="archgrid">
         <div class="emblem" id="archEmblem"></div>
@@ -579,32 +593,32 @@ footer{font-size:13px;color:var(--muted);text-align:center}
     </div>
     <div class="reframe"><div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg></div><div><b>Try seeing it this way</b><span id="reframe"></span></div></div>
 
-    <div class="card" data-about="Where I'll thrive">
-      <span class="tag">Where you fit</span>
-      <div class="fitgrid">
-        <div><div class="fithead good"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>You'll thrive</div><div class="fitchips yes" id="thrive"></div></div>
-        <div><div class="fithead bad"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Walk away from</div><div class="fitchips no" id="avoid"></div></div>
+    <div class="pushrow"><button class="link" id="pushBack" type="button" aria-expanded="false">Doesn't feel like you? Push back</button></div>
+    <div class="card talk" id="talk" hidden>
+      <span class="tag">Talk back</span>
+      <h3>Does this feel right? Push back.</h3>
+      <p class="hint">Correct what's off, disagree, or ask about anything above. Your mentor answers, and you can update your results with what you said.</p>
+      <div class="thread" id="thread-log" aria-live="polite"></div>
+      <div class="chips" id="starters">
+        <button type="button" class="chip" data-say="That's not quite me. ">That's not quite me</button>
+        <button type="button" class="chip" data-say="I like this, but I'm scared that ">I'm scared that...</button>
+        <button type="button" class="chip" data-say="Tell me more about how to actually do side door 1.">More on side door 1</button>
       </div>
-    </div>
-
-    <h2 class="sech">Three side doors for you</h2>
-    <p class="lead" style="margin-top:-12px">Skip the application pile. Tap a door to open it.</p>
-    <div class="routes doors" id="routes"></div>
-
-    <div class="card move" data-about="My one move this week">
-      <div class="movegrid"><div class="ico target"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg></div>
-      <div><span class="tag">Your one move this week</span><p class="big" id="move"></p><p class="hint" id="moveWhy"></p></div></div>
-    </div>
-
-    <div class="card" id="kitCard" data-about="My pitch kit" hidden>
-      <details class="kitd">
-        <summary><span class="ico small"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/></svg></span><span><b>Your pitch kit</b><small>LinkedIn headline, About and a 30-second intro, ready to paste</small></span></summary>
-        <div class="kit">
-          <div class="piece"><div class="copyrow"><span class="label">LinkedIn headline</span><button class="link kitcopy" type="button" data-src="kitHead">Copy</button></div><div class="note" id="kitHead"></div></div>
-          <div class="piece"><div class="copyrow"><span class="label">LinkedIn About</span><button class="link kitcopy" type="button" data-src="kitAbout">Copy</button></div><div class="note" id="kitAbout"></div></div>
-          <div class="piece"><div class="copyrow"><span class="label">30-second intro (say it out loud)</span><button class="link kitcopy" type="button" data-src="kitIntro">Copy</button></div><div class="note" id="kitIntro"></div></div>
-        </div>
-      </details>
+      <div class="copyrow">
+        <label class="q" for="reply">Your reply</label>
+        <button type="button" class="mic" id="mic2">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span id="micLabel2">Talk your reply</span>
+        </button>
+      </div>
+      <div class="micHint" id="micHint2" hidden></div>
+      <textarea id="reply" class="reply-box" placeholder="Type or dictate your reply..."></textarea>
+      <div class="row">
+        <button class="btn" id="send" type="button">Send</button>
+        <button class="link" id="stopChat" type="button" hidden>Stop</button>
+        <button class="link" id="updateMap" type="button" hidden>Update my results with this conversation</button>
+      </div>
+      <div class="status" id="statusChat" role="status"></div>
     </div>
 
     <div class="card fb" id="fbCard" hidden>
@@ -623,49 +637,43 @@ footer{font-size:13px;color:var(--muted);text-align:center}
       <p class="hint" id="fbThanks" hidden>Thank you. This shapes what we build next.</p>
     </div>
 
-    <h2 class="sech">What next?</h2>
-    <div class="agroup"><span class="glabel">Find opportunities</span>
-    <div class="actions">
-      <button type="button" class="action wide" data-open="radarCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12 18 6"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><b>Hidden jobs radar</b><small>Companies that just raised money or are expanding, and will soon need someone like you</small></button>
-      <button type="button" class="action" data-open="netCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><circle cx="12" cy="5" r="2.5"/><path d="M7 16.5 10.5 7M17 16.5 13.5 7M7.5 18h9"/></svg></span><b>Network X-ray</b><small>Who you already know who can open doors</small></button>
-      <button type="button" class="action" data-open="jobsCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/></svg></span><b>Live jobs</b><small>Remote openings this week that fit you</small></button>
-    </div></div>
-    <div class="agroup"><span class="glabel">Show who you are</span>
-    <div class="actions">
-      <button type="button" class="action" data-open="pageCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></span><b>Your Compass Page</b><small>One link that tells your story, instead of a CV</small></button>
-      <button type="button" class="action" data-open="shareCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span><b>Ask someone for help</b><small>A one-page report, made for them</small></button>
-      <button type="button" class="action" id="ownReportTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15l3 3 3-3"/></svg></span><b>Download my report</b><small>Everything above, as a PDF</small></button>
-    </div></div>
-    <div class="agroup"><span class="glabel">Go deeper</span>
-    <div class="actions">
-      <button type="button" class="action" data-open="talk"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><b>Talk back</b><small>Correct it, push back, ask more</small></button>
-      <button type="button" class="action" id="toScanTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span><b>Check a job</b><small>Paste a job post, get your fit</small></button>
-    </div></div>
+    <div class="pathnext" id="toDoorsRow"><button class="btn big" id="toDoors" type="button">Next: pick your way in &rarr;</button></div>
 
-    <div class="card radar" id="radarCard" hidden>
-      <span class="tag">Hidden jobs radar</span>
-      <h3>Jobs before they're posted</h3>
-      <p class="hint">We search this month's news for companies that just raised money, entered a new market or launched something, and pick the ones that will need someone like you.</p>
-      <div><label class="q" for="radarFocus">Anything to focus on? <span class="hint">(optional)</span></label>
-      <input id="radarFocus" type="text" placeholder="e.g. Europe, Israel, e-commerce, gaming" autocomplete="off"></div>
-      <div class="row"><button class="btn" id="runRadar" type="button">Scan for hidden jobs</button></div>
-      <div class="status" id="statusRadar" role="status"></div>
-      <div class="joblist" id="radarList"></div>
+    <div id="doorStep" class="pathstep" hidden>
+      <span class="stepno">Step 3 of 5</span>
+      <h2 class="sech">Pick one door</h2>
+      <p class="lead" style="margin-top:-12px">Three ways in that fit your story. Choose the one you'd actually do this week.</p>
+      <div class="routes doors" id="routes"></div>
     </div>
 
-    <div class="card net" id="netCard" hidden>
-      <span class="tag">Network X-ray</span>
-      <h3>The doors you already have</h3>
-      <details class="more"><summary>How to get your LinkedIn contacts file</summary>
-        <ol class="howto"><li>On LinkedIn, open <b>Me</b>, then <b>Settings &amp; Privacy</b>, then <b>Data privacy</b>.</li><li>Click <b>Get a copy of your data</b>, tick only <b>Connections</b>, and request it.</li><li>You get an email, usually within minutes. Download and unzip it.</li><li>Pick the file <b>Connections.csv</b> below.</li></ol>
-      </details>
-      <label class="filepick"><input id="netFile" type="file" accept=".csv,text/csv"><span>Choose Connections.csv</span></label>
-      <p class="hint">The file is read in your browser. Only names, roles and companies of your most relevant contacts are sent to the AI. Nothing is stored.</p>
-      <div class="status" id="statusNet" role="status"></div>
-      <div class="joblist" id="netList"></div>
+    <div id="targetStep" class="pathstep" hidden>
+      <span class="stepno">Step 4 of 5</span>
+      <h2 class="sech">3 real targets for your door</h2>
+      <p class="lead" style="margin-top:-12px">Your door: <b id="doorName"></b>. <button class="link" id="changeDoor" type="button">Change</button></p>
+      <div class="card radar" id="targetCard">
+        <div class="q" style="margin-bottom:4px">Where should we look?</div>
+        <div class="chips" id="tMode">
+          <button type="button" class="chip" aria-pressed="true" data-v="news">Companies with fresh news</button>
+          <button type="button" class="chip" aria-pressed="false" data-v="roles">Open remote roles</button>
+        </div>
+        <p class="hint" id="tModeHint">Companies that just raised money, entered a new market or launched something, and will soon need someone like you.</p>
+        <div id="tFocusWrap"><label class="q" for="radarFocus">Anything to focus on? <span class="hint">(optional)</span></label>
+        <input id="radarFocus" type="text" placeholder="e.g. Europe, Israel, e-commerce, gaming" autocomplete="off"></div>
+        <div id="tBaseWrap" hidden><label class="q" for="baseIn">Where are you based? <span class="hint">(so we skip jobs you can't take)</span></label>
+        <input id="baseIn" type="text" placeholder="e.g. Thailand, Belgium" autocomplete="country-name"></div>
+        <div class="row"><button class="btn" id="findTargets" type="button">Find my 3 targets</button></div>
+        <div class="status" id="statusTargets" role="status"></div>
+        <div class="joblist" id="targetList"></div>
+        <p class="credit" id="jobCredit" hidden>Job listings via <a href="https://himalayas.app" target="_blank" rel="noopener">Himalayas</a> and <a href="https://jobicy.com" target="_blank" rel="noopener">Jobicy</a>. Apply on their pages.</p>
+      </div>
+      <div class="pathnext" id="toDoneRow" hidden><button class="btn big" id="toDone" type="button">I've picked who to message &rarr;</button></div>
     </div>
 
-    <div class="card page" id="pageCard" hidden>
+    <div id="doneStep" class="pathstep" hidden>
+      <span class="stepno">Step 5 of 5</span>
+      <h2 class="sech">Send it, and share your link</h2>
+      <p class="lead" style="margin-top:-12px">Send your messages today. Add this link so they see who you are, instead of a CV.</p>
+      <div class="card page" id="pageCard">
       <span class="tag">Your Compass Page</span>
       <h3>One link that tells your story</h3>
       <p class="hint">Put it in your LinkedIn profile, your email signature, or send it to a founder instead of a CV.</p>
@@ -681,15 +689,28 @@ footer{font-size:13px;color:var(--muted);text-align:center}
       </div>
     </div>
 
-    <div class="card jobs" id="jobsCard" hidden>
-      <span class="tag">Live jobs</span>
-      <h3>Remote openings that fit you, posted this week</h3>
-      <div><label class="q" for="baseIn">Where are you based? <span class="hint">(so we skip jobs you can't take)</span></label>
-      <input id="baseIn" type="text" placeholder="e.g. Thailand, Belgium" autocomplete="country-name"></div>
-      <div class="row"><button class="btn" id="findJobs" type="button">Find my jobs</button></div>
-      <div class="status" id="statusJobs" role="status"></div>
-      <div class="joblist" id="jobList"></div>
-      <p class="credit" id="jobCredit" hidden>Job listings via <a href="https://himalayas.app" target="_blank" rel="noopener">Himalayas</a> and <a href="https://jobicy.com" target="_blank" rel="noopener">Jobicy</a>. Apply on their pages.</p>
+    <div class="card again"><b>Come back in a week</b><p class="hint">New companies raise money and expand every week. Come back for 3 fresh targets for your door.</p>
+        <div class="row"><button class="ghost" id="againBtn" type="button">Find 3 new targets now</button></div></div>
+    </div>
+
+    <details class="more tools" id="moreTools"><summary>More tools</summary>
+      <div class="toolsin">
+      <div class="actions">
+        <button type="button" class="action" data-open="netCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><circle cx="12" cy="5" r="2.5"/><path d="M7 16.5 10.5 7M17 16.5 13.5 7M7.5 18h9"/></svg></span><b>Network X-ray</b><small>Who you already know who can open doors</small></button>
+        <button type="button" class="action" data-open="shareCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span><b>Ask someone for help</b><small>A one-page report, made for them</small></button>
+        <button type="button" class="action" id="toScanTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span><b>Check a job</b><small>Paste a job post, get your fit</small></button>
+        <button type="button" class="action" id="ownReportTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15l3 3 3-3"/></svg></span><b>Download my report</b><small>Your full reading, as a PDF</small></button>
+      </div>
+      <div class="card net" id="netCard" hidden>
+      <span class="tag">Network X-ray</span>
+      <h3>The doors you already have</h3>
+      <details class="more"><summary>How to get your LinkedIn contacts file</summary>
+        <ol class="howto"><li>On LinkedIn, open <b>Me</b>, then <b>Settings &amp; Privacy</b>, then <b>Data privacy</b>.</li><li>Click <b>Get a copy of your data</b>, tick only <b>Connections</b>, and request it.</li><li>You get an email, usually within minutes. Download and unzip it.</li><li>Pick the file <b>Connections.csv</b> below.</li></ol>
+      </details>
+      <label class="filepick"><input id="netFile" type="file" accept=".csv,text/csv"><span>Choose Connections.csv</span></label>
+      <p class="hint">The file is read in your browser. Only names, roles and companies of your most relevant contacts are sent to the AI. Nothing is stored.</p>
+      <div class="status" id="statusNet" role="status"></div>
+      <div class="joblist" id="netList"></div>
     </div>
 
     <div class="card share" id="shareCard" hidden>
@@ -718,34 +739,33 @@ footer{font-size:13px;color:var(--muted);text-align:center}
       <div class="status" id="statusReport" role="status"></div>
     </div>
 
-    <div class="card talk" id="talk" hidden>
-      <span class="tag">Talk back</span>
-      <h3>Does this feel right? Push back.</h3>
-      <p class="hint">Correct what's off, disagree, or ask about anything above. Your mentor answers, and you can update your results with what you said.</p>
-      <div class="thread" id="thread-log" aria-live="polite"></div>
-      <div class="chips" id="starters">
-        <button type="button" class="chip" data-say="That's not quite me. ">That's not quite me</button>
-        <button type="button" class="chip" data-say="I like this, but I'm scared that ">I'm scared that...</button>
-        <button type="button" class="chip" data-say="Tell me more about how to actually do side door 1.">More on side door 1</button>
+    <div class="card" data-about="Where I'll thrive">
+      <span class="tag">Where you fit</span>
+      <div class="fitgrid">
+        <div><div class="fithead good"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>You'll thrive</div><div class="fitchips yes" id="thrive"></div></div>
+        <div><div class="fithead bad"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Walk away from</div><div class="fitchips no" id="avoid"></div></div>
       </div>
-      <div class="copyrow">
-        <label class="q" for="reply">Your reply</label>
-        <button type="button" class="mic" id="mic2">
-          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <span id="micLabel2">Talk your reply</span>
-        </button>
-      </div>
-      <div class="micHint" id="micHint2" hidden></div>
-      <textarea id="reply" class="reply-box" placeholder="Type or dictate your reply..."></textarea>
-      <div class="row">
-        <button class="btn" id="send" type="button">Send</button>
-        <button class="link" id="stopChat" type="button" hidden>Stop</button>
-        <button class="link" id="updateMap" type="button" hidden>Update my results with this conversation</button>
-      </div>
-      <div class="status" id="statusChat" role="status"></div>
+    </div>
+
+    <div class="card" id="kitCard" data-about="My pitch kit" hidden>
+      <details class="kitd">
+        <summary><span class="ico small"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/></svg></span><span><b>Your pitch kit</b><small>LinkedIn headline, About and a 30-second intro, ready to paste</small></span></summary>
+        <div class="kit">
+          <div class="piece"><div class="copyrow"><span class="label">LinkedIn headline</span><button class="link kitcopy" type="button" data-src="kitHead">Copy</button></div><div class="note" id="kitHead"></div></div>
+          <div class="piece"><div class="copyrow"><span class="label">LinkedIn About</span><button class="link kitcopy" type="button" data-src="kitAbout">Copy</button></div><div class="note" id="kitAbout"></div></div>
+          <div class="piece"><div class="copyrow"><span class="label">30-second intro (say it out loud)</span><button class="link kitcopy" type="button" data-src="kitIntro">Copy</button></div><div class="note" id="kitIntro"></div></div>
+        </div>
+      </details>
+    </div>
+
+    <div class="card move" hidden data-about="My one move this week">
+      <div class="movegrid"><div class="ico target"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg></div>
+      <div><span class="tag">Your one move this week</span><p class="big" id="move"></p><p class="hint" id="moveWhy"></p></div></div>
     </div>
 
     <p class="quiet" id="titlesLine"></p>
+      </div>
+    </details>
 
     <div class="row">
       <button class="btn" id="toScan" type="button" hidden>Found a job? Check it</button>
@@ -832,7 +852,7 @@ footer{font-size:13px;color:var(--muted);text-align:center}
 
   // ---------- storage (convenience only) ----------
   const load = () => { try { return JSON.parse(localStorage.getItem("gc-state-2")||"null"); } catch(e){ return null; } };
-  const save = () => { try { localStorage.setItem("gc-state-2", JSON.stringify({profile:S.profile,stuck:S.stuck,prefs:S.prefs,map:S.example?null:S.map,name:S.name||"",base:S.base||"",page:S.page||null,helper:S.example?null:(S.helper||null),chat:S.example?[]:(S.chat||[]).slice(-20)})); } catch(e){} };
+  const save = () => { try { localStorage.setItem("gc-state-2", JSON.stringify({profile:S.profile,stuck:S.stuck,prefs:S.prefs,map:S.example?null:S.map,name:S.name||"",base:S.base||"",page:S.page||null,helper:S.example?null:(S.helper||null),chat:S.example?[]:(S.chat||[]).slice(-20),stage:S.stage||2,door:(S.door==null?null:S.door)})); } catch(e){} };
 
   // ---------- helpers ----------
   const clear = el => { while(el.firstChild) el.removeChild(el.firstChild); };
@@ -1010,7 +1030,7 @@ footer{font-size:13px;color:var(--muted);text-align:center}
 
     const r = $("routes"); clear(r);
     (Array.isArray(m.routes) ? m.routes : []).slice(0,3).forEach((x, i) => {
-      const c = document.createElement("div"); c.className = "doorcard"; c.dataset.about = "Side door " + (i+1) + " (" + str(x.name) + ")";
+      const c = document.createElement("div"); c.className = "doorcard";
       const btn = document.createElement("button"); btn.type = "button"; btn.className = "doorbtn"; btn.setAttribute("aria-expanded","false");
       const art = document.createElement("div"); art.className = "doorart";
       const fr = document.createElement("div"); fr.className = "frame";
@@ -1031,10 +1051,13 @@ footer{font-size:13px;color:var(--muted);text-align:center}
         const note = document.createElement("div"); note.className = "note"; note.textContent = str(x.script);
         d.append(sm, note); body.append(d);
       }
-      c.append(btn, body);
+      const ch = document.createElement("button"); ch.type = "button"; ch.className = "btn choose"; ch.textContent = "Choose this door";
+      ch.onclick = () => chooseDoor(i);
+      c.classList.add("open"); btn.setAttribute("aria-expanded","true");
+      c.append(btn, body, ch);
       r.append(c);
     });
-    addReplyLinks();
+    markDoor();
 
     $("move").textContent = str(m.move && m.move.action);
     $("moveWhy").textContent = str(m.move && m.move.why);
@@ -1138,7 +1161,7 @@ ${cut(job, 10000)}
   }
 
   // ---------- actions ----------
-  $("example").onclick = () => { S.example = true; S.map = EXAMPLE_MAP; S.chat = []; renderChat(); renderMap(EXAMPLE_MAP); go(2); };
+  $("example").onclick = () => { S.example = true; S.map = EXAMPLE_MAP; S.chat = []; S.stage = 2; S.door = null; clear($("targetList")); applyStage(); renderChat(); renderMap(EXAMPLE_MAP); go(2); };
 
   function runSteps(){
     const ol = $("loadSteps"), items = [...ol.children], at = [0, 5, 12, 20, 30, 44];
@@ -1166,7 +1189,7 @@ ${cut(job, 10000)}
     try {
       const m = await sample.json(mapPrompt());
       if (!m || !Array.isArray(m.routes)) throw {code:"invalid_json"};
-      S.example = false; S.map = m; S.chat = []; renderChat(); save();
+      S.example = false; S.map = m; S.chat = []; S.stage = 2; S.door = null; clear($("targetList")); renderChat(); applyStage(); save();
       setStatus(st, "");
       stopSteps(true);
       renderMap(m); go(2); showFeedback();
@@ -1488,98 +1511,134 @@ ${talk ? "\nWhat they added in conversation (overrides the reading where they di
     $("fbMore").hidden = true; $("fbThanks").hidden = false; $("fbText").value = "";
   };
 
-  // ---------- live jobs ----------
+  // ---------- core path ----------
   const onWebsite = !(window.claude && typeof window.claude.use === "function");
-  $("findJobs").onclick = async () => {
-    const st = $("statusJobs"), list = $("jobList");
-    if (!S.map){ setStatus(st, "Get your results first in step 1.", "err"); return; }
-    if (!onWebsite){ setStatus(st, "Live jobs work on the website version of Generalist Compass.", "err"); return; }
+  S.stage = S.stage || 2; S.door = null; S.tmode = "news";
+  function curDoor(){ const rs = S.map && Array.isArray(S.map.routes) ? S.map.routes : []; return S.door == null ? null : rs[S.door] || null; }
+  function markDoor(){
+    const cards = [...document.querySelectorAll("#routes .doorcard")];
+    cards.forEach((c, i) => { const on = i === S.door; c.classList.toggle("chosen", on); const b = c.querySelector(".choose"); if (b) b.textContent = on ? "Your door ✓" : "Choose this door"; });
+    $("routes").classList.toggle("picked", S.door != null && cards.length > 0);
+    const d = curDoor(); $("doorName").textContent = d ? str(d.name) : "";
+  }
+  function applyStage(){
+    const st = S.map ? (S.stage || 2) : 2;
+    $("doorStep").hidden = st < 3;
+    $("toDoorsRow").hidden = st >= 3;
+    $("targetStep").hidden = st < 4 || !curDoor();
+    $("doneStep").hidden = st < 5;
+    $("toDoneRow").hidden = st >= 5 || !$("targetList").children.length;
+  }
+  const reveal = id => setTimeout(() => $(id).scrollIntoView({behavior:"smooth", block:"start"}), 60);
+  function chooseDoor(i){
+    S.door = i; S.stage = Math.max(S.stage || 2, 4); markDoor(); applyStage(); save(); reveal("targetStep");
+  }
+  $("toDoors").onclick = () => { S.stage = Math.max(S.stage || 2, 3); applyStage(); save(); reveal("doorStep"); };
+  $("changeDoor").onclick = () => reveal("doorStep");
+  $("toDone").onclick = () => { S.stage = 5; applyStage(); save(); reveal("doneStep"); };
+  $("againBtn").onclick = () => { reveal("targetStep"); setTimeout(() => $("findTargets").click(), 400); };
+  $("pushBack").onclick = () => { const t = $("talk"), open = t.hidden; t.hidden = !open; $("pushBack").setAttribute("aria-expanded", String(open)); if (open) t.scrollIntoView({behavior:"smooth", block:"start"}); };
+  document.querySelectorAll("#tMode .chip").forEach(c => {
+    c.onclick = () => {
+      S.tmode = c.dataset.v;
+      document.querySelectorAll("#tMode .chip").forEach(x => x.setAttribute("aria-pressed", String(x === c)));
+      const roles = S.tmode === "roles";
+      $("tFocusWrap").hidden = roles; $("tBaseWrap").hidden = !roles;
+      $("tModeHint").textContent = roles ? "Remote openings posted this week, picked for your story and your door." : "Companies that just raised money, entered a new market or launched something, and will soon need someone like you.";
+    };
+  });
+
+  function copyBtn(getText){
+    const b = document.createElement("button"); b.type = "button"; b.className = "link"; b.textContent = "Copy";
+    b.onclick = () => { const done = () => { b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy", 1600); }; try { navigator.clipboard.writeText(getText()).then(done, () => {}); } catch(e){} };
+    return b;
+  }
+  function msgBlock(label, text){
+    const d = document.createElement("details"); d.className = "script";
+    const sm = document.createElement("summary"); sm.textContent = label;
+    const row = document.createElement("div"); row.className = "copyrow"; row.style.marginTop = "8px";
+    const note = document.createElement("div"); note.className = "note"; note.style.marginTop = "0"; note.textContent = text;
+    row.append(document.createElement("span"), copyBtn(() => note.textContent));
+    d.append(sm, row, note); return d;
+  }
+  function introText(company){
+    return "Hey [name], quick question: do you know anyone at " + company + "? I think I could really help them right now, and an intro from you would mean a lot. Happy to send you a short note you can forward.";
+  }
+  function targetCard(o){
+    const c = document.createElement("div"); c.className = "job";
+    const t = document.createElement("div"); t.className = "jt"; t.textContent = o.title;
+    const m = document.createElement("div"); m.className = "jm"; o.meta.filter(Boolean).forEach(v => { const sp = document.createElement("span"); sp.textContent = v; m.append(sp); });
+    c.append(t, m);
+    if (o.event){ const ev = document.createElement("p"); ev.textContent = o.event; c.append(ev); }
+    const f = document.createElement("p"); f.className = "fit"; const fb = document.createElement("b"); fb.textContent = o.whyLabel; f.append(fb, o.why); c.append(f);
+    if (o.door){ const dp = document.createElement("p"); dp.className = "hint"; dp.textContent = o.door; c.append(dp); }
+    const msg = msgBlock("Message to send them", o.message); msg.open = true; c.append(msg);
+    const intro = msgBlock("Or ask someone you know for an intro", o.intro || introText(o.company)); intro.classList.add("intro"); c.append(intro);
+    const a = document.createElement("a"); a.className = o.linkClass; a.href = o.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = o.linkText; c.append(a);
+    return c;
+  }
+
+  $("findTargets").onclick = async () => {
+    const st = $("statusTargets"), list = $("targetList"), d = curDoor();
+    if (!S.map || !d){ setStatus(st, "Pick your door first.", "err"); return; }
+    if (!onWebsite){ setStatus(st, "Targets come from the live web, so this works on the website version of Generalist Compass.", "err"); return; }
     if (busy) return;
-    busy = true; $("findJobs").disabled = true; clear(list); $("jobCredit").hidden = true;
-    const base = $("baseIn").value.trim(); S.base = base; save();
-    const queries = [...new Set([str(S.map.search), ...arr(S.map.titles)].map(q => q.trim()).filter(Boolean))].slice(0, 3);
-    setStatus(st, "Searching fresh openings", "thinking");
+    busy = true; $("findTargets").disabled = true; clear(list); $("jobCredit").hidden = true; $("toDoneRow").hidden = true;
+    const doorTxt = str(d.name) + ": " + str(d.why);
     try {
-      const r = await fetch("/api/jobs", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({queries})});
-      const data = await r.json().catch(() => ({}));
-      const jobs = Array.isArray(data.jobs) ? data.jobs : [];
-      if (!r.ok || !jobs.length){ setStatus(st, "No fresh openings found for your directions right now. Try again tomorrow.", "err"); return; }
-      setStatus(st, "Picking the ones that fit you", "thinking");
-      const brief = jobs.map((j,i) => `${i}. ${j.title} | ${j.company} | ${j.location} | ${j.excerpt}`).join("\n");
-      const picks = await sample.json(`You are a headhunter for generalists. From the job list below, pick up to 5 openings that genuinely fit this person, best first. Reply with ONLY a JSON array like:
+      if (S.tmode === "roles"){
+        const base = $("baseIn").value.trim(); S.base = base; save();
+        const queries = [...new Set([str(S.map.search), ...arr(S.map.titles)].map(q => q.trim()).filter(Boolean))].slice(0, 3);
+        setStatus(st, "Searching fresh openings", "thinking");
+        const r = await fetch("/api/jobs", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({queries})});
+        const data = await r.json().catch(() => ({}));
+        const jobs = Array.isArray(data.jobs) ? data.jobs : [];
+        if (!r.ok || !jobs.length){ setStatus(st, "No fresh openings right now. Try “Companies with fresh news” instead.", "err"); return; }
+        setStatus(st, "Picking the 3 that fit you best", "thinking");
+        const brief = jobs.map((j,i) => `${i}. ${j.title} | ${j.company} | ${j.location} | ${j.excerpt}`).join("\n");
+        const picks = await sample.json(`You are a headhunter for generalists. From the job list below, pick the 3 openings that best fit this person AND the way in they chose, best first. Reply with ONLY a JSON array like:
 [{"i":0,"fit":"...","door":"...","message":"..."}]
 
 Rules:
 - i = the job's number in the list.
 - Skip jobs whose location restrictions exclude where they live (${base || "unknown; prefer Worldwide jobs"}).
-- fit: max 18 words, why this job suits their type and story.
-- door: max 22 words, a way in besides the apply button (who to contact, what to show).
+- fit: max 18 words, why this job suits their story. Be specific.
+- door: max 22 words, how to use their chosen way in for this job (who to contact, what to show), not the apply button.
 - message: max 55 words, a short note to that person, first person, leading with the problem they can solve. No cliches.
-- If nothing fits, reply [].
+- If fewer than 3 genuinely fit, return fewer. If nothing fits, reply [].
 - Language: write in the language of their story.
+
+Their chosen way in: ${doorTxt}
 
 The person (JSON):
 ${cut(JSON.stringify({type:S.map.archetype, thread:S.map.thread, edge:S.map.edge, thrive:S.map.thrive, avoid:S.map.avoid, prefs:S.prefs}), 4000)}
 
 Jobs:
 ${cut(brief, 14000)}`, { cache:false });
-      const chosen = (Array.isArray(picks) ? picks : []).filter(p => jobs[Number(p.i)]).slice(0, 5);
-      if (!chosen.length){ setStatus(st, "Nothing this week fits you well enough to show. That's useful too: use your side doors, and check back in a few days.", ""); return; }
-      setStatus(st, "");
-      chosen.forEach(p => {
-        const j = jobs[Number(p.i)];
-        const c = document.createElement("div"); c.className = "job";
-        const t = document.createElement("div"); t.className = "jt"; t.textContent = j.title;
-        const m = document.createElement("div"); m.className = "jm";
-        const age = j.date ? Math.max(0, Math.round((Date.now() - Date.parse(j.date)) / 864e5)) : null;
-        [j.company, j.location, age === null ? "" : (age === 0 ? "Posted today" : "Posted " + age + (age === 1 ? " day ago" : " days ago"))].filter(Boolean).forEach(x => { const sp = document.createElement("span"); sp.textContent = x; m.append(sp); });
-        const f = document.createElement("p"); f.className = "fit"; const fb = document.createElement("b"); fb.textContent = "Why you: "; f.append(fb, str(p.fit));
-        const d = document.createElement("details"); d.className = "script";
-        const sm = document.createElement("summary"); sm.textContent = "The side door";
-        const dp = document.createElement("p"); dp.textContent = str(p.door); dp.style.marginTop = "8px";
-        const note = document.createElement("div"); note.className = "note"; note.textContent = str(p.message);
-        d.append(sm, dp, note);
-        const row = document.createElement("div"); row.className = "jrow";
-        const a = document.createElement("a"); a.className = "apply"; a.href = j.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "View job on " + j.source + " →";
-        row.append(a);
-        c.append(t, m, f, d, row); list.append(c);
-      });
-      $("jobCredit").hidden = false;
+        const chosen = (Array.isArray(picks) ? picks : []).filter(p => jobs[Number(p.i)]).slice(0, 3);
+        if (!chosen.length){ setStatus(st, "Nothing this week fits well enough to show. Try “Companies with fresh news” instead.", ""); return; }
+        setStatus(st, "");
+        chosen.forEach(p => {
+          const j = jobs[Number(p.i)];
+          const age = j.date ? Math.max(0, Math.round((Date.now() - Date.parse(j.date)) / 864e5)) : null;
+          list.append(targetCard({title:j.title, company:j.company, meta:[j.company, j.location, age === null ? "" : (age === 0 ? "Posted today" : "Posted " + age + (age === 1 ? " day ago" : " days ago"))], whyLabel:"Why you: ", why:str(p.fit), door:str(p.door), message:str(p.message), url:j.url, linkClass:"apply", linkText:"View job on " + j.source + " →"}));
+        });
+        $("jobCredit").hidden = false;
+      } else {
+        setStatus(st, "Scanning this month's news. This takes up to a minute", "thinking");
+        const focus = $("radarFocus").value.trim();
+        const person = {type:S.map.archetype, thread:S.map.thread, edge:S.map.edge, thrive:S.map.thrive, avoid:S.map.avoid, prefs:S.prefs, base:S.base||"", chosen_way_in: doorTxt, story: cut(S.example ? EXAMPLE_PROFILE : S.profile, 1500)};
+        const r = await fetch("/api/radar", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({person, focus: cut((focus ? focus + "; " : "") + "way in: " + str(d.name), 200)})});
+        const data = await r.json().catch(() => ({}));
+        const cos = Array.isArray(data.companies) ? data.companies.slice(0, 3) : [];
+        if (!r.ok){ setStatus(st, data.error || "The scan didn't work this time. Try again in a minute.", "err"); return; }
+        if (!cos.length){ setStatus(st, "No strong matches this time. Try a focus, like a region or an industry.", ""); return; }
+        setStatus(st, "");
+        cos.forEach(x => list.append(targetCard({title:str(x.company), company:str(x.company), meta:[str(x.date), str(x.who)], event:str(x.event), whyLabel:"Why now: ", why:str(x.why), message:str(x.message), intro:str(x.intro||""), url:str(x.source), linkClass:"src", linkText:"Read the news →"})));
+      }
+      if ((S.stage || 2) < 5) $("toDoneRow").hidden = false;
     } catch(e){ setStatus(st, errText(e), "err"); }
-    finally { busy = false; $("findJobs").disabled = false; }
-  };
-
-  // ---------- hidden jobs radar ----------
-  $("runRadar").onclick = async () => {
-    const st = $("statusRadar"), list = $("radarList");
-    if (!S.map){ setStatus(st, "Get your results first in step 1.", "err"); return; }
-    if (!onWebsite){ setStatus(st, "The radar searches the live web, so it works on the website version of Generalist Compass.", "err"); return; }
-    if (busy) return;
-    busy = true; $("runRadar").disabled = true; clear(list);
-    setStatus(st, "Scanning this month's news. This takes up to a minute", "thinking");
-    try {
-      const person = {type:S.map.archetype, thread:S.map.thread, edge:S.map.edge, thrive:S.map.thrive, avoid:S.map.avoid, prefs:S.prefs, base:S.base||"", story: cut(S.example ? EXAMPLE_PROFILE : S.profile, 1500)};
-      const r = await fetch("/api/radar", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({person, focus: $("radarFocus").value.trim()})});
-      const data = await r.json().catch(() => ({}));
-      const cos = Array.isArray(data.companies) ? data.companies : [];
-      if (!r.ok){ setStatus(st, data.error || "The scan didn't work this time. Try again in a minute.", "err"); return; }
-      if (!cos.length){ setStatus(st, "No strong matches this time. Try a different focus, like a region or an industry.", ""); return; }
-      setStatus(st, "");
-      cos.forEach(x => {
-        const c = document.createElement("div"); c.className = "job";
-        const t = document.createElement("div"); t.className = "jt"; t.textContent = str(x.company);
-        const m = document.createElement("div"); m.className = "jm"; [str(x.date), str(x.who)].filter(Boolean).forEach(v => { const sp=document.createElement("span"); sp.textContent=v; m.append(sp); });
-        const ev = document.createElement("p"); ev.textContent = str(x.event);
-        const f = document.createElement("p"); f.className = "fit"; const fb = document.createElement("b"); fb.textContent = "Why now: "; f.append(fb, str(x.why));
-        const d = document.createElement("details"); d.className = "script";
-        const sm = document.createElement("summary"); sm.textContent = "The message to send";
-        const note = document.createElement("div"); note.className = "note"; note.textContent = str(x.message);
-        d.append(sm, note);
-        const a = document.createElement("a"); a.className = "src"; a.href = str(x.source); a.target = "_blank"; a.rel = "noopener"; a.textContent = "Read the news →";
-        c.append(t, m, ev, f, d, a); list.append(c);
-      });
-    } catch(e){ setStatus(st, "The scan didn't work this time. Try again in a minute.", "err"); }
-    finally { busy = false; $("runRadar").disabled = false; }
+    finally { busy = false; $("findTargets").disabled = false; }
   };
 
   // ---------- network x-ray ----------
@@ -1811,7 +1870,7 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     if (saved.profile){ S.profile = saved.profile; $("profile").value = saved.profile; }
     if (Array.isArray(saved.stuck)){ S.stuck = saved.stuck; setChips("stuck", S.stuck); }
     if (Array.isArray(saved.prefs)){ S.prefs = saved.prefs; setChips("prefs", S.prefs); }
-    if (saved.map && Array.isArray(saved.map.routes)){ S.map = saved.map; renderMap(S.map); }
+    if (saved.map && Array.isArray(saved.map.routes)){ S.map = saved.map; S.stage = Number(saved.stage) || 2; S.door = saved.door == null ? null : Number(saved.door); renderMap(S.map); applyStage(); }
     if (saved.name){ S.name = saved.name; $("myName").value = saved.name; }
     if (saved.base){ S.base = saved.base; $("baseIn").value = saved.base; }
     if (saved.helper && saved.helper.who){ S.helper = saved.helper; $("openHelper").hidden = false; }
