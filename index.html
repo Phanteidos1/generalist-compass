@@ -338,7 +338,7 @@ details.kitd[open] .kit{margin-top:16px}
 .credit a{color:var(--accent)}
 .agroup{display:flex;flex-direction:column;gap:10px}
 .glabel{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--muted)}
-.radar input,.page input{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;width:100%;margin-top:6px}
+.radar input,.page input,#recruit input,.optcard input{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;width:100%;margin-top:6px}
 .howto{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px}
 .filepick{display:inline-flex;align-items:center;gap:10px;align-self:flex-start;cursor:pointer;font-weight:700;color:var(--accent);border:1px dashed var(--accent);border-radius:12px;padding:12px 16px}
 .filepick input{position:absolute;opacity:0;width:1px;height:1px}
@@ -373,12 +373,31 @@ footer{font-size:13px;color:var(--muted);text-align:center}
 .pushrow{margin-top:-4px}
 .doorcard .choose{margin-top:4px;align-self:flex-start}
 .doorcard.chosen{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
-.doors.picked .doorcard:not(.chosen){opacity:.55}
+.doors.picked .doorcard:not(.chosen) .doorbtn,.doors.picked .doorcard:not(.chosen) .doorbody{opacity:.5}
+.doors.picked .doorcard:not(.chosen) .choose{background:var(--surface);color:var(--accent);border:1.5px solid var(--accent)}
 .doorcard.chosen .choose{background:var(--good)}
 details.tools{border-top:1px solid var(--line);padding-top:16px}
 details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16px}
 .job .intro{margin-top:4px}
 .card.again{gap:6px}
+.optcard{border-color:var(--accent)}
+.prof{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:start}
+.prof .em{width:52px;height:52px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center}
+.prof .em svg{width:30px;height:30px}
+.badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:2px 7px;background:var(--needle-soft);color:var(--needle);margin-left:6px;vertical-align:middle}
+.need{border-left:4px solid var(--needle)}
+.need .jt{font-size:17px}
+.ireq{background:var(--needle-soft);border:1px solid var(--needle);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.tstat{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.tstat button{font:inherit;font-size:13px;font-weight:700;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+.tstat button[aria-pressed="true"]{border-color:var(--good);background:var(--good);color:var(--surface)}
+.tstat button.no[aria-pressed="true"]{border-color:var(--muted);background:var(--muted)}
+.job.st-no{opacity:.55}
+.tracker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tracker div{background:var(--bg);border-radius:12px;padding:12px;text-align:center}
+.tracker b{display:block;font-family:var(--display);font-size:24px}
+.tracker span{font-size:13px;color:var(--muted)}
+.ready{border-color:var(--needle);background:var(--needle-soft)}
 </style>
 
 <div class="wrap">
@@ -394,8 +413,9 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
 
   <nav class="steps" aria-label="Steps">
     <button id="nav0" type="button">Home</button>
-    <button id="nav1" type="button" aria-current="step">1 · You</button>
-    <button id="nav2" type="button" disabled>2 · Your way in</button>
+    <button id="nav1" type="button" aria-current="step">Your story</button>
+    <button id="nav2" type="button" disabled>Your way in</button>
+    <button id="navR" type="button" hidden>For recruiters</button>
     <button id="nav3" type="button" disabled hidden>3 · Check a job</button>
   </nav>
 
@@ -499,6 +519,7 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
 
   <!-- STEP 1 -->
   <section id="step1">
+    <span class="stepno">Step 1 of 5 · Your story</span>
     <h1>Done a bit of everything? That's not a problem to fix.</h1>
     <p class="lead">Generalists rarely get hired through job boards. They get in through people, problems and side doors. Tell us your story and we'll show you yours.</p>
     <div class="card">
@@ -540,14 +561,14 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
         <li>Finding the thread</li>
         <li>Choosing your type</li>
         <li>Opening your side doors</li>
-        <li>Writing your pitch kit</li>
+        <li>Writing your messages</li>
         <li>Almost there</li>
       </ol>
     </div>
     <div class="promise">
-      <div><b>What we see</b>The thread in your path, your edge, and what's holding you back.</div>
-      <div><b>3 side doors</b>Ways in that skip the application pile, with scripts.</div>
-      <div><b>One move</b>A single thing to do this week. Nothing more.</div>
+      <div><b>Your reading</b>The thread in your path, your edge, and what's holding you back.</div>
+      <div><b>Your door</b>Pick one way in that skips the application pile.</div>
+      <div><b>3 real targets a week</b>Companies that need you now, with the message to send.</div>
     </div>
   </section>
 
@@ -689,7 +710,20 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
       </div>
     </div>
 
-    <div class="card again"><b>Come back in a week</b><p class="hint">New companies raise money and expand every week. Come back for 3 fresh targets for your door.</p>
+    <div class="card" id="trackCard" hidden><span class="tag">Your outreach</span>
+        <div class="tracker"><div><b id="tkSent">0</b><span id="tkSentL">messages sent</span></div><div><b id="tkReply">0</b><span id="tkReplyL">replies</span></div><div><b id="tkWeeks">1</b><span id="tkWeeksL">week in a row</span></div></div>
+        <p class="hint" id="tkHint"></p></div>
+      <div class="card optcard" id="optCard" hidden>
+        <span class="tag">Be found</span>
+        <h3>Let recruiters find you</h3>
+        <p class="hint">We publish an anonymous version of your reading: your type, your thread and your edge. No name, no contact details. When a recruiter wants to meet you, you see their request and decide.</p>
+        <div><label class="q" for="optRegion">Where are you based?</label><input id="optRegion" type="text" placeholder="e.g. Thailand, works remote" autocomplete="off"></div>
+        <div class="row"><button class="btn" id="optOn" type="button">Make me findable</button><button class="link" id="optOff" type="button" hidden>Remove my profile</button></div>
+        <div class="status" id="statusOpt" role="status"></div>
+        <div id="myIntros" style="display:flex;flex-direction:column;gap:10px"></div>
+        <div id="seekBoardWrap" hidden><div class="q" style="margin:6px 0 8px">Recruiters are looking for</div><div class="joblist" id="seekBoard"></div></div>
+      </div>
+      <div class="card again" id="againCard"><b id="againHead">Come back in a week</b><p class="hint" id="againText">New companies raise money and expand every week. Come back for 3 fresh targets for your door.</p>
         <div class="row"><button class="ghost" id="againBtn" type="button">Find 3 new targets now</button></div></div>
     </div>
 
@@ -774,6 +808,45 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
     </div>
   </section>
 
+  <!-- RECRUITERS -->
+  <section id="recruit" hidden>
+    <span class="stepno">For recruiters and founders</span>
+    <h1>Hiring someone who can do a bit of everything?</h1>
+    <p class="lead">Describe the problem, not the job title. We match you with generalists whose story fits, and introduce you if they say yes.</p>
+    <div class="example-flag">Demo version. Profiles and requests marked <b>Example</b> are made up to show how it works.</div>
+    <div class="card">
+      <label class="q" for="rNeed">What do you need solved?</label>
+      <textarea id="rNeed" placeholder="e.g. We're launching in Spain in March and need one person to open the market: first partners, first clients, a small local team."></textarea>
+      <div class="pair">
+        <div><label class="q" for="rCompany">Company</label><input id="rCompany" type="text" placeholder="e.g. Acme Travel" autocomplete="organization"></div>
+        <div><label class="q" for="rContact">How candidates reach you</label><input id="rContact" type="text" placeholder="Email or LinkedIn" autocomplete="off"></div>
+      </div>
+      <div><div class="q" style="margin-bottom:8px">Setup</div>
+        <div class="chips" id="rWork">
+          <button type="button" class="chip" aria-pressed="true" data-v="Remote">Remote</button>
+          <button type="button" class="chip" aria-pressed="false" data-v="On-site or hybrid">On-site or hybrid</button>
+          <button type="button" class="chip" aria-pressed="false" data-v="Project or freelance">Project or freelance</button>
+        </div></div>
+      <div class="row"><button class="btn" id="rGo" type="button">Find my matches</button></div>
+      <div class="status" id="statusR" role="status"></div>
+    </div>
+    <div id="rOut" hidden style="display:flex;flex-direction:column;gap:16px">
+      <div class="card need">
+        <span class="tag">Your brief</span>
+        <h3 id="rTitle"></h3>
+        <p id="rProblem"></p>
+        <p class="hint" id="rType"></p>
+        <div class="row"><button class="ghost" id="rPost" type="button">Post it on the board</button></div>
+        <div class="status" id="statusPost" role="status"></div>
+      </div>
+      <h2 class="sech">Your best matches</h2>
+      <div class="joblist" id="rMatches"></div>
+    </div>
+    <h2 class="sech">On the board</h2>
+    <p class="lead" style="margin-top:-12px">What recruiters are looking for right now.</p>
+    <div class="joblist" id="rBoard"></div>
+  </section>
+
   <!-- REPORT VIEWER -->
   <section id="viewer" hidden>
     <div class="row" style="justify-content:space-between">
@@ -818,7 +891,7 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
     </div>
   </section>
 
-  <footer>Your text stays in this browser. Nothing is saved to a server.</footer>
+  <footer>Your story is sent to the AI only to write your results. Your answers are saved in this browser, not in an account.</footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -852,7 +925,7 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
 
   // ---------- storage (convenience only) ----------
   const load = () => { try { return JSON.parse(localStorage.getItem("gc-state-2")||"null"); } catch(e){ return null; } };
-  const save = () => { try { localStorage.setItem("gc-state-2", JSON.stringify({profile:S.profile,stuck:S.stuck,prefs:S.prefs,map:S.example?null:S.map,name:S.name||"",base:S.base||"",page:S.page||null,helper:S.example?null:(S.helper||null),chat:S.example?[]:(S.chat||[]).slice(-20),stage:S.stage||2,door:(S.door==null?null:S.door)})); } catch(e){} };
+  const save = () => { if (S.example) return; try { localStorage.setItem("gc-state-2", JSON.stringify({profile:S.profile,stuck:S.stuck,prefs:S.prefs,map:S.example?null:S.map,name:S.name||"",base:S.base||"",page:S.page||null,helper:S.example?null:(S.helper||null),chat:S.example?[]:(S.chat||[]).slice(-20),stage:S.stage||2,door:(S.door==null?null:S.door),targets:S.example?[]:(S.targets||[]).slice(-60),lastBatch:S.lastBatch||0,weeks:S.weeks||[]})); } catch(e){} };
 
   // ---------- helpers ----------
   const clear = el => { while(el.firstChild) el.removeChild(el.firstChild); };
@@ -900,7 +973,7 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
 
   // ---------- steps ----------
   function go(n){
-    $("viewer").hidden = true;
+    $("viewer").hidden = true; $("recruit").hidden = true; $("navR").removeAttribute("aria-current");
     $("home").hidden = n !== 0;
     if (n === 0) $("nav0").setAttribute("aria-current","step"); else $("nav0").removeAttribute("aria-current");
     if (n === 0) film.start(); else { film.stop(); try { $("introVideo").pause(); } catch(e){} }
@@ -1280,7 +1353,7 @@ ${cut(JSON.stringify(S.map), 8000)}`;
       $("updateMap").hidden = false;
     } catch(e){
       if (e && e.text){ out.classList.remove("wait"); out.textContent = e.text; S.chat.push({role:"assistant", content:e.text}); }
-      else { out.remove(); S.chat.pop(); $("reply").value = text; }
+      else { out.remove(); S.chat.pop(); const mine = [...$("thread-log").querySelectorAll(".me, .user")].pop(); if (mine) mine.remove(); $("reply").value = text; }
       if (!e || e.code !== "cancelled") setStatus(st, errText(e), "err");
     } finally { chatCtl = null; $("send").disabled = false; $("stopChat").hidden = true; }
   };
@@ -1527,10 +1600,12 @@ ${talk ? "\nWhat they added in conversation (overrides the reading where they di
     $("toDoorsRow").hidden = st >= 3;
     $("targetStep").hidden = st < 4 || !curDoor();
     $("doneStep").hidden = st < 5;
+    try { renderOpt(); } catch(e){}
     $("toDoneRow").hidden = st >= 5 || !$("targetList").children.length;
   }
   const reveal = id => setTimeout(() => $(id).scrollIntoView({behavior:"smooth", block:"start"}), 60);
   function chooseDoor(i){
+    if (S.door !== i){ clear($("targetList")); $("toDoneRow").hidden = true; $("jobCredit").hidden = true; setStatus($("statusTargets"), ""); if ((S.stage || 2) > 4) S.stage = 4; }
     S.door = i; S.stage = Math.max(S.stage || 2, 4); markDoor(); applyStage(); save(); reveal("targetStep");
   }
   $("toDoors").onclick = () => { S.stage = Math.max(S.stage || 2, 3); applyStage(); save(); reveal("doorStep"); };
@@ -1574,13 +1649,52 @@ ${talk ? "\nWhat they added in conversation (overrides the reading where they di
     if (o.door){ const dp = document.createElement("p"); dp.className = "hint"; dp.textContent = o.door; c.append(dp); }
     const msg = msgBlock("Message to send them", o.message); msg.open = true; c.append(msg);
     const intro = msgBlock("Or ask someone you know for an intro", o.intro || introText(o.company)); intro.classList.add("intro"); c.append(intro);
-    const a = document.createElement("a"); a.className = o.linkClass; a.href = o.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = o.linkText; c.append(a);
+    const a = document.createElement("a"); a.className = o.linkClass; a.href = /^https?:\/\//i.test(String(o.url || "")) ? o.url : "#"; if (a.getAttribute("href") === "#") a.hidden = true; a.target = "_blank"; a.rel = "noopener"; a.textContent = o.linkText; c.append(a);
+    if (o.id){
+      const row = document.createElement("div"); row.className = "tstat";
+      [["sent","I sent it"],["reply","They replied"],["no","Not for me"]].forEach(([v, lab]) => {
+        const b = document.createElement("button"); b.type = "button"; b.textContent = lab; if (v === "no") b.className = "no";
+        const sync = () => { b.setAttribute("aria-pressed", String(o.status === v || (v === "sent" && o.status === "reply"))); c.classList.toggle("st-no", o.status === "no"); };
+        b.onclick = () => { o.status = (o.status === v) ? (v === "reply" ? "sent" : "") : v; save(); row.querySelectorAll("button").forEach(x => x._sync()); renderTracker(); };
+        b._sync = sync; sync(); row.append(b);
+      });
+      c.append(row);
+    }
     return c;
+  }
+  const weekKey = t => { const d = new Date(t); d.setHours(0,0,0,0); d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7); const w1 = new Date(d.getFullYear(), 0, 4); return d.getFullYear() + "-" + (1 + Math.round(((d - w1) / 864e5 - 3 + (w1.getDay() + 6) % 7) / 7)); };
+  function commitBatch(batch){
+    const now = Date.now();
+    batch.forEach((o, i) => { o.id = now + "-" + i; o.batch = now; o.status = ""; });
+    S.targets = (S.targets || []).concat(batch).slice(-60); S.lastBatch = now;
+    const wk = weekKey(now); S.weeks = (S.weeks || []).filter(w => w !== wk).concat(wk).slice(-52);
+    save(); showBatch();
+  }
+  function showBatch(){
+    const list = $("targetList"); clear(list);
+    const batch = (S.targets || []).filter(o => o.batch === S.lastBatch);
+    batch.forEach(o => list.append(targetCard(o)));
+    $("jobCredit").hidden = !batch.some(o => o.linkClass === "apply");
+    renderTracker();
+  }
+  function renderTracker(){
+    const T = S.targets || [], sent = T.filter(o => o.status === "sent" || o.status === "reply").length, rep = T.filter(o => o.status === "reply").length;
+    $("trackCard").hidden = !T.length;
+    $("tkSent").textContent = sent; $("tkReply").textContent = rep; $("tkSentL").textContent = sent === 1 ? "message sent" : "messages sent"; $("tkReplyL").textContent = rep === 1 ? "reply" : "replies";
+    let n = 0; const has = new Set(S.weeks || []); const d = new Date();
+    while (has.has(weekKey(d.getTime()))){ n++; d.setDate(d.getDate() - 7); }
+    $("tkWeeks").textContent = Math.max(n, T.length ? 1 : 0); $("tkWeeksL").textContent = n > 1 ? "weeks in a row" : "week in a row";
+    $("tkHint").textContent = !sent ? "Mark a target as sent once you've messaged them. Most replies come from the second or third batch, not the first." : rep ? "A reply is a door opening. Answer within a day, and suggest a short call." : "Replies usually take 3 to 10 days. Keep the rhythm: 3 new targets every week.";
+    const days = S.lastBatch ? Math.floor((Date.now() - S.lastBatch) / 864e5) : 0, due = S.lastBatch && days >= 7;
+    $("againCard").classList.toggle("ready", !!due);
+    $("againHead").textContent = due ? "Your next 3 targets are ready" : "Come back in a week";
+    $("againText").textContent = due ? "It's been " + days + " days. New companies raised money and expanded since then. Get 3 fresh targets for your door." : "New companies raise money and expand every week. Come back " + (S.lastBatch ? "in " + Math.max(1, 7 - days) + (7 - days === 1 ? " day" : " days") : "next week") + " for 3 fresh targets for your door.";
   }
 
   $("findTargets").onclick = async () => {
     const st = $("statusTargets"), list = $("targetList"), d = curDoor();
     if (!S.map || !d){ setStatus(st, "Pick your door first.", "err"); return; }
+    if (S.example){ setStatus(st, "This is the example profile. Go back to step 1 and add your own story to get real targets.", "err"); return; }
     if (!onWebsite){ setStatus(st, "Targets come from the live web, so this works on the website version of Generalist Compass.", "err"); return; }
     if (busy) return;
     busy = true; $("findTargets").disabled = true; clear(list); $("jobCredit").hidden = true; $("toDoneRow").hidden = true;
@@ -1618,12 +1732,13 @@ ${cut(brief, 14000)}`, { cache:false });
         const chosen = (Array.isArray(picks) ? picks : []).filter(p => jobs[Number(p.i)]).slice(0, 3);
         if (!chosen.length){ setStatus(st, "Nothing this week fits well enough to show. Try “Companies with fresh news” instead.", ""); return; }
         setStatus(st, "");
+        const batch = [];
         chosen.forEach(p => {
           const j = jobs[Number(p.i)];
           const age = j.date ? Math.max(0, Math.round((Date.now() - Date.parse(j.date)) / 864e5)) : null;
-          list.append(targetCard({title:j.title, company:j.company, meta:[j.company, j.location, age === null ? "" : (age === 0 ? "Posted today" : "Posted " + age + (age === 1 ? " day ago" : " days ago"))], whyLabel:"Why you: ", why:str(p.fit), door:str(p.door), message:str(p.message), url:j.url, linkClass:"apply", linkText:"View job on " + j.source + " →"}));
+          batch.push(({title:j.title, company:j.company, meta:[j.company, j.location, age === null ? "" : (age === 0 ? "Posted today" : "Posted " + age + (age === 1 ? " day ago" : " days ago"))], whyLabel:"Why you: ", why:str(p.fit), door:str(p.door), message:str(p.message), url:j.url, linkClass:"apply", linkText:"View job on " + j.source + " →"}));
         });
-        $("jobCredit").hidden = false;
+        commitBatch(batch);
       } else {
         setStatus(st, "Scanning this month's news. This takes up to a minute", "thinking");
         const focus = $("radarFocus").value.trim();
@@ -1634,7 +1749,7 @@ ${cut(brief, 14000)}`, { cache:false });
         if (!r.ok){ setStatus(st, data.error || "The scan didn't work this time. Try again in a minute.", "err"); return; }
         if (!cos.length){ setStatus(st, "No strong matches this time. Try a focus, like a region or an industry.", ""); return; }
         setStatus(st, "");
-        cos.forEach(x => list.append(targetCard({title:str(x.company), company:str(x.company), meta:[str(x.date), str(x.who)], event:str(x.event), whyLabel:"Why now: ", why:str(x.why), message:str(x.message), intro:str(x.intro||""), url:str(x.source), linkClass:"src", linkText:"Read the news →"})));
+        commitBatch(cos.map(x => ({title:str(x.company), company:str(x.company), meta:[str(x.date), str(x.who)], event:str(x.event), whyLabel:"Why now: ", why:str(x.why), message:str(x.message), intro:str(x.intro||""), url:str(x.source), linkClass:"src", linkText:"Read the news →"})));
       }
       if ((S.stage || 2) < 5) $("toDoneRow").hidden = false;
     } catch(e){ setStatus(st, errText(e), "err"); }
@@ -1772,6 +1887,7 @@ ${cut(brief, 20000)}`, { cache:false });
   $("makePage").onclick = async () => {
     const st = $("statusPage");
     if (!S.map){ setStatus(st, "Get your results first in step 1.", "err"); return; }
+    if (S.example){ setStatus(st, "This is the example profile. Add your own story in step 1 to make your page.", "err"); return; }
     if (!sample){ setStatus(st, "This works when the page is opened in Claude or on the website.", "err"); return; }
     const name = $("pgName").value.trim();
     if (!name){ setStatus(st, "Add your name first.", "err"); return; }
@@ -1864,19 +1980,228 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
   wireMic({btn:"mic2", label:"micLabel2", hint:"micHint2", box:"reply", idle:"Talk your reply",
     tipExtra:"Say what feels off, what scares you, or what you want to know. Then press Send."});
 
+  // ---------- recruiters & matching (demo; needs the shared db) ----------
+  var db = null, uid = null, myProfile = null, needs = [], intros = [];
+  const WEB = { on: false, token: null };
+  async function api(action, payload){
+    const r = await fetch("/api/board", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify(Object.assign({action}, payload || {}))});
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw {code:"web", message: data.error || "Something went wrong. Try again."};
+    return data;
+  }
+  function webToken(create){
+    if (WEB.token) return WEB.token;
+    try { WEB.token = localStorage.getItem("gc-board-token"); } catch(e){}
+    if (!WEB.token && create){
+      const a = new Uint8Array(24); crypto.getRandomValues(a);
+      WEB.token = btoa(String.fromCharCode(...a)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      try { localStorage.setItem("gc-board-token", WEB.token); } catch(e){}
+    }
+    return WEB.token;
+  }
+  async function webRefresh(){
+    try {
+      const [pool, nd] = await Promise.all([api("pool"), api("needs")]);
+      RX.pool = (pool.profiles || []).map(p => Object.assign({_id: p.id}, p));
+      needs = (nd.needs || []).map(n => Object.assign({_id: n.id}, n));
+      const t = webToken(false);
+      if (t){ const mine = await api("mine", {token: t}); myProfile = mine.profile || null; uid = myProfile ? myProfile.id : null; intros = (mine.intros || []).map(x => Object.assign({profile: uid}, x)); }
+      renderBoards(); renderOpt(); renderMyIntros();
+    } catch(e){ /* board offline: keep the rest of the app working */ }
+  }
+  const RX = { pool: [], brief: null, needId: null };
+  const workSel = () => [...document.querySelectorAll('#rWork .chip[aria-pressed="true"]')].map(c => c.dataset.v);
+  document.querySelectorAll("#rWork .chip").forEach(c => c.onclick = () => c.setAttribute("aria-pressed", String(c.getAttribute("aria-pressed") !== "true")));
+  function showRecruit(){
+    go(-1); ["home","step1","step2","step3"].forEach(id => $(id).hidden = true);
+    $("recruit").hidden = false; $("navR").setAttribute("aria-current","step"); film.stop();
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+  $("navR").onclick = showRecruit;
+  const typeLine = t => ARCH[t] ? t + ": " + ARCH[t].tag : t;
+  function profCard(p, why, needForIntro){
+    const c = document.createElement("div"); c.className = "job";
+    const g = document.createElement("div"); g.className = "prof";
+    const em = document.createElement("div"); em.className = "em"; em.innerHTML = embSvg(str(p.type));
+    const body = document.createElement("div");
+    const t = document.createElement("div"); t.className = "jt"; t.textContent = str(p.type) + (p.second ? " · " + str(p.second) : "");
+    if (p.example){ const b = document.createElement("span"); b.className = "badge"; b.textContent = "Example"; t.append(b); }
+    const m = document.createElement("div"); m.className = "jm"; [str(p.region), p.remote ? "Open to remote" : ""].filter(Boolean).forEach(v => { const sp = document.createElement("span"); sp.textContent = v; m.append(sp); });
+    const th = document.createElement("p"); th.textContent = str(p.thread);
+    body.append(t, m, th);
+    if (p.edge){ const e = document.createElement("p"); e.className = "fit"; const b = document.createElement("b"); b.textContent = "Edge: "; e.append(b, str(p.edge)); body.append(e); }
+    if (why){ const w = document.createElement("p"); w.className = "fit"; const b = document.createElement("b"); b.textContent = "Why this match: "; w.append(b, why); body.append(w); }
+    g.append(em, body); c.append(g);
+    if (needForIntro){
+      const row = document.createElement("div"); row.className = "row";
+      const btn = document.createElement("button"); btn.type = "button"; btn.className = "btn"; btn.textContent = "Request an intro";
+      const st = document.createElement("div"); st.className = "status";
+      btn.onclick = () => requestIntro(p, btn, st);
+      row.append(btn); c.append(row, st);
+    }
+    return c;
+  }
+  function needCard(n){
+    const c = document.createElement("div"); c.className = "job need";
+    const t = document.createElement("div"); t.className = "jt"; t.textContent = str(n.title);
+    if (n.example){ const b = document.createElement("span"); b.className = "badge"; b.textContent = "Example"; t.append(b); }
+    const m = document.createElement("div"); m.className = "jm"; [str(n.company), arr(n.work).join(", "), str(n.type)].filter(Boolean).forEach(v => { const sp = document.createElement("span"); sp.textContent = v; m.append(sp); });
+    const p = document.createElement("p"); p.textContent = str(n.problem);
+    c.append(t, m, p); return c;
+  }
+  function renderBoards(){
+    const b = $("rBoard"); clear(b);
+    const list = needs.slice().sort((a, z) => (z.at || 0) - (a.at || 0));
+    if (!list.length){ const p = document.createElement("p"); p.className = "hint"; p.textContent = "Nothing posted yet. Be the first: describe what you need above."; b.append(p); }
+    list.slice(0, 12).forEach(n => b.append(needCard(n)));
+    // seeker side: needs for my type first
+    const sb = $("seekBoard"); clear(sb);
+    const myType = S.map && S.map.archetype ? S.map.archetype.type : "";
+    const mine = list.filter(n => n.type === myType).concat(list.filter(n => n.type !== myType)).slice(0, 3);
+    mine.forEach(n => sb.append(needCard(n)));
+    $("seekBoardWrap").hidden = !mine.length;
+    renderMyIntros();
+  }
+  function renderMyIntros(){
+    const box = $("myIntros"); clear(box);
+    if (!uid || !myProfile) return;
+    intros.filter(x => x.profile === uid).sort((a, z) => (z.at || 0) - (a.at || 0)).forEach(x => {
+      const d = document.createElement("div"); d.className = "ireq";
+      const h = document.createElement("b"); h.textContent = (str(x.company) || "A recruiter") + " wants to meet you";
+      const p = document.createElement("p"); p.textContent = str(x.title) + (x.note ? ". " + str(x.note) : "");
+      const r = document.createElement("p"); r.className = "hint"; r.textContent = x.contact ? "Interested? Reach them at: " + str(x.contact) : "They didn't leave contact details.";
+      d.append(h, p, r); box.append(d);
+    });
+  }
+  function profileFromMap(){
+    const m = S.map || {}, a = m.archetype || {};
+    return { type: str(a.type), second: str(a.second), thread: str(m.thread), say: str(m.say), edge: m.edge ? str(m.edge.name) + ": " + str(m.edge.why) : "", thrive: arr(m.thrive).slice(0,3), region: $("optRegion").value.trim().slice(0, 60), remote: S.prefs.includes("Remote only") || /remote/i.test($("optRegion").value), at: Date.now(), example: false };
+  }
+  function renderOpt(){
+    $("optCard").hidden = !(db || WEB.on) || !S.map || S.example;
+    $("optOn").textContent = myProfile ? "Update my profile" : "Make me findable";
+    $("optOff").hidden = !myProfile;
+    if (myProfile && !$("optRegion").value) $("optRegion").value = str(myProfile.region);
+  }
+  $("optOn").onclick = async () => {
+    const st = $("statusOpt");
+    if (!S.map || S.example){ setStatus(st, "Get your own reading first.", "err"); return; }
+    if (WEB.on){
+      try { const r = await api("profile.save", {token: webToken(true), profile: profileFromMap()}); myProfile = r.profile; uid = r.profile.id; setStatus(st, "You're findable. Your name and contact details stay private."); webRefresh(); }
+      catch(e){ setStatus(st, e.message || "That didn't save. Try again.", "err"); }
+      return;
+    }
+    if (!db || !uid){ setStatus(st, "Sign in to Claude to publish your profile.", "err"); return; }
+    try { const p = profileFromMap(); await db.doc("profiles/" + uid).set(p); myProfile = p; setStatus(st, "You're findable. Your name and contact details stay private."); renderOpt(); renderMyIntros(); }
+    catch(e){ setStatus(st, e && e.code === "invalid_argument" ? "In this demo, only invited testers can publish a profile." : "That didn't save. Try again in a moment.", "err"); }
+  };
+  $("optOff").onclick = async () => {
+    if (WEB.on){ try { await api("profile.delete", {token: webToken(false)}); myProfile = null; intros = []; setStatus($("statusOpt"), "Your profile is removed."); webRefresh(); } catch(e){ setStatus($("statusOpt"), e.message, "err"); } return; }
+    try { await db.doc("profiles/" + uid).delete(); myProfile = null; setStatus($("statusOpt"), "Your profile is removed."); renderOpt(); renderMyIntros(); } catch(e){ setStatus($("statusOpt"), "That didn't work. Try again.", "err"); }
+  };
+  $("rGo").onclick = async () => {
+    const st = $("statusR"), need = $("rNeed").value.trim();
+    if (need.length < 30){ setStatus(st, "Add a few more lines about what you need solved.", "err"); return; }
+    if (!sample){ setStatus(st, "Matching works when this page is opened in Claude.", "err"); return; }
+    if (!RX.pool.length){ setStatus(st, "No profiles to match yet.", "err"); return; }
+    if (busy) return; busy = true; $("rGo").disabled = true; $("rOut").hidden = true; RX.needId = null;
+    setStatus(st, "Reading your need and comparing it with every profile", "thinking");
+    const pool = RX.pool.slice(0, 80).map(p => ({id: p._id, type: p.type, second: p.second, thread: p.thread, edge: p.edge, thrive: p.thrive, region: p.region, remote: !!p.remote}));
+    try {
+      const r = await sample.json(`You match companies with generalists: people with varied careers. A company described a need. First turn it into a short brief, then pick the best matching people from the pool.
+
+Reply with ONLY a JSON object like:
+{"brief":{"title":"...","problem":"...","type":"..."},"matches":[{"id":"...","why":"..."}]}
+
+Rules:
+- brief.title: max 10 words, the role as a problem to solve (not a job title list).
+- brief.problem: max 40 words, plain language, what this person will actually do in the first months.
+- brief.type: exactly one of: ${ARCH_NAMES.join(", ")}. The generalist type that fits the need best.
+- matches: the 3 best people from the pool, best first (fewer if fewer fit). id must be copied exactly from the pool.
+- why: max 25 words, concrete: link something in their thread or edge to the need. Never invent facts about them.
+- Respect the setup: ${workSel().join(", ") || "not stated"}. Do not pick someone who clearly can't work that way.
+- Write in the language of the need.
+
+The need:
+"""
+${cut(need, 3000)}
+"""
+Company: ${cut($("rCompany").value.trim(), 100) || "not given"}
+
+The pool (JSON):
+${cut(JSON.stringify(pool), 20000)}`, { cache:false });
+      const b = r && r.brief || {}; const ms = (Array.isArray(r && r.matches) ? r.matches : []).filter(x => RX.pool.some(p => p._id === x.id)).slice(0, 3);
+      RX.brief = {title: str(b.title), problem: str(b.problem), type: ARCH[str(b.type)] ? str(b.type) : ""};
+      $("rTitle").textContent = RX.brief.title; $("rProblem").textContent = RX.brief.problem;
+      $("rType").textContent = RX.brief.type ? "Best fit: " + typeLine(RX.brief.type) : "";
+      const list = $("rMatches"); clear(list);
+      if (!ms.length){ const p = document.createElement("p"); p.className = "hint"; p.textContent = "No strong matches yet. Post your brief on the board so new generalists see it."; list.append(p); }
+      ms.forEach(x => list.append(profCard(RX.pool.find(p => p._id === x.id), str(x.why), true)));
+      $("rPost").disabled = false; $("rPost").textContent = "Post it on the board"; setStatus($("statusPost"), "");
+      $("rOut").hidden = false; setStatus(st, "");
+      $("rOut").scrollIntoView({behavior:"smooth", block:"start"});
+    } catch(e){ setStatus(st, errText(e), "err"); }
+    finally { busy = false; $("rGo").disabled = false; }
+  };
+  async function postNeed(){
+    if (RX.needId) return RX.needId;
+    const n = {title: RX.brief.title, problem: RX.brief.problem, type: RX.brief.type, company: $("rCompany").value.trim().slice(0, 80), work: workSel(), contact: $("rContact").value.trim().slice(0, 120), at: Date.now(), by: uid || "", example: false};
+    if (WEB.on){ const r = await api("need.post", {need: n}); RX.needId = r.id; webRefresh(); return r.id; }
+    const ref = await db.collection("needs").add(n); RX.needId = ref.id; return ref.id;
+  }
+  $("rPost").onclick = async () => {
+    const st = $("statusPost");
+    if (!db && !WEB.on){ setStatus(st, "The board isn't available right now.", "err"); return; }
+    try { await postNeed(); $("rPost").disabled = true; $("rPost").textContent = "Posted"; setStatus(st, "Generalists whose type fits will see it on their results page."); }
+    catch(e){ setStatus(st, e && e.code === "invalid_argument" ? "In this demo, only invited testers can post." : (e && e.code === "web" ? e.message : "That didn't save. Try again in a moment."), "err"); }
+  };
+  async function requestIntro(p, btn, st){
+    if (!db && !WEB.on){ setStatus(st, "Intros aren't available right now.", "err"); return; }
+    if (p.example){ btn.disabled = true; btn.textContent = "Requested"; setStatus(st, "This is an example profile, so nobody will get it. With a real profile, they'd see your request and decide whether to reply."); return; }
+    if (!$("rContact").value.trim()){ setStatus(st, "Add how candidates can reach you first (above).", "err"); $("rContact").focus(); return; }
+    try {
+      const needId = await postNeed();
+      if (WEB.on){ await api("intro.request", {profileId: p._id, needId, title: RX.brief.title, company: $("rCompany").value.trim().slice(0, 80), contact: $("rContact").value.trim().slice(0, 120)}); }
+      else await db.collection("intros").add({profile: p._id, need: needId, title: RX.brief.title, company: $("rCompany").value.trim().slice(0, 80), contact: $("rContact").value.trim().slice(0, 120), note: "", at: Date.now(), by: uid || ""});
+      btn.disabled = true; btn.textContent = "Requested"; setStatus(st, "Sent. They'll see your request and contact you if they're interested.");
+    } catch(e){ setStatus(st, e && e.code === "invalid_argument" ? "In this demo, only invited testers can send requests." : (e && e.code === "web" ? e.message : "That didn't go through. Try again."), "err"); }
+  }
+  async function startDb(){
+    if (!(window.claude && typeof window.claude.use === "function")){
+      try { const r = await fetch("/api/board", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({action:"needs"})}); if (!r.ok) return; } catch(e){ return; }
+      WEB.on = true; $("navR").hidden = false;
+      $("recruit").querySelector(".example-flag").textContent = "Early version. Profiles and requests marked Example are made up to show how it works, until real ones fill the board.";
+      webRefresh(); setInterval(() => { if (!document.hidden) webRefresh(); }, 60000);
+      return;
+    }
+    try { db = await window.claude.use("db"); } catch(e){ db = null; }
+    if (!db) return;
+    try { const u = await window.claude.use("user"); uid = u ? await u.id() : null; } catch(e){ uid = null; }
+    $("navR").hidden = false;
+    db.collection("profiles").onSnapshot(snap => {
+      RX.pool = snap.docs.filter(d => d.exists).map(d => Object.assign({_id: d.id}, d.data()));
+      myProfile = uid ? (RX.pool.find(p => p._id === uid) || null) : null; renderOpt(); renderMyIntros();
+    }, () => {});
+    db.collection("needs").onSnapshot(snap => { needs = snap.docs.map(d => Object.assign({_id: d.id}, d.data())); renderBoards(); }, () => {});
+    db.collection("intros").onSnapshot(snap => { intros = snap.docs.map(d => Object.assign({_id: d.id}, d.data())); renderMyIntros(); }, () => {});
+    renderOpt();
+  }
+  startDb();
+
   // ---------- boot ----------
   const saved = load();
   if (saved){
     if (saved.profile){ S.profile = saved.profile; $("profile").value = saved.profile; }
     if (Array.isArray(saved.stuck)){ S.stuck = saved.stuck; setChips("stuck", S.stuck); }
     if (Array.isArray(saved.prefs)){ S.prefs = saved.prefs; setChips("prefs", S.prefs); }
-    if (saved.map && Array.isArray(saved.map.routes)){ S.map = saved.map; S.stage = Number(saved.stage) || 2; S.door = saved.door == null ? null : Number(saved.door); renderMap(S.map); applyStage(); }
+    if (Array.isArray(saved.targets)) S.targets = saved.targets; if (saved.lastBatch) S.lastBatch = saved.lastBatch; if (Array.isArray(saved.weeks)) S.weeks = saved.weeks;
+    if (saved.map && Array.isArray(saved.map.routes)){ S.map = saved.map; S.stage = Number(saved.stage) || 2; S.door = saved.door == null ? null : Number(saved.door); renderMap(S.map); applyStage(); if (S.lastBatch && (S.targets||[]).length){ showBatch(); applyStage(); } }
     if (saved.name){ S.name = saved.name; $("myName").value = saved.name; }
     if (saved.base){ S.base = saved.base; $("baseIn").value = saved.base; }
     if (saved.helper && saved.helper.who){ S.helper = saved.helper; $("openHelper").hidden = false; }
     if (Array.isArray(saved.chat)){ S.chat = saved.chat.filter(t => t && (t.role==="user"||t.role==="assistant") && t.content); renderChat(); }
   }
-  if (S.map) $("continueBtn").hidden = false;
+  if (S.map){ $("continueBtn").hidden = false; const due = S.lastBatch && Date.now() - S.lastBatch > 6.5 * 864e5; if (due){ $("continueBtn").textContent = "Your next 3 targets are ready"; $("continueBtn").className = "btn"; } }
   if (S.page){ $("pgName").value = S.page.name || ""; $("pgContact").value = S.page.contact || ""; }
   const hashTok = (location.hash || "").slice(1);
   if (/^c[pq]\.[A-Za-z0-9_-]+$/.test(hashTok)){
