@@ -12,9 +12,9 @@ const WORK = ["Remote","On-site or hybrid","Project or freelance"];
 
 // Shown until enough real people are on the board. Clearly flagged as examples.
 const EXAMPLE_PROFILES = [
-  {id:"example-1",type:"The Connector",second:"The Translator",thread:"Ten years putting buyers and sellers together across Latin America and Southern Europe.",edge:"Trusted in three languages: closes deals other people can't get a meeting for.",thrive:["Small teams entering new countries","Partnership-led growth","A founder who lets them run"],region:"Lisbon",remote:true,example:true},
-  {id:"example-2",type:"The Opener",second:"The Operator",thread:"Launched three products from zero, then handed each over once it ran.",edge:"Zero-to-one builder: product, first customers and first hires.",thrive:["Pre-launch or just-launched","Messy first year","Clear ownership"],region:"Berlin",remote:true,example:true},
-  {id:"example-3",type:"The Fixer",second:"The Operator",thread:"Walked into three struggling operations and turned each around within a year.",edge:"Calm in chaos: finds the real bottleneck fast.",thrive:["Turnarounds","Operations under pressure","Hands-on roles"],region:"Tel Aviv",remote:false,example:true},
+  {id:"example-1",type:"The Connector",second:"The Translator",thread:"Ten years putting buyers and sellers together across Latin America and Southern Europe.",edge:"Trusted in three languages: closes deals other people can't get a meeting for.",thrive:["Small teams entering new countries","Partnership-led growth","A founder who lets them run"],problems:[{title:"Got a stalled distributor deal signed in Brazil",result:"Signed in eight weeks after a year of silence."},{title:"Rebuilt a partner network after a bad launch",result:"Twelve of twenty partners active again within six months."}],region:"Lisbon",remote:true,example:true},
+  {id:"example-2",type:"The Opener",second:"The Operator",thread:"Launched three products from zero, then handed each over once it ran.",edge:"Zero-to-one builder: product, first customers and first hires.",thrive:["Pre-launch or just-launched","Messy first year","Clear ownership"],problems:[{title:"Took a booking app from idea to first paying users",result:"First 1,000 paying users in five months."},{title:"Hired and handed over a first team of five",result:"The product ran without me after a year."}],region:"Berlin",remote:true,example:true},
+  {id:"example-3",type:"The Fixer",second:"The Operator",thread:"Walked into three struggling operations and turned each around within a year.",edge:"Calm in chaos: finds the real bottleneck fast.",thrive:["Turnarounds","Operations under pressure","Hands-on roles"],problems:[{title:"Fixed late deliveries at a food distributor",result:"On-time deliveries went from about 70% to 95%."}],region:"Tel Aviv",remote:false,example:true},
   {id:"example-4",type:"The Storyteller",second:"The Connector",thread:"Built three communities from nothing, from a festival to an online brand.",edge:"Turns a product into a community people talk about.",thrive:["Consumer brands","Community-led growth","Creative freedom"],region:"Barcelona",remote:true,example:true},
   {id:"example-5",type:"The Strategist",second:"The Explorer",thread:"Moved from finance to retail to tech, each time spotting where the market was going first.",edge:"Pattern recognition across industries.",thrive:["Leadership teams deciding direction","New markets","Ambiguous problems"],region:"Amsterdam",remote:true,example:true},
   {id:"example-6",type:"The Translator",second:"The Fixer",thread:"Bridged engineers, sales and clients in four countries.",edge:"Explains the complex simply, in five languages.",thrive:["International teams","Customer-facing technical work","Remote-first"],region:"Bangkok",remote:true,example:true}
@@ -41,6 +41,9 @@ const list = (v, n, each) => (Array.isArray(v) ? v : []).map(x => s(x, each)).fi
 const hash = t => createHash("sha256").update(String(t)).digest("hex");
 const idOf = t => "p" + hash("id:" + t).slice(0, 16);
 const okToken = t => typeof t === "string" && /^[A-Za-z0-9_-]{24,80}$/.test(t);
+const problems = v => (Array.isArray(v) ? v : []).slice(0, 6).map(x => x && typeof x === "object" ? {
+  title: s(x.title, 90), situation: s(x.situation, 240), did: s(x.did, 300), result: s(x.result, 240),
+} : null).filter(x => x && x.title && (x.situation || x.did || x.result));
 const parse = x => { try { return JSON.parse(x); } catch (e) { return null; } };
 
 async function limited(req, bucket, max) {
@@ -77,7 +80,7 @@ export default async function handler(req, res) {
         const prof = {
           id, type: p.type, second: TYPES.includes(p.second) ? p.second : "",
           thread: s(p.thread, 240), say: s(p.say, 200), edge: s(p.edge, 240),
-          thrive: list(p.thrive, 3, 80), region: s(p.region, 60), remote: !!p.remote,
+          thrive: list(p.thrive, 3, 80), problems: problems(p.problems), region: s(p.region, 60), remote: !!p.remote,
           at: Date.now(), example: false,
         };
         await redis([["HSET", "gc:profiles", id, JSON.stringify(prof)]]);

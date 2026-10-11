@@ -381,6 +381,27 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
 .job .intro{margin-top:4px}
 .card.again{gap:6px}
 .optcard{border-color:var(--accent)}
+.plist{display:flex;flex-direction:column;gap:12px}
+.plist:empty{display:none}
+.pcard{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--bg);display:flex;flex-direction:column;gap:8px;min-width:0}
+.pcard.ok{border-color:var(--good)}
+.pcard .ph{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.pcard .pt{font-family:var(--display);font-weight:700;font-size:17px;line-height:1.3;unicode-bidi:plaintext;overflow-wrap:anywhere}
+.pcard .pstate{flex:none;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:2px 7px;background:var(--needle-soft);color:var(--needle)}
+.pcard.ok .pstate{background:transparent;color:var(--good);border:1px solid var(--good)}
+.pcard dl{margin:0;display:flex;flex-direction:column;gap:6px}
+.pcard dt{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pcard dd{margin:0;font-size:15px;unicode-bidi:plaintext;overflow-wrap:anywhere}
+.pcard .row{gap:14px}
+.pcard label{font-size:13px;font-weight:700;color:var(--muted)}
+.pcard input,.pcard textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;margin-top:4px}
+.pcard textarea{min-height:76px}
+.pcard input:focus-visible,.pcard textarea:focus-visible{outline:2px solid var(--needle);outline-offset:2px}
+.pcard .btn{padding:9px 16px;font-size:15px}
+.job .solved{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.job .solved li{padding-left:16px;position:relative;unicode-bidi:plaintext}
+.job .solved li::before{content:"";position:absolute;left:1px;top:.6em;width:7px;height:7px;border-radius:50%;background:var(--good)}
+.job .solved b{font-weight:700}
 .prof{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:start}
 .prof .em{width:52px;height:52px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center}
 .prof .em svg{width:30px;height:30px}
@@ -621,6 +642,19 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
     </div>
     <div class="reframe"><div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg></div><div><b>Try seeing it this way</b><span id="reframe"></span></div></div>
 
+    <div class="card probs" id="probCard">
+      <span class="tag">Problems you've solved</span>
+      <h3>Companies hire people who've solved their problem before</h3>
+      <p class="hint" id="probLead">We turn your story into 3 to 5 short cards: the situation, what you did, what changed. You edit and approve each one. Only approved cards go on your profile.</p>
+      <div class="plist" id="probList"></div>
+      <p class="hint" id="probCount" hidden></p>
+      <div class="row" id="probActions">
+        <button class="btn" id="probDraft" type="button">Draft my problem cards</button>
+        <button class="link" id="probAdd" type="button">Write one myself</button>
+      </div>
+      <div class="status" id="statusProb" role="status"></div>
+    </div>
+
     <div class="pushrow"><button class="link" id="pushBack" type="button" aria-expanded="false">Doesn't feel like you? Push back</button></div>
     <div class="card talk" id="talk" hidden>
       <span class="tag">Talk back</span>
@@ -723,7 +757,8 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
       <div class="card optcard" id="optCard" hidden>
         <span class="tag">Be found</span>
         <h3>Let recruiters find you</h3>
-        <p class="hint">We publish an anonymous version of your reading: your type, your thread and your edge. No name, no contact details. When a recruiter wants to meet you, you see their request and decide.</p>
+        <p class="hint">We publish an anonymous version of your reading: your type, your thread, your edge and the problem cards you approved. No name, no contact details. When a recruiter wants to meet you, you see their request and decide.</p>
+        <p class="hint" id="optProbs"></p>
         <div><label class="q" for="optRegion">Where are you based?</label><input id="optRegion" type="text" placeholder="e.g. Thailand, works remote" autocomplete="off"></div>
         <div class="row"><button class="btn" id="optOn" type="button">Make me findable</button><button class="link" id="optOff" type="button" hidden>Remove my profile</button></div>
         <div class="status" id="statusOpt" role="status"></div>
@@ -958,10 +993,15 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
     titles:["Business Development Manager","Head of Operations","Founder's Associate"],
     search:"business development startup"
   };
+  const EXAMPLE_PROBLEMS = [
+    {title:"Opened a supply operation in a new country",situation:"A trading company wanted to buy direct in Latin America but had no suppliers, no warehouse and no one on the ground.",did:"Found and vetted the first suppliers, set up a warehouse and ran the first shipments myself.",result:"A working supplier network and warehouse that the company ran without me after the first year.",ok:true},
+    {title:"Took a family shop online",situation:"The family retail business sold only in the store and sales were flat.",did:"Built the online shop, ran the first campaigns and set up shipping from the back room.",result:"Online became a real second channel within two years. [how much of sales?]",ok:false},
+    {title:"Ran live events where everything had to work on the night",situation:"Festivals and events with fixed dates, small budgets and no second chances.",did:"Booked the acts, managed suppliers and volunteers, and handled problems as they came up on the night.",result:"Several years of events that ran on time, with crowds that came back.",ok:true}
+  ];
 
   // ---------- storage (convenience only) ----------
   const load = () => { try { return JSON.parse(localStorage.getItem("gc-state-2")||"null"); } catch(e){ return null; } };
-  const save = () => { if (S.example) return; try { localStorage.setItem("gc-state-2", JSON.stringify({profile:S.profile,stuck:S.stuck,prefs:S.prefs,map:S.example?null:S.map,name:S.name||"",base:S.base||"",page:S.page||null,helper:S.example?null:(S.helper||null),chat:S.example?[]:(S.chat||[]).slice(-20),stage:S.stage||2,door:(S.door==null?null:S.door),targets:S.example?[]:(S.targets||[]).slice(-60),lastBatch:S.lastBatch||0,weeks:S.weeks||[]})); } catch(e){} };
+  const save = () => { if (S.example) return; try { localStorage.setItem("gc-state-2", JSON.stringify({profile:S.profile,stuck:S.stuck,prefs:S.prefs,map:S.example?null:S.map,name:S.name||"",base:S.base||"",page:S.page||null,helper:S.example?null:(S.helper||null),chat:S.example?[]:(S.chat||[]).slice(-20),stage:S.stage||2,door:(S.door==null?null:S.door),targets:S.example?[]:(S.targets||[]).slice(-60),lastBatch:S.lastBatch||0,weeks:S.weeks||[],problems:S.problems||[]})); } catch(e){} };
 
   // ---------- helpers ----------
   const clear = el => { while(el.firstChild) el.removeChild(el.firstChild); };
@@ -1180,7 +1220,137 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
       a.target = "_blank"; a.rel = "noopener"; a.textContent = "Search on LinkedIn";
       tl.append(a);
     }
+    renderProblems();
   }
+
+  // ---------- problems you've solved ----------
+  // Cards: {title, situation, did, result, ok}. ok = approved by the person. Only approved cards go on the board.
+  const PROB_MAX = 6;
+  const PROB_FIELDS = [["situation","The situation",240],["did","What I did",300],["result","What changed",240]];
+  const oneLine = (v, n) => str(v).replace(/\s+/g, " ").trim().slice(0, n);
+  function cleanProb(p){
+    if (!p || typeof p !== "object") return null;
+    const c = {title: oneLine(p.title, 90), situation: oneLine(p.situation, 240), did: oneLine(p.did, 300), result: oneLine(p.result, 240), ok: !!p.ok};
+    return c.title && (c.situation || c.did || c.result) ? c : null;
+  }
+  S.problems = [];
+  let probEditing = -1; // index being edited, PROB_MAX = a new card
+  const hasBlanks = p => /\[[^\]]*\]/.test([p.title, p.situation, p.did, p.result].join(" "));
+  const approvedProblems = () => (S.problems || []).filter(p => p.ok).map(({title, situation, did, result}) => ({title, situation, did, result}));
+  function probView(p, i){
+    const c = document.createElement("div"); c.className = "pcard" + (p.ok ? " ok" : "");
+    const h = document.createElement("div"); h.className = "ph";
+    const t = document.createElement("div"); t.className = "pt"; t.textContent = p.title;
+    const st = document.createElement("span"); st.className = "pstate"; st.textContent = p.ok ? "Approved" : "Draft";
+    h.append(t, st);
+    const dl = document.createElement("dl");
+    PROB_FIELDS.forEach(([k, label]) => { if (!p[k]) return; const dt = document.createElement("dt"); dt.textContent = label; const dd = document.createElement("dd"); dd.textContent = p[k]; dl.append(dt, dd); });
+    c.append(h, dl);
+    if (S.example) return c;
+    const row = document.createElement("div"); row.className = "row";
+    const msg = document.createElement("div"); msg.className = "status";
+    if (!p.ok){
+      const ap = document.createElement("button"); ap.type = "button"; ap.className = "btn"; ap.textContent = "Approve";
+      ap.onclick = () => {
+        if (hasBlanks(p)){ setStatus(msg, "Fill in the part in [brackets] first. Tap Edit.", "err"); return; }
+        p.ok = true; save(); renderProblems(); probNote("Approved. " + boardNudge());
+      };
+      row.append(ap);
+    }
+    const ed = document.createElement("button"); ed.type = "button"; ed.className = "link"; ed.textContent = "Edit";
+    ed.onclick = () => { probEditing = i; renderProblems(); };
+    const rm = document.createElement("button"); rm.type = "button"; rm.className = "link"; rm.textContent = "Remove";
+    rm.onclick = () => { S.problems.splice(i, 1); probEditing = -1; save(); renderProblems(); probNote("Removed. " + boardNudge()); };
+    row.append(ed, rm); c.append(row, msg);
+    return c;
+  }
+  function probEdit(p, i){
+    const c = document.createElement("div"); c.className = "pcard";
+    const fields = {};
+    const add = (k, label, n, area) => {
+      const id = "pe-" + k; const lb = document.createElement("label"); lb.htmlFor = id; lb.textContent = label;
+      const el = document.createElement(area ? "textarea" : "input"); el.id = id; el.maxLength = n; el.value = str(p[k]);
+      if (!area) el.type = "text";
+      const w = document.createElement("div"); w.append(lb, el); c.append(w); fields[k] = el;
+    };
+    add("title", "In a few words", 90, false);
+    PROB_FIELDS.forEach(([k, label, n]) => add(k, label, n, true));
+    fields.title.placeholder = "e.g. Opened our Spanish market from zero";
+    fields.situation.placeholder = "What was wrong or missing when you started?";
+    fields.did.placeholder = "What did you do, in your own words?";
+    fields.result.placeholder = "What was different afterwards? A number helps if you have one.";
+    const row = document.createElement("div"); row.className = "row";
+    const msg = document.createElement("div"); msg.className = "status";
+    const ok = document.createElement("button"); ok.type = "button"; ok.className = "btn"; ok.textContent = "Save and approve";
+    ok.onclick = () => {
+      const n = cleanProb({title: fields.title.value, situation: fields.situation.value, did: fields.did.value, result: fields.result.value, ok: true});
+      if (!n){ setStatus(msg, "Give it a short title and at least one line below.", "err"); return; }
+      if (hasBlanks(n)){ setStatus(msg, "Fill in the part in [brackets] first.", "err"); return; }
+      if (i >= S.problems.length) S.problems.push(n); else S.problems[i] = n;
+      probEditing = -1; save(); renderProblems(); probNote("Saved. " + boardNudge());
+    };
+    const cancel = document.createElement("button"); cancel.type = "button"; cancel.className = "link"; cancel.textContent = "Cancel";
+    cancel.onclick = () => { probEditing = -1; renderProblems(); };
+    row.append(ok, cancel); c.append(row, msg);
+    setTimeout(() => fields.title.focus(), 0);
+    return c;
+  }
+  const boardNudge = () => myProfile ? "Tap Update my profile below to share the change." : "";
+  const probNote = t => setStatus($("statusProb"), t.trim());
+  function renderProblems(){
+    if (typeof renderOpt === "function" && $("optProbs")) try { renderOpt(); } catch(e){}
+    const list = $("probList"); clear(list);
+    const ex = !!S.example, cards = ex ? EXAMPLE_PROBLEMS : (S.problems || []);
+    cards.forEach((p, i) => list.append(!ex && i === probEditing ? probEdit(p, i) : probView(p, i)));
+    if (!ex && probEditing >= cards.length) list.append(probEdit({}, cards.length));
+    const n = cards.length, ok = cards.filter(p => p.ok).length;
+    $("probCount").hidden = !n || ex;
+    $("probCount").textContent = ok === n ? (n === 1 ? "Your card is approved." : "All " + n + " cards are approved.") + " They go on your profile when you make yourself findable."
+      : ok + " of " + n + " approved. Only approved cards go on your profile.";
+    $("probActions").hidden = ex;
+    $("probDraft").textContent = n ? "Draft new ones from my story" : "Draft my problem cards";
+    $("probAdd").hidden = n >= PROB_MAX || probEditing >= 0;
+    if (ex) setStatus($("statusProb"), "Example cards. Get your own reading to make yours.");
+    else if ($("statusProb").textContent.startsWith("Example")) setStatus($("statusProb"), "");
+  }
+  $("probAdd").onclick = () => { if ((S.problems || []).length >= PROB_MAX) return; probEditing = PROB_MAX; renderProblems(); };
+  $("probDraft").onclick = async () => {
+    const st = $("statusProb");
+    if (busy || S.example) return;
+    if (!S.profile || S.profile.length < 30){ setStatus(st, "Add your story in step 1 first.", "err"); return; }
+    if (!sample){ setStatus(st, sampleReady ? "Drafting works when the page is opened in Claude." : "Getting ready, try again in a moment.", "err"); return; }
+    const kept = (S.problems || []).filter(p => p.ok);
+    const room = Math.max(0, Math.min(5, PROB_MAX - kept.length));
+    if (!room){ setStatus(st, "You have " + PROB_MAX + " approved cards, the most a profile holds. Remove one to draft more.", "err"); return; }
+    busy = true; $("probDraft").disabled = true; probEditing = -1;
+    setStatus(st, "Finding the problems you've solved in your story", "thinking");
+    const talk = (S.chat || []).filter(t => t.role === "user").map(t => "- " + t.content).join("\n");
+    try {
+      const r = await sample.json(`You help a generalist show companies the problems they have already solved. From their story, pick the ${Math.min(room, 5) < 3 ? Math.min(room, 5) : "3 to " + Math.min(room, 5)} clearest problems they solved: real situations where something was wrong or missing, they acted, and something changed.
+
+Reply with ONLY a JSON object like:
+{"problems":[{"title":"...","situation":"...","did":"...","result":"..."}]}
+
+Rules:
+- title: max 9 words, what they solved, said as an outcome (e.g. "Opened a supply operation in a new country"). Not a job title.
+- situation: max 30 words, what was wrong or missing at the start.
+- did: max 35 words, first person, what they did themselves.
+- result: max 30 words, first person or plain, what was different afterwards.
+- Use only facts from their story and their own words below. Never invent numbers, names, or results. If the story doesn't say what changed, write what probably changed in plain words and put the missing detail in [brackets] as a question, e.g. "[how many clients?]", so they fill it in.
+- Pick problems a startup would pay to have solved again. Leave out ones that repeat each other.${kept.length ? "\n- They already have these cards, do not repeat them: " + kept.map(p => p.title).join("; ") + "." : ""}
+- Write in the language of their story. Plain, warm, direct words. No jargon.
+
+Their story:
+"""
+${cut(S.profile, 10000)}
+"""${talk ? `\n\nWhat they added later in their own words:\n"""\n${cut(talk, 3000)}\n"""` : ""}`, { cache:false });
+      const fresh = (Array.isArray(r && r.problems) ? r.problems : Array.isArray(r) ? r : []).map(p => cleanProb(Object.assign({}, p, {ok:false}))).filter(Boolean).slice(0, room);
+      if (!fresh.length) throw {code:"invalid_json"};
+      S.problems = kept.concat(fresh); save(); renderProblems();
+      setStatus(st, "Here are your drafts. Read each one, fix anything that isn't quite right, then approve it.");
+    } catch(e){ setStatus(st, errText(e), "err"); }
+    finally { busy = false; $("probDraft").disabled = false; }
+  };
 
   // ---------- render step 3 ----------
   function renderScan(s){
@@ -2066,6 +2236,13 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     const th = document.createElement("p"); th.textContent = str(p.thread);
     body.append(t, m, th);
     if (p.edge){ const e = document.createElement("p"); e.className = "fit"; const b = document.createElement("b"); b.textContent = "Edge: "; e.append(b, str(p.edge)); body.append(e); }
+    const solved = (Array.isArray(p.problems) ? p.problems : []).filter(x => x && x.title).slice(0, 3);
+    if (solved.length){
+      const ul = document.createElement("ul"); ul.className = "solved"; ul.setAttribute("aria-label", "Problems solved");
+      solved.forEach(x => { const l = document.createElement("li"); const b = document.createElement("b"); b.textContent = str(x.title); l.append(b); if (x.result) l.append(". " + str(x.result)); ul.append(l); });
+      const lab = document.createElement("div"); lab.className = "jm"; lab.textContent = "Problems solved";
+      body.append(lab, ul);
+    }
     if (why){ const w = document.createElement("p"); w.className = "fit"; const b = document.createElement("b"); b.textContent = "Why this match: "; w.append(b, why); body.append(w); }
     g.append(em, body); c.append(g);
     if (needForIntro){
@@ -2111,13 +2288,16 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
   }
   function profileFromMap(){
     const m = S.map || {}, a = m.archetype || {};
-    return { type: str(a.type), second: str(a.second), thread: str(m.thread), say: str(m.say), edge: m.edge ? str(m.edge.name) + ": " + str(m.edge.why) : "", thrive: arr(m.thrive).slice(0,3), region: $("optRegion").value.trim().slice(0, 60), remote: S.prefs.includes("Remote only") || /remote/i.test($("optRegion").value), at: Date.now(), example: false };
+    return { type: str(a.type), second: str(a.second), thread: str(m.thread), say: str(m.say), edge: m.edge ? str(m.edge.name) + ": " + str(m.edge.why) : "", thrive: arr(m.thrive).slice(0,3), problems: approvedProblems(), region: $("optRegion").value.trim().slice(0, 60), remote: S.prefs.includes("Remote only") || /remote/i.test($("optRegion").value), at: Date.now(), example: false };
   }
   function renderOpt(){
     $("optCard").hidden = !(db || WEB.on) || !S.map || S.example;
     $("optOn").textContent = myProfile ? "Update my profile" : "Make me findable";
     $("optOff").hidden = !myProfile;
     if (myProfile && !$("optRegion").value) $("optRegion").value = str(myProfile.region);
+    const nOk = approvedProblems().length, nAll = (S.problems || []).length;
+    $("optProbs").textContent = nOk ? "Your " + (nOk === 1 ? "approved problem card goes" : nOk + " approved problem cards go") + " with it." + (nAll > nOk ? " Drafts stay private until you approve them." : "")
+      : "Tip: approve a few problem cards above first. Recruiters look for people who've solved their problem before.";
   }
   $("optOn").onclick = async () => {
     const st = $("statusOpt");
@@ -2142,7 +2322,7 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     if (!RX.pool.length){ setStatus(st, "No profiles to match yet.", "err"); return; }
     if (busy) return; busy = true; $("rGo").disabled = true; $("rOut").hidden = true; RX.needId = null;
     setStatus(st, "Reading your need and comparing it with every profile", "thinking");
-    const pool = RX.pool.slice(0, 80).map(p => ({id: p._id, type: p.type, second: p.second, thread: p.thread, edge: p.edge, thrive: p.thrive, region: p.region, remote: !!p.remote}));
+    const pool = RX.pool.slice(0, 80).map(p => ({id: p._id, type: p.type, second: p.second, thread: p.thread, edge: p.edge, thrive: p.thrive, solved: (Array.isArray(p.problems) ? p.problems : []).slice(0, 6).map(x => str(x.title) + (x.result ? ": " + str(x.result) : "")), region: p.region, remote: !!p.remote}));
     try {
       const r = await sample.json(`You match companies with generalists: people with varied careers. A company described a need. First turn it into a short brief, then pick the best matching people from the pool.
 
@@ -2154,7 +2334,8 @@ Rules:
 - brief.problem: max 40 words, plain language, what this person will actually do in the first months.
 - brief.type: exactly one of: ${ARCH_NAMES.join(", ")}. The generalist type that fits the need best.
 - matches: the 3 best people from the pool, best first (fewer if fewer fit). id must be copied exactly from the pool.
-- why: max 25 words, concrete: link something in their thread or edge to the need. Never invent facts about them.
+- Weigh "solved" most: problems these people already solved. Someone who solved this exact kind of problem before beats a better-sounding type.
+- why: max 25 words, concrete: link a problem they solved, or their thread or edge, to the need. Never invent facts about them.
 - Respect the setup: ${workSel().join(", ") || "not stated"}. Do not pick someone who clearly can't work that way.
 - Write in the language of the need.
 
@@ -2307,6 +2488,7 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     if (saved.profile){ S.profile = saved.profile; $("profile").value = saved.profile; }
     if (Array.isArray(saved.stuck)){ S.stuck = saved.stuck; setChips("stuck", S.stuck); }
     if (Array.isArray(saved.prefs)){ S.prefs = saved.prefs; setChips("prefs", S.prefs); }
+    if (Array.isArray(saved.problems)) S.problems = saved.problems.map(cleanProb).filter(Boolean).slice(0, PROB_MAX);
     if (Array.isArray(saved.targets)) S.targets = saved.targets; if (saved.lastBatch) S.lastBatch = saved.lastBatch; if (Array.isArray(saved.weeks)) S.weeks = saved.weeks;
     if (saved.map && Array.isArray(saved.map.routes)){ S.map = saved.map; S.stage = Number(saved.stage) || 2; S.door = saved.door == null ? null : Number(saved.door); renderMap(S.map); applyStage(); if (S.lastBatch && (S.targets||[]).length){ showBatch(); applyStage(); } }
     if (saved.name){ S.name = saved.name; $("myName").value = saved.name; }
