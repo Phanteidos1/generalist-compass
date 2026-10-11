@@ -338,7 +338,7 @@ details.kitd[open] .kit{margin-top:16px}
 .credit a{color:var(--accent)}
 .agroup{display:flex;flex-direction:column;gap:10px}
 .glabel{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--muted)}
-.radar input,.page input,#recruit input,.optcard input{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;width:100%;margin-top:6px}
+.radar input,.page input,#recruit input,.optcard input,#signin input{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;width:100%;margin-top:6px}
 .howto{margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px}
 .filepick{display:inline-flex;align-items:center;gap:10px;align-self:flex-start;cursor:pointer;font-weight:700;color:var(--accent);border:1px dashed var(--accent);border-radius:12px;padding:12px 16px}
 .filepick input{position:absolute;opacity:0;width:1px;height:1px}
@@ -398,6 +398,12 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
 .tracker b{display:block;font-family:var(--display);font-size:24px}
 .tracker span{font-size:13px;color:var(--muted)}
 .ready{border-color:var(--needle);background:var(--needle-soft)}
+header .brand{min-width:0;flex:1}
+header .acct{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
+.signed{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--good);margin-right:6px;vertical-align:middle}
+#signin .mail{overflow-wrap:anywhere}
+@media (max-width:400px){header{gap:10px} header .acct .ghost{padding:6px 10px;font-size:13px}}
 </style>
 
 <div class="wrap">
@@ -409,6 +415,7 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
       <circle cx="20" cy="20" r="2" fill="var(--ink)"/>
     </svg>
     <div class="brand"><button type="button" id="homeLink" class="brandlink">Generalist Compass</button><small>For people who've done a bit of everything</small></div>
+    <div class="acct" id="acct" hidden><button class="ghost" id="acctBtn" type="button">Sign in</button></div>
   </header>
 
   <nav class="steps" aria-label="Steps">
@@ -847,6 +854,35 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
     <div class="joblist" id="rBoard"></div>
   </section>
 
+  <!-- SIGN IN -->
+  <section id="signin" hidden>
+    <span class="stepno">Your account</span>
+    <h1 id="siHead">Sign in with your email</h1>
+    <p class="lead" id="siLead">No password to remember. We email you a link, you open it, and you're in. Your email stays private: nobody on the board ever sees it.</p>
+    <div class="card" id="siForm">
+      <label class="q" for="siEmail">Your email</label>
+      <input id="siEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com">
+      <div class="row"><button class="btn" id="siGo" type="button">Email me a link</button></div>
+      <div class="status" id="statusSi" role="status"></div>
+    </div>
+    <div class="card ready" id="siSent" hidden>
+      <h3>Check your inbox</h3>
+      <p>We sent a sign-in link to <b class="mail" id="siTo"></b>. It works once and expires in 15 minutes. Open it on the phone or computer where you want to be signed in.</p>
+      <p class="hint">Nothing there after a minute? Look in your spam folder, or try again.</p>
+      <div class="row"><button class="link" id="siAgain" type="button">Use a different email</button></div>
+    </div>
+    <div class="card" id="siOff" hidden>
+      <h3>Almost ready</h3>
+      <p>Sign-in by email switches on very soon. Until then everything works without an account, and your results stay saved in this browser.</p>
+    </div>
+    <div class="card" id="siIn" hidden>
+      <h3><span class="signed" aria-hidden="true"></span>You're signed in</h3>
+      <p>As <b class="mail" id="siMe"></b>. Your email stays private until you say yes to an introduction.</p>
+      <div class="row"><button class="btn" id="siContinue" type="button">Continue</button><button class="ghost" id="siOut" type="button">Sign out</button></div>
+      <div class="status" id="statusSiIn" role="status"></div>
+    </div>
+  </section>
+
   <!-- REPORT VIEWER -->
   <section id="viewer" hidden>
     <div class="row" style="justify-content:space-between">
@@ -973,7 +1009,7 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
 
   // ---------- steps ----------
   function go(n){
-    $("viewer").hidden = true; $("recruit").hidden = true; $("navR").removeAttribute("aria-current");
+    $("viewer").hidden = true; $("recruit").hidden = true; $("signin").hidden = true; $("navR").removeAttribute("aria-current");
     $("home").hidden = n !== 0;
     if (n === 0) $("nav0").setAttribute("aria-current","step"); else $("nav0").removeAttribute("aria-current");
     if (n === 0) film.start(); else { film.stop(); try { $("introVideo").pause(); } catch(e){} }
@@ -2188,6 +2224,83 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
   }
   startDb();
 
+  // ---------- account: email-link sign-in ----------
+  const AUTH = { on: false, enabled: false, user: null, session: null };
+  async function authApi(action, payload){
+    const r = await fetch("/api/auth", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify(Object.assign({action}, payload || {}))});
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw {status: r.status, code: data.code || "web", message: data.error || "Something went wrong. Try again."};
+    return data;
+  }
+  const getSession = () => { try { return localStorage.getItem("gc-session"); } catch(e){ return null; } };
+  const putSession = v => { try { if (v) localStorage.setItem("gc-session", v); else localStorage.removeItem("gc-session"); } catch(e){} AUTH.session = v || null; };
+  function renderAcct(){
+    $("acct").hidden = !AUTH.on;
+    $("acctBtn").textContent = AUTH.user ? "Account" : "Sign in";
+    $("siHead").textContent = AUTH.user ? "Your account" : "Sign in with your email";
+    $("siLead").hidden = !!AUTH.user;
+    $("siIn").hidden = !AUTH.user;
+    if (AUTH.user) $("siMe").textContent = AUTH.user.email;
+    $("siOff").hidden = !!AUTH.user || AUTH.enabled;
+    $("siForm").hidden = !!AUTH.user || !AUTH.enabled || !$("siSent").hidden;
+    if (AUTH.user) $("siSent").hidden = true;
+    if (AUTH.linkErr){
+      setStatus($(AUTH.user ? "statusSiIn" : "statusSi"), AUTH.user ? "That link was already used or has expired, but you're still signed in." : AUTH.linkErr, AUTH.user ? "" : "err");
+      setStatus($(AUTH.user ? "statusSi" : "statusSiIn"), "");
+      if (!AUTH.user) $("siForm").hidden = false;
+    }
+  }
+  function showSignin(){
+    go(-1); ["home","step1","step2","step3"].forEach(id => $(id).hidden = true);
+    $("signin").hidden = false; film.stop(); renderAcct();
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+  $("acctBtn").onclick = showSignin;
+  $("siContinue").onclick = () => go(S.map ? 2 : 0);
+  $("siAgain").onclick = () => { $("siSent").hidden = true; renderAcct(); $("siEmail").focus(); };
+  $("siEmail").addEventListener("keydown", e => { if (e.key === "Enter") $("siGo").click(); });
+  $("siGo").onclick = async () => {
+    const st = $("statusSi"), email = $("siEmail").value.trim(); AUTH.linkErr = "";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){ setStatus(st, "That doesn't look like an email address.", "err"); $("siEmail").focus(); return; }
+    $("siGo").disabled = true; setStatus(st, "Sending your link", "thinking");
+    try {
+      await authApi("request", {email});
+      setStatus(st, ""); $("siTo").textContent = email; $("siSent").hidden = false; renderAcct();
+    } catch(e){
+      if (e.code === "not_enabled"){ AUTH.enabled = false; setStatus(st, ""); renderAcct(); }
+      else setStatus(st, e.message, "err");
+    } finally { $("siGo").disabled = false; }
+  };
+  $("siOut").onclick = async () => {
+    const s = AUTH.session; putSession(null); AUTH.user = null; AUTH.linkErr = ""; setStatus($("statusSiIn"), "");
+    try { if (s) await authApi("logout", {session: s}); } catch(e){}
+    renderAcct(); setStatus($("statusSi"), "You're signed out.");
+  };
+  async function verifyLogin(code){
+    history.replaceState(null, "", location.pathname + location.search);
+    showSignin();
+    $("siForm").hidden = false; $("siOff").hidden = true;
+    setStatus($("statusSi"), "Signing you in", "thinking"); AUTH.linkErr = "";
+    try {
+      const r = await authApi("verify", {code});
+      putSession(r.session); AUTH.user = r.user; AUTH.on = true;
+      setStatus($("statusSi"), ""); renderAcct();
+    } catch(e){
+      AUTH.linkErr = e.message || "That link didn't work. Ask for a new one."; renderAcct();
+    }
+  }
+  async function startAuth(){
+    if (window.claude && typeof window.claude.use === "function") return;
+    try { const r = await authApi("status"); AUTH.on = true; AUTH.enabled = !!r.enabled; } catch(e){ return; }
+    const sess = getSession();
+    if (sess && !AUTH.user){
+      AUTH.session = sess;
+      try { const r = await authApi("me", {session: sess}); if (AUTH.session === sess) AUTH.user = r.user; }
+      catch(e){ if (e.status === 401 && getSession() === sess) putSession(null); }
+    }
+    renderAcct();
+  }
+
   // ---------- boot ----------
   const saved = load();
   if (saved){
@@ -2204,9 +2317,17 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
   if (S.map){ $("continueBtn").hidden = false; const due = S.lastBatch && Date.now() - S.lastBatch > 6.5 * 864e5; if (due){ $("continueBtn").textContent = "Your next 3 targets are ready"; $("continueBtn").className = "btn"; } }
   if (S.page){ $("pgName").value = S.page.name || ""; $("pgContact").value = S.page.contact || ""; }
   const hashTok = (location.hash || "").slice(1);
-  if (/^c[pq]\.[A-Za-z0-9_-]+$/.test(hashTok)){
+  const loginCode = /^login\.([A-Za-z0-9_-]{40,60})$/.exec(hashTok);
+  if (loginCode){
+    AUTH.on = true; AUTH.enabled = true; verifyLogin(loginCode[1]); startAuth();
+  } else if (/^c[pq]\.[A-Za-z0-9_-]+$/.test(hashTok)){
     unpackPage(hashTok).then(pg => { renderPage(pg); showPageView(); document.title = (pg.name ? pg.name + " · " : "") + "Generalist Compass"; }).catch(() => go(0));
   } else go(0);
+  if (!loginCode) startAuth();
+  window.addEventListener("hashchange", () => {
+    const m = /^#login\.([A-Za-z0-9_-]{40,60})$/.exec(location.hash || "");
+    if (m) verifyLogin(m[1]);
+  });
 
   if (window.claude && typeof window.claude.use === "function"){
     window.claude.use("sample").then(fn => { sample = fn; sampleReady = true; }, () => { sampleReady = true; });
