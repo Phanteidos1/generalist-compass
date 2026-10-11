@@ -1,8 +1,17 @@
 // Recruiter board: anonymous generalist profiles, recruiter briefs, intro requests.
 // Storage: Upstash Redis, added to the Vercel project from the Marketplace.
 // It sets KV_REST_API_URL and KV_REST_API_TOKEN automatically.
+//
+// Who owns what:
+//   - Signed out: a profile belongs to a random key kept in that browser ("token").
+//   - Signed in (email link, see auth.js): a profile belongs to the account ("session"),
+//     so it follows the person to every device. "claim" moves a browser's profile and its
+//     intro requests into the account the first time someone signs in there.
+//   - Briefs posted while signed in remember their owner (never shown publicly), so the
+//     recruiter can see and remove them later.
 
 import { createHash, randomBytes } from "node:crypto";
+import { userFromSession } from "./auth.js";
 
 const URL_ = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
 const TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -46,6 +55,20 @@ const problems = v => (Array.isArray(v) ? v : []).slice(0, 6).map(x => x && type
 } : null).filter(x => x && x.title && (x.situation || x.did || x.result));
 const parse = x => { try { return JSON.parse(x); } catch (e) { return null; } };
 
+// Whose profile is this call about? The signed-in account wins over the browser key.
+// Returns { id, uid } or { error, status }.
+async function owner(b, needToken) {
+  if (b.session) {
+    const u = await userFromSession(b.session);
+    if (!u) return { status: 401, error: "You were signed out. Sign in again.", code: "signed_out" };
+    return { id: idOf("user:" + u.id), uid: u.id };
+  }
+  if (okToken(b.token)) return { id: idOf(b.token), uid: "" };
+  return { status: needToken ? 400 : 401, error: needToken ? "Bad token" : "Sign in first.", code: "no_owner" };
+}
+const fail = (res, o) => res.status(o.status).json({ error: o.error, code: o.code });
+const needPublic = ({ contact, token, owner, ...pub }) => pub;
+
 async function limited(req, bucket, max) {
   const ip = s((req.headers["x-forwarded-for"] || "").split(",")[0] || req.socket?.remoteAddress || "x", 64);
   const key = "gc:rl:" + bucket + ":" + hash(ip).slice(0, 16);
@@ -67,16 +90,17 @@ export default async function handler(req, res) {
       }
       case "needs": {
         const [all] = await redis([["LRANGE", "gc:needs", 0, 59]]);
-        const real = (all || []).map(parse).filter(n => n && !n.hidden).map(({ contact, token, ...pub }) => pub);
+        const real = (all || []).map(parse).filter(n => n && !n.hidden).map(needPublic);
         const needs = real.length >= 3 ? real : real.concat(EXAMPLE_NEEDS);
         return res.status(200).json({ needs });
       }
       case "profile.save": {
-        if (!okToken(b.token)) return res.status(400).json({ error: "Bad token" });
+        const o = await owner(b, true);
+        if (o.error) return fail(res, o);
         if (await limited(req, "profile", 30)) return res.status(429).json({ error: "Too many changes. Try again later." });
         const p = b.profile || {};
         if (!TYPES.includes(p.type)) return res.status(400).json({ error: "Get your reading first." });
-        const id = idOf(b.token);
+        const id = o.id;
         const prof = {
           id, type: p.type, second: TYPES.includes(p.second) ? p.second : "",
           thread: s(p.thread, 240), say: s(p.say, 200), edge: s(p.edge, 240),
@@ -87,12 +111,15 @@ export default async function handler(req, res) {
         return res.status(200).json({ profile: prof });
       }
       case "profile.delete": {
-        if (!okToken(b.token)) return res.status(400).json({ error: "Bad token" });
-        const id = idOf(b.token);
+        const o = await owner(b, true);
+        if (o.error) return fail(res, o);
+        const id = o.id;
         await redis([["HDEL", "gc:profiles", id], ["DEL", "gc:intros:" + id]]);
         return res.status(200).json({ ok: true });
       }
       case "need.post": {
+        let uid = "";
+        if (b.session) { const o = await owner({ session: b.session }, false); if (o.error) return fail(res, o); uid = o.uid; }
         if (await limited(req, "need", 8)) return res.status(429).json({ error: "You've posted a lot today. Try again later." });
         const n = b.need || {};
         const title = s(n.title, 120), problem = s(n.problem, 400);
@@ -101,7 +128,7 @@ export default async function handler(req, res) {
           id: "n" + randomBytes(8).toString("hex"), title, problem,
           type: TYPES.includes(n.type) ? n.type : "", company: s(n.company, 80),
           work: list(n.work, 3, 30).filter(w => WORK.includes(w)), contact: s(n.contact, 120),
-          at: Date.now(), example: false,
+          at: Date.now(), example: false, ...(uid ? { owner: uid } : {}),
         };
         await redis([["LPUSH", "gc:needs", JSON.stringify(need)], ["LTRIM", "gc:needs", 0, 199]]);
         return res.status(200).json({ id: need.id });
@@ -119,10 +146,53 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true });
       }
       case "mine": {
-        if (!okToken(b.token)) return res.status(400).json({ error: "Bad token" });
-        const id = idOf(b.token);
+        const o = await owner(b, true);
+        if (o.error) return fail(res, o);
+        const id = o.id;
         const [p, intros] = await redis([["HGET", "gc:profiles", id], ["LRANGE", "gc:intros:" + id, 0, 49]]);
-        return res.status(200).json({ profile: parse(p), intros: (intros || []).map(parse).filter(Boolean) });
+        let briefs = [];
+        if (o.uid) {
+          const [all] = await redis([["LRANGE", "gc:needs", 0, 199]]);
+          briefs = (all || []).map(parse).filter(n => n && n.owner === o.uid).map(({ token, owner, ...n }) => n);
+        }
+        return res.status(200).json({ profile: parse(p), intros: (intros || []).map(parse).filter(Boolean), briefs, account: !!o.uid });
+      }
+      case "claim": {
+        // First sign-in on a browser that already had a profile: move it into the account.
+        const o = await owner({ session: b.session }, false);
+        if (o.error) return fail(res, o);
+        if (!okToken(b.token)) return res.status(200).json({ moved: false });
+        if (await limited(req, "claim", 30)) return res.status(429).json({ error: "Too many tries. Try again later." });
+        const from = idOf(b.token), to = o.id;
+        if (from === to) return res.status(200).json({ moved: false });
+        const [oldP, newP, oldI, newI] = await redis([
+          ["HGET", "gc:profiles", from], ["HGET", "gc:profiles", to],
+          ["LRANGE", "gc:intros:" + from, 0, 49], ["LRANGE", "gc:intros:" + to, 0, 49],
+        ]);
+        const a = parse(oldP), z = parse(newP);
+        if (!a && !(oldI || []).length) return res.status(200).json({ moved: false });
+        const cmds = [];
+        // Keep whichever profile was updated last, under the account's id.
+        if (a && (!z || (a.at || 0) > (z.at || 0))) cmds.push(["HSET", "gc:profiles", to, JSON.stringify({ ...a, id: to })]);
+        const intros = (newI || []).concat(oldI || []).map(parse).filter(Boolean)
+          .sort((x, y) => (y.at || 0) - (x.at || 0)).slice(0, 50);
+        if ((oldI || []).length) {
+          cmds.push(["DEL", "gc:intros:" + to]);
+          if (intros.length) cmds.push(["RPUSH", "gc:intros:" + to, ...intros.map(x => JSON.stringify(x))]);
+        }
+        cmds.push(["HDEL", "gc:profiles", from], ["DEL", "gc:intros:" + from]);
+        await redis(cmds);
+        return res.status(200).json({ moved: true });
+      }
+      case "need.delete": {
+        const o = await owner({ session: b.session }, false);
+        if (o.error) return fail(res, o);
+        const nid = s(b.id, 40);
+        const [all] = await redis([["LRANGE", "gc:needs", 0, 199]]);
+        const raw = (all || []).find(x => { const n = parse(x); return n && n.id === nid && n.owner === o.uid; });
+        if (!raw) return res.status(404).json({ error: "That brief is already gone." });
+        await redis([["LREM", "gc:needs", 1, raw]]);
+        return res.status(200).json({ ok: true });
       }
       default:
         return res.status(400).json({ error: "Unknown action" });

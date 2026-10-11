@@ -759,6 +759,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
         <h3>Let recruiters find you</h3>
         <p class="hint">We publish an anonymous version of your reading: your type, your thread, your edge and the problem cards you approved. No name, no contact details. When a recruiter wants to meet you, you see their request and decide.</p>
         <p class="hint" id="optProbs"></p>
+        <p class="hint" id="optAcct" hidden></p>
         <div><label class="q" for="optRegion">Where are you based?</label><input id="optRegion" type="text" placeholder="e.g. Thailand, works remote" autocomplete="off"></div>
         <div class="row"><button class="btn" id="optOn" type="button">Make me findable</button><button class="link" id="optOff" type="button" hidden>Remove my profile</button></div>
         <div class="status" id="statusOpt" role="status"></div>
@@ -880,9 +881,15 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
         <p class="hint" id="rType"></p>
         <div class="row"><button class="ghost" id="rPost" type="button">Post it on the board</button></div>
         <div class="status" id="statusPost" role="status"></div>
+        <p class="hint" id="rAcctHint" hidden>Signed in, you can come back later to see and remove the briefs you post. <button class="link" id="rSignin" type="button">Sign in</button></p>
       </div>
       <h2 class="sech">Your best matches</h2>
       <div class="joblist" id="rMatches"></div>
+    </div>
+    <div id="rMineWrap" hidden style="display:flex;flex-direction:column;gap:20px">
+      <h2 class="sech">Your briefs</h2>
+      <p class="lead" style="margin-top:-12px">Only you see this list. Remove a brief once the role is filled.</p>
+      <div class="joblist" id="rMine"></div>
     </div>
     <h2 class="sech">On the board</h2>
     <p class="lead" style="margin-top:-12px">What recruiters are looking for right now.</p>
@@ -913,6 +920,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
     <div class="card" id="siIn" hidden>
       <h3><span class="signed" aria-hidden="true"></span>You're signed in</h3>
       <p>As <b class="mail" id="siMe"></b>. Your email stays private until you say yes to an introduction.</p>
+      <p class="hint" id="siBoard" hidden></p>
       <div class="row"><button class="btn" id="siContinue" type="button">Continue</button><button class="ghost" id="siOut" type="button">Sign out</button></div>
       <div class="status" id="statusSiIn" role="status"></div>
     </div>
@@ -2187,13 +2195,30 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     tipExtra:"Say what feels off, what scares you, or what you want to know. Then press Send."});
 
   // ---------- recruiters & matching (demo; needs the shared db) ----------
-  var db = null, uid = null, myProfile = null, needs = [], intros = [];
+  var db = null, uid = null, myProfile = null, needs = [], intros = [], myBriefs = [];
   const WEB = { on: false, token: null };
   async function api(action, payload){
     const r = await fetch("/api/board", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify(Object.assign({action}, payload || {}))});
     const data = await r.json().catch(() => ({}));
-    if (!r.ok) throw {code:"web", message: data.error || "Something went wrong. Try again."};
+    if (!r.ok) throw {code:"web", status: r.status, why: data.code || "", message: data.error || "Something went wrong. Try again."};
     return data;
+  }
+  // Who the board should file things under: the signed-in account, else this browser's key.
+  const signedIn = () => !!(AUTH.user && AUTH.session);
+  const who = create => signedIn() ? {session: AUTH.session} : {token: webToken(create)};
+  // A session can end on the server (expired, signed out elsewhere). Drop it and carry on as signed out.
+  async function boardApi(action, payload){
+    try { return await api(action, payload); }
+    catch(e){
+      if (e && e.why === "signed_out" && payload && payload.session){
+        putSession(null); AUTH.user = null; renderAcct();
+        const again = Object.assign({}, payload); delete again.session;
+        if (action === "need.post") return api(action, again);
+        if (action === "need.delete" || action === "claim") throw e;
+        return api(action, Object.assign(again, {token: webToken(action === "profile.save")}));
+      }
+      throw e;
+    }
   }
   function webToken(create){
     if (WEB.token) return WEB.token;
@@ -2210,9 +2235,14 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
       const [pool, nd] = await Promise.all([api("pool"), api("needs")]);
       RX.pool = (pool.profiles || []).map(p => Object.assign({_id: p.id}, p));
       needs = (nd.needs || []).map(n => Object.assign({_id: n.id}, n));
-      const t = webToken(false);
-      if (t){ const mine = await api("mine", {token: t}); myProfile = mine.profile || null; uid = myProfile ? myProfile.id : null; intros = (mine.intros || []).map(x => Object.assign({profile: uid}, x)); }
-      renderBoards(); renderOpt(); renderMyIntros();
+      const me = who(false);
+      if (me.session || me.token){
+        const mine = await boardApi("mine", me);
+        myProfile = mine.profile || null; uid = myProfile ? myProfile.id : null;
+        intros = (mine.intros || []).map(x => Object.assign({profile: uid}, x));
+        myBriefs = Array.isArray(mine.briefs) ? mine.briefs : [];
+      } else { myProfile = null; uid = null; intros = []; myBriefs = []; }
+      renderBoards(); renderOpt(); renderMyIntros(); renderAcctBoard();
     } catch(e){ /* board offline: keep the rest of the app working */ }
   }
   const RX = { pool: [], brief: null, needId: null };
@@ -2273,7 +2303,27 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     const mine = list.filter(n => n.type === myType).concat(list.filter(n => n.type !== myType)).slice(0, 3);
     mine.forEach(n => sb.append(needCard(n)));
     $("seekBoardWrap").hidden = !mine.length;
+    renderMyBriefs();
     renderMyIntros();
+  }
+  function renderMyBriefs(){
+    const box = $("rMine"); clear(box);
+    const on = WEB.on && signedIn() && myBriefs.length > 0;
+    $("rMineWrap").hidden = !on;
+    $("rAcctHint").hidden = !(WEB.on && AUTH.on && AUTH.enabled && !signedIn());
+    if (!on) return;
+    myBriefs.slice().sort((a, z) => (z.at || 0) - (a.at || 0)).forEach(n => {
+      const c = needCard(n);
+      const row = document.createElement("div"); row.className = "row";
+      const del = document.createElement("button"); del.type = "button"; del.className = "link"; del.textContent = "Remove from the board";
+      const st = document.createElement("div"); st.className = "status"; st.setAttribute("role", "status");
+      del.onclick = async () => {
+        del.disabled = true;
+        try { await boardApi("need.delete", {session: AUTH.session, id: n.id}); myBriefs = myBriefs.filter(x => x.id !== n.id); needs = needs.filter(x => x._id !== n.id); renderBoards(); webRefresh(); }
+        catch(e){ del.disabled = false; setStatus(st, e.message || "That didn't work. Try again.", "err"); }
+      };
+      row.append(del); c.append(row, st); box.append(c);
+    });
   }
   function renderMyIntros(){
     const box = $("myIntros"); clear(box);
@@ -2295,6 +2345,14 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     $("optOn").textContent = myProfile ? "Update my profile" : "Make me findable";
     $("optOff").hidden = !myProfile;
     if (myProfile && !$("optRegion").value) $("optRegion").value = str(myProfile.region);
+    const acct = $("optAcct"); clear(acct);
+    acct.hidden = !(WEB.on && AUTH.on && (signedIn() || AUTH.enabled));
+    if (signedIn()) acct.textContent = myProfile ? "Saved to your account, so it follows you to any phone or computer you sign in on." : "You're signed in, so your profile will be saved to your account and follow you to any device.";
+    else if (!acct.hidden){
+      acct.append("Want it on every device? ");
+      const b = document.createElement("button"); b.type = "button"; b.className = "link"; b.textContent = "Sign in with your email"; b.onclick = showSignin;
+      acct.append(b, ". Until then it's kept in this browser.");
+    }
     const nOk = approvedProblems().length, nAll = (S.problems || []).length;
     $("optProbs").textContent = nOk ? "Your " + (nOk === 1 ? "approved problem card goes" : nOk + " approved problem cards go") + " with it." + (nAll > nOk ? " Drafts stay private until you approve them." : "")
       : "Tip: approve a few problem cards above first. Recruiters look for people who've solved their problem before.";
@@ -2303,7 +2361,7 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     const st = $("statusOpt");
     if (!S.map || S.example){ setStatus(st, "Get your own reading first.", "err"); return; }
     if (WEB.on){
-      try { const r = await api("profile.save", {token: webToken(true), profile: profileFromMap()}); myProfile = r.profile; uid = r.profile.id; setStatus(st, "You're findable. Your name and contact details stay private."); webRefresh(); }
+      try { const r = await boardApi("profile.save", Object.assign(who(true), {profile: profileFromMap()})); myProfile = r.profile; uid = r.profile.id; setStatus(st, "You're findable. Your name and contact details stay private."); webRefresh(); }
       catch(e){ setStatus(st, e.message || "That didn't save. Try again.", "err"); }
       return;
     }
@@ -2312,7 +2370,7 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     catch(e){ setStatus(st, e && e.code === "invalid_argument" ? "In this demo, only invited testers can publish a profile." : "That didn't save. Try again in a moment.", "err"); }
   };
   $("optOff").onclick = async () => {
-    if (WEB.on){ try { await api("profile.delete", {token: webToken(false)}); myProfile = null; intros = []; setStatus($("statusOpt"), "Your profile is removed."); webRefresh(); } catch(e){ setStatus($("statusOpt"), e.message, "err"); } return; }
+    if (WEB.on){ try { await boardApi("profile.delete", who(false)); myProfile = null; intros = []; setStatus($("statusOpt"), "Your profile is removed."); webRefresh(); } catch(e){ setStatus($("statusOpt"), e.message, "err"); } return; }
     try { await db.doc("profiles/" + uid).delete(); myProfile = null; setStatus($("statusOpt"), "Your profile is removed."); renderOpt(); renderMyIntros(); } catch(e){ setStatus($("statusOpt"), "That didn't work. Try again.", "err"); }
   };
   $("rGo").onclick = async () => {
@@ -2363,7 +2421,7 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
   async function postNeed(){
     if (RX.needId) return RX.needId;
     const n = {title: RX.brief.title, problem: RX.brief.problem, type: RX.brief.type, company: $("rCompany").value.trim().slice(0, 80), work: workSel(), contact: $("rContact").value.trim().slice(0, 120), at: Date.now(), by: uid || "", example: false};
-    if (WEB.on){ const r = await api("need.post", {need: n}); RX.needId = r.id; webRefresh(); return r.id; }
+    if (WEB.on){ const r = await boardApi("need.post", Object.assign(signedIn() ? {session: AUTH.session} : {}, {need: n})); RX.needId = r.id; webRefresh(); return r.id; }
     const ref = await db.collection("needs").add(n); RX.needId = ref.id; return ref.id;
   }
   $("rPost").onclick = async () => {
@@ -2422,6 +2480,7 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     $("siLead").hidden = !!AUTH.user;
     $("siIn").hidden = !AUTH.user;
     if (AUTH.user) $("siMe").textContent = AUTH.user.email;
+    renderAcctBoard();
     $("siOff").hidden = !!AUTH.user || AUTH.enabled;
     $("siForm").hidden = !!AUTH.user || !AUTH.enabled || !$("siSent").hidden;
     if (AUTH.user) $("siSent").hidden = true;
@@ -2437,6 +2496,7 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     window.scrollTo({top:0, behavior:"smooth"});
   }
   $("acctBtn").onclick = showSignin;
+  $("rSignin").onclick = showSignin;
   $("siContinue").onclick = () => go(S.map ? 2 : 0);
   $("siAgain").onclick = () => { $("siSent").hidden = true; renderAcct(); $("siEmail").focus(); };
   $("siEmail").addEventListener("keydown", e => { if (e.key === "Enter") $("siGo").click(); });
@@ -2456,7 +2516,23 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     const s = AUTH.session; putSession(null); AUTH.user = null; AUTH.linkErr = ""; setStatus($("statusSiIn"), "");
     try { if (s) await authApi("logout", {session: s}); } catch(e){}
     renderAcct(); setStatus($("statusSi"), "You're signed out.");
+    if (WEB.on){ myProfile = null; uid = null; intros = []; myBriefs = []; renderOpt(); renderMyIntros(); renderMyBriefs(); webRefresh(); }
   };
+  // Right after signing in: bring this browser's board profile into the account, then reload it.
+  async function linkBoard(){
+    if (!WEB.on || !signedIn()) return;
+    const t = webToken(false);
+    if (t){ try { const r = await boardApi("claim", {session: AUTH.session, token: t}); if (r && r.moved) setStatus($("statusSiIn"), "Your board profile is now saved to your account."); } catch(e){} }
+    webRefresh();
+  }
+  function renderAcctBoard(){
+    const el = $("siBoard"); if (!el) return;
+    el.hidden = !(WEB.on && signedIn());
+    if (el.hidden) return;
+    const parts = [myProfile ? "Your anonymous profile is on the board." : "You're not on the board yet. Get your reading, then tap \"Make me findable\"."];
+    if (myBriefs.length) parts.push("You have " + (myBriefs.length === 1 ? "1 brief" : myBriefs.length + " briefs") + " posted for recruiters.");
+    el.textContent = parts.join(" ");
+  }
   async function verifyLogin(code){
     history.replaceState(null, "", location.pathname + location.search);
     showSignin();
@@ -2465,7 +2541,7 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     try {
       const r = await authApi("verify", {code});
       putSession(r.session); AUTH.user = r.user; AUTH.on = true;
-      setStatus($("statusSi"), ""); renderAcct();
+      setStatus($("statusSi"), ""); renderAcct(); linkBoard();
     } catch(e){
       AUTH.linkErr = e.message || "That link didn't work. Ask for a new one."; renderAcct();
     }
@@ -2476,10 +2552,10 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     const sess = getSession();
     if (sess && !AUTH.user){
       AUTH.session = sess;
-      try { const r = await authApi("me", {session: sess}); if (AUTH.session === sess) AUTH.user = r.user; }
+      try { const r = await authApi("me", {session: sess}); if (AUTH.session === sess){ AUTH.user = r.user; linkBoard(); } }
       catch(e){ if (e.status === 401 && getSession() === sess) putSession(null); }
     }
-    renderAcct();
+    renderAcct(); if (WEB.on){ renderOpt(); renderMyBriefs(); }
   }
 
   // ---------- boot ----------
