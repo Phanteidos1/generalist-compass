@@ -9,7 +9,7 @@ const MODELS = {
 const MAX_INPUT = 60000; // characters
 
 // AI readings can take 20 to 60 seconds; give the function room.
-export const config = { maxDuration: 60 };
+export const config = { maxDuration: 120 };
 
 // If the answer is meant to be JSON, hand back clean, valid JSON.
 function cleanJson(text) {
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
   const wantsJson = /reply with only a json/i.test(messages[messages.length - 1].content);
 
   try {
-    const body = { model: MODELS[tier] || MODELS.default, max_tokens: 4000, messages };
+    const body = { model: MODELS[tier] || MODELS.default, max_tokens: 8000, messages };
     if (wantsJson) body.system = "Reply with one valid JSON value only. No prose before or after, no code fences. Escape line breaks inside strings as \\n.";
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
