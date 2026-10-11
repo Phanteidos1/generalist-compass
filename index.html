@@ -404,6 +404,17 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
 .ivhead{display:flex;flex-direction:column;gap:2px}
 .ivhead b{font-family:var(--display);font-size:17px}
 .ivbox .ivfoot{gap:16px}
+.ivvoice{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}
+.ivvoice .hint{flex:1 1 200px;font-size:14px}
+.ivlive{display:flex;flex-direction:column;gap:10px;background:var(--needle-soft);border-radius:10px;padding:12px 14px}
+.ivlive .livebar{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px}
+.ivlive .dot{width:12px;height:12px;border-radius:50%;background:var(--muted);flex:none}
+.ivlive[data-phase="speaking"] .dot{background:var(--needle);animation:pulse 1.2s ease-in-out infinite}
+.ivlive[data-phase="listening"] .dot,.ivlive[data-phase="soon"] .dot{background:var(--good);animation:pulse 1s ease-in-out infinite}
+.ivlive[data-phase="thinking"] .dot{background:var(--accent);animation:pulse 1.6s ease-in-out infinite}
+.ivlive .row{gap:14px}
+.ivlive .row:not(:has(button:not([hidden]))){display:none}
+@media (prefers-reduced-motion:reduce){.ivlive .dot{animation:none!important}}
 .ivbox textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
 .job .solved{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:15px}
 .job .solved li{padding-left:16px;position:relative;unicode-bidi:plaintext}
@@ -663,7 +674,21 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
       <div class="status" id="statusProb" role="status"></div>
       <div class="ivbox" id="ivBox" hidden>
         <div class="ivhead"><b>A short interview</b><span class="hint">One question at a time about the moments that mattered: what was wrong, what you did, what changed. About 5 minutes. Stop whenever you like.</span></div>
+        <div class="ivvoice">
+          <button type="button" class="mic" id="ivVoice" aria-pressed="false" aria-describedby="ivVoiceHint">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span id="ivVoiceLabel">Do it by voice</span>
+          </button>
+          <span class="hint" id="ivVoiceHint">I read each question out loud and listen to your answer. Headphones help.</span>
+        </div>
         <div class="thread" id="ivLog" aria-live="polite"></div>
+        <div class="ivlive" id="ivLive" hidden>
+          <div class="livebar" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span id="ivLiveText"></span></div>
+          <div class="row">
+            <button class="btn" id="ivVSend" type="button" hidden>I'm done, send</button>
+            <button class="link" id="ivRepeat" type="button" hidden>Say the question again</button>
+          </div>
+        </div>
         <div class="copyrow">
           <label class="q" for="ivReply">Your answer</label>
           <button type="button" class="mic" id="mic3">
@@ -1432,7 +1457,7 @@ ${cut(S.profile, 8000)}
   let ivCtl = null;
   async function ivAsk(){
     const st = $("statusIv");
-    if (!sample){ setStatus(st, sampleReady ? "The interview works when the page is opened in Claude or on the website." : "Getting ready, try again in a moment.", "err"); return false; }
+    if (!sample){ setStatus(st, sampleReady ? "The interview works when the page is opened in Claude or on the website." : "Getting ready, try again in a moment.", "err"); if (V.on) vSet("paused", "Not ready yet. Try again in a moment."); return false; }
     let hist = (S.interview || []).slice(-IV_KEEP);
     if (hist.length && hist[0].role === "user") hist = hist.slice(1);
     const turns = [{role:"user", content: ivRules() + "\n\nStart the interview now with your first question."}].concat(hist.length ? hist : []);
@@ -1446,10 +1471,12 @@ ${cut(S.profile, 8000)}
       if (!q) throw {code:"empty_completion"};
       out.classList.remove("wait"); out.textContent = q;
       S.interview.push({role:"assistant", content:q}); save(); renderIv();
+      if (V.on) vSpeakLast();
       return true;
     } catch(e){
       out.remove();
       if (!e || e.code !== "cancelled") setStatus(st, errText(e), "err");
+      if (V.on) vSet("paused", e && e.code === "cancelled" ? "Paused. Tap \"Say the question again\" to go on." : "That didn't go through. Press Try again below.");
       return false;
     } finally { ivCtl = null; $("ivSend").disabled = false; $("ivStop").hidden = true; }
   }
@@ -1469,25 +1496,156 @@ ${cut(S.profile, 8000)}
   // Send an answer. With an empty box after a failed reply, Send asks the question again.
   $("ivSend").onclick = async () => {
     if (ivCtl || busy) return;
+    if (V.on) vListenStop();
     const text = $("ivReply").value.trim();
     const last = (S.interview || [])[S.interview.length - 1];
-    if (!text){ if (last && last.role === "user"){ const ok = await ivAsk(); $("ivSend").textContent = ok ? "Send" : "Try again"; } return; }
+    if (!text){ if (last && last.role === "user"){ if (V.on) vSet("thinking", "Thinking of the next question"); const ok = await ivAsk(); $("ivSend").textContent = ok ? "Send" : "Try again"; } return; }
     if (last && last.role === "user") last.content = cut(last.content + "\n" + text, 3000);
     else S.interview.push({role:"user", content: cut(text, 3000)});
     save(); renderIv(); $("ivReply").value = "";
+    if (V.on) vSet("thinking", "Thinking of the next question");
     const ok = await ivAsk();
     $("ivSend").textContent = ok ? "Send" : "Try again";
   };
   $("ivReply").addEventListener("input", () => { $("ivSend").textContent = "Send"; });
   $("ivStop").onclick = () => ivCtl && ivCtl.abort();
   $("ivReply").addEventListener("keydown", ev => { if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) $("ivSend").click(); });
-  $("ivDone").onclick = () => { if (ivCtl) ivCtl.abort(); draftCards(true); };
-  $("ivClose").onclick = () => { if (ivCtl) ivCtl.abort(); $("ivBox").hidden = true; renderIv(); $("probCard").scrollIntoView({behavior:"smooth", block:"start"}); };
+  $("ivDone").onclick = () => { vStop(); if (ivCtl) ivCtl.abort(); draftCards(true); };
+  $("ivClose").onclick = () => { vStop(); if (ivCtl) ivCtl.abort(); $("ivBox").hidden = true; renderIv(); $("probCard").scrollIntoView({behavior:"smooth", block:"start"}); };
   $("ivReset").onclick = async () => {
     if (ivCtl || busy) return;
-    if (!confirm("Start the interview over? Your answers so far will be cleared. Your cards stay.")) return;
-    S.interview = []; save(); renderIv(); setStatus($("statusIv"), ""); await ivAsk();
+    if (V.on){ vListenStop(); if (TTS) TTS.cancel(); }
+    if (!confirm("Start the interview over? Your answers so far will be cleared. Your cards stay.")){ if (V.on) vListen(); return; }
+    S.interview = []; save(); renderIv(); setStatus($("statusIv"), ""); if (V.on) vSet("thinking", "Thinking of the first question"); await ivAsk();
   };
+
+  // ---------- the interview by voice: questions read aloud, answers heard, a pause sends ----------
+  const TTS = (window.speechSynthesis && window.SpeechSynthesisUtterance) ? window.speechSynthesis : null;
+  const IV_SILENCE = 3500; // ms of quiet after speech before the answer goes
+  const V = { on:false, phase:"off", rec:null, timer:null, poll:null, utt:null, base:"", finals:"", restarts:0 };
+  const canHear = () => !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  function vSet(phase, text){
+    V.phase = phase;
+    const live = $("ivLive"); live.dataset.phase = phase; live.hidden = !V.on;
+    $("ivLiveText").textContent = text;
+    $("ivVSend").hidden = !(phase === "listening" || phase === "soon");
+    $("ivRepeat").hidden = !(phase === "listening" || phase === "soon" || phase === "typing" || phase === "paused") || !(S.interview || []).some(t => t.role === "assistant");
+  }
+  function vVoice(){
+    const all = TTS.getVoices ? TTS.getVoices() : [];
+    if (!all.length) return null;
+    const want = (navigator.language || "en").slice(0, 2).toLowerCase();
+    let pool = all.filter(v => (v.lang || "").toLowerCase().startsWith(want));
+    if (!pool.length) pool = all.filter(v => /^en/i.test(v.lang || ""));
+    if (!pool.length) return null;
+    return pool.find(v => /natural|neural|premium|enhanced/i.test(v.name)) || pool.find(v => /samantha|daniel|karen|moira|google/i.test(v.name)) || pool.find(v => v.default) || pool[0];
+  }
+  function vListenStop(){
+    clearTimeout(V.timer); V.timer = null;
+    const r = V.rec; V.rec = null;
+    if (r){ try { r.abort(); } catch(e){} }
+  }
+  function vSpeak(text, then){
+    vListenStop(); clearInterval(V.poll);
+    if (!TTS){ then(); return; }
+    try { TTS.cancel(); } catch(e){}
+    const u = new SpeechSynthesisUtterance(text);
+    const voice = vVoice(); if (voice){ u.voice = voice; u.lang = voice.lang; }
+    u.rate = 1; u.pitch = 1;
+    let done = false;
+    const fin = () => { if (done) return; done = true; clearInterval(V.poll); if (V.on && V.utt === u) then(); };
+    u.onend = fin; u.onerror = fin;
+    V.utt = u; vSet("speaking", "Reading the question out loud");
+    try { $("ivLive").scrollIntoView({block:"nearest", behavior:"smooth"}); } catch(e){}
+    TTS.speak(u);
+    // some browsers never fire "end": check if speech stopped on its own
+    const started = Date.now();
+    V.poll = setInterval(() => { if ((!TTS.speaking && !TTS.pending && Date.now() - started > 800) || Date.now() - started > 90000) fin(); }, 400);
+  }
+  function vSpeakLast(){
+    const q = [...(S.interview || [])].reverse().find(t => t.role === "assistant");
+    V.restarts = 0;
+    if (q) vSpeak(q.content, vListen); else vListen();
+  }
+  function vTyping(text){ vListenStop(); vSet("typing", text); }
+  function vListen(){
+    if (!V.on) return;
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Rec){ vTyping("Your turn. Answer with your keyboard's microphone or type it, then press Send."); return; }
+    vListenStop();
+    const box = $("ivReply");
+    let rec;
+    try {
+      rec = new Rec(); rec.continuous = true; rec.interimResults = true; rec.lang = navigator.language || "en-US";
+    } catch(e){ vTyping("Listening isn't available here. Type your answer, then press Send."); return; }
+    V.base = box.value.trim(); V.finals = "";
+    rec.onresult = ev => {
+      if (V.rec !== rec) return;
+      let interim = "";
+      for (let i = ev.resultIndex; i < ev.results.length; i++){
+        const t = ev.results[i][0].transcript;
+        if (ev.results[i].isFinal) V.finals += t + " "; else interim += t;
+      }
+      box.value = [V.base, (V.finals + interim).trim()].filter(Boolean).join(" ");
+      if (box.value.trim()){
+        clearTimeout(V.timer);
+        vSet("soon", "Got it. A short pause sends it; keep talking to add more.");
+        V.timer = setTimeout(vSend, IV_SILENCE);
+      }
+    };
+    rec.onerror = ev => {
+      if (V.rec !== rec) return;
+      const err = ev && ev.error;
+      if (err === "no-speech" || err === "aborted") return;
+      V.rec = null; clearTimeout(V.timer);
+      if (err === "not-allowed" || err === "service-not-allowed") vTyping("Your microphone is blocked. Allow it for this site, or type your answer and press Send. I'll keep reading the questions.");
+      else vTyping("Listening stopped. Type your answer, or tap \"Say the question again\".");
+    };
+    rec.onend = () => {
+      if (V.rec !== rec) return;
+      V.rec = null;
+      if (!V.on) return;
+      if (box.value.trim() && V.finals.trim()) vSend();
+      else if (V.restarts++ < 3) vListen();
+      else vTyping("I didn't hear anything. Tap \"Say the question again\", or type your answer.");
+    };
+    V.rec = rec;
+    try { rec.start(); } catch(e){ V.rec = null; vTyping("Listening isn't available here. Type your answer, then press Send."); return; }
+    vSet("listening", "Your turn. Talk as long as you like.");
+  }
+  function vSend(){
+    clearTimeout(V.timer); V.timer = null;
+    if (!V.on || !$("ivReply").value.trim()) return;
+    vListenStop();
+    $("ivSend").click();
+  }
+  function vStop(){
+    V.on = false; vListenStop(); clearInterval(V.poll); V.utt = null;
+    if (TTS){ try { TTS.cancel(); } catch(e){} }
+    $("ivLive").hidden = true; V.phase = "off";
+    $("ivVoice").setAttribute("aria-pressed", "false"); $("ivVoiceLabel").textContent = "Do it by voice";
+    $("mic3").hidden = false;
+  }
+  $("ivVoice").onclick = async () => {
+    if (V.on){ vStop(); $("ivReply").focus(); return; }
+    if (!TTS && !canHear()){ setStatus($("statusIv"), "This browser can't talk or listen. Your keyboard's microphone still works: tap \"Talk your answer\".", "err"); return; }
+    V.on = true; V.restarts = 0;
+    $("ivVoice").setAttribute("aria-pressed", "true"); $("ivVoiceLabel").textContent = "Voice on, tap to type instead";
+    $("mic3").hidden = canHear();
+    setStatus($("statusIv"), "");
+    const last = (S.interview || [])[S.interview.length - 1];
+    if (ivCtl){ vSet("thinking", "Thinking of the next question"); return; }
+    if (last && last.role === "assistant"){ vSpeakLast(); return; }
+    // nothing to read yet: wake up speech inside this tap (phones need that), then ask
+    if (TTS){ try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; TTS.speak(u); } catch(e){} }
+    vSet("thinking", last ? "Thinking of the next question" : "Thinking of the first question");
+    await ivAsk();
+  };
+  $("ivVSend").onclick = () => vSend();
+  $("ivRepeat").onclick = () => { if (V.on && !ivCtl) vSpeakLast(); };
+  // typing while it listens: stop listening and let them finish by hand
+  $("ivReply").addEventListener("input", () => { if (V.on && (V.phase === "listening" || V.phase === "soon")) vTyping("You're typing. Press Send when you're ready."); });
+  if (TTS && TTS.getVoices){ try { TTS.getVoices(); TTS.addEventListener && TTS.addEventListener("voiceschanged", () => {}); } catch(e){} }
 
   // ---------- render step 3 ----------
   function renderScan(s){
