@@ -398,6 +398,13 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
 .pcard textarea{min-height:76px}
 .pcard input:focus-visible,.pcard textarea:focus-visible{outline:2px solid var(--needle);outline-offset:2px}
 .pcard .btn{padding:9px 16px;font-size:15px}
+.ivbox{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--bg);display:flex;flex-direction:column;gap:12px;min-width:0}
+.ivbox .bubble{background:var(--surface)}
+.ivbox .bubble.me{background:var(--accent-soft)}
+.ivhead{display:flex;flex-direction:column;gap:2px}
+.ivhead b{font-family:var(--display);font-size:17px}
+.ivbox .ivfoot{gap:16px}
+.ivbox textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
 .job .solved{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:15px}
 .job .solved li{padding-left:16px;position:relative;unicode-bidi:plaintext}
 .job .solved li::before{content:"";position:absolute;left:1px;top:.6em;width:7px;height:7px;border-radius:50%;background:var(--good)}
@@ -650,9 +657,30 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
       <p class="hint" id="probCount" hidden></p>
       <div class="row" id="probActions">
         <button class="btn" id="probDraft" type="button">Draft my problem cards</button>
+        <button class="ghost" id="probInterview" type="button">Interview me first</button>
         <button class="link" id="probAdd" type="button">Write one myself</button>
       </div>
       <div class="status" id="statusProb" role="status"></div>
+      <div class="ivbox" id="ivBox" hidden>
+        <div class="ivhead"><b>A short interview</b><span class="hint">One question at a time about the moments that mattered: what was wrong, what you did, what changed. About 5 minutes. Stop whenever you like.</span></div>
+        <div class="thread" id="ivLog" aria-live="polite"></div>
+        <div class="copyrow">
+          <label class="q" for="ivReply">Your answer</label>
+          <button type="button" class="mic" id="mic3">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span id="micLabel3">Talk your answer</span>
+          </button>
+        </div>
+        <div class="micHint" id="micHint3" hidden></div>
+        <textarea id="ivReply" class="reply-box" placeholder="Type or dictate your answer. A rough answer is fine."></textarea>
+        <div class="row">
+          <button class="btn" id="ivSend" type="button">Send</button>
+          <button class="link" id="ivStop" type="button" hidden>Stop</button>
+          <button class="ghost" id="ivDone" type="button" hidden>Write my cards from this</button>
+        </div>
+        <div class="row ivfoot"><button class="link" id="ivClose" type="button">Hide the interview</button><button class="link" id="ivReset" type="button" hidden>Start the interview over</button></div>
+        <div class="status" id="statusIv" role="status"></div>
+      </div>
     </div>
 
     <div class="pushrow"><button class="link" id="pushBack" type="button" aria-expanded="false">Doesn't feel like you? Push back</button></div>
@@ -1009,7 +1037,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
 
   // ---------- storage (convenience only) ----------
   const load = () => { try { return JSON.parse(localStorage.getItem("gc-state-2")||"null"); } catch(e){ return null; } };
-  const save = () => { if (S.example) return; try { localStorage.setItem("gc-state-2", JSON.stringify({profile:S.profile,stuck:S.stuck,prefs:S.prefs,map:S.example?null:S.map,name:S.name||"",base:S.base||"",page:S.page||null,helper:S.example?null:(S.helper||null),chat:S.example?[]:(S.chat||[]).slice(-20),stage:S.stage||2,door:(S.door==null?null:S.door),targets:S.example?[]:(S.targets||[]).slice(-60),lastBatch:S.lastBatch||0,weeks:S.weeks||[],problems:S.problems||[]})); } catch(e){} };
+  const save = () => { if (S.example) return; try { localStorage.setItem("gc-state-2", JSON.stringify({profile:S.profile,stuck:S.stuck,prefs:S.prefs,map:S.example?null:S.map,name:S.name||"",base:S.base||"",page:S.page||null,helper:S.example?null:(S.helper||null),chat:S.example?[]:(S.chat||[]).slice(-20),stage:S.stage||2,door:(S.door==null?null:S.door),targets:S.example?[]:(S.targets||[]).slice(-60),lastBatch:S.lastBatch||0,weeks:S.weeks||[],problems:S.problems||[],interview:(S.interview||[]).slice(-40)})); } catch(e){} };
 
   // ---------- helpers ----------
   const clear = el => { while(el.firstChild) el.removeChild(el.firstChild); };
@@ -1316,23 +1344,26 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
     $("probCount").textContent = ok === n ? (n === 1 ? "Your card is approved." : "All " + n + " cards are approved.") + " They go on your profile when you make yourself findable."
       : ok + " of " + n + " approved. Only approved cards go on your profile.";
     $("probActions").hidden = ex;
+    if (ex) $("ivBox").hidden = true;
     $("probDraft").textContent = n ? "Draft new ones from my story" : "Draft my problem cards";
     $("probAdd").hidden = n >= PROB_MAX || probEditing >= 0;
     if (ex) setStatus($("statusProb"), "Example cards. Get your own reading to make yours.");
     else if ($("statusProb").textContent.startsWith("Example")) setStatus($("statusProb"), "");
   }
   $("probAdd").onclick = () => { if ((S.problems || []).length >= PROB_MAX) return; probEditing = PROB_MAX; renderProblems(); };
-  $("probDraft").onclick = async () => {
-    const st = $("statusProb");
+  $("probDraft").onclick = () => draftCards(false);
+  async function draftCards(fromIv){
+    const st = fromIv ? $("statusIv") : $("statusProb");
     if (busy || S.example) return;
     if (!S.profile || S.profile.length < 30){ setStatus(st, "Add your story in step 1 first.", "err"); return; }
     if (!sample){ setStatus(st, sampleReady ? "Drafting works when the page is opened in Claude." : "Getting ready, try again in a moment.", "err"); return; }
     const kept = (S.problems || []).filter(p => p.ok);
     const room = Math.max(0, Math.min(5, PROB_MAX - kept.length));
     if (!room){ setStatus(st, "You have " + PROB_MAX + " approved cards, the most a profile holds. Remove one to draft more.", "err"); return; }
-    busy = true; $("probDraft").disabled = true; probEditing = -1;
-    setStatus(st, "Finding the problems you've solved in your story", "thinking");
+    busy = true; $("probDraft").disabled = true; $("ivDone").disabled = true; probEditing = -1;
+    setStatus(st, fromIv ? "Writing your cards from the interview" : "Finding the problems you've solved in your story", "thinking");
     const talk = (S.chat || []).filter(t => t.role === "user").map(t => "- " + t.content).join("\n");
+    const iv = ivTranscript();
     try {
       const r = await sample.json(`You help a generalist show companies the problems they have already solved. From their story, pick the ${Math.min(room, 5) < 3 ? Math.min(room, 5) : "3 to " + Math.min(room, 5)} clearest problems they solved: real situations where something was wrong or missing, they acted, and something changed.
 
@@ -1351,13 +1382,111 @@ Rules:
 Their story:
 """
 ${cut(S.profile, 10000)}
-"""${talk ? `\n\nWhat they added later in their own words:\n"""\n${cut(talk, 3000)}\n"""` : ""}`, { cache:false });
+"""${talk ? `\n\nWhat they added later in their own words:\n"""\n${cut(talk, 3000)}\n"""` : ""}${iv ? `\n\nAn interview where they answered follow-up questions about their work. Their answers here are the best source: prefer these facts, numbers and words over the story when they differ, and build the cards mainly from the situations they talked about:\n"""\n${cut(iv, 14000)}\n"""` : ""}`, { cache:false });
       const fresh = (Array.isArray(r && r.problems) ? r.problems : Array.isArray(r) ? r : []).map(p => cleanProb(Object.assign({}, p, {ok:false}))).filter(Boolean).slice(0, room);
       if (!fresh.length) throw {code:"invalid_json"};
       S.problems = kept.concat(fresh); save(); renderProblems();
-      setStatus(st, "Here are your drafts. Read each one, fix anything that isn't quite right, then approve it.");
+      const done = "Here are your drafts. Read each one, fix anything that isn't quite right, then approve it.";
+      if (fromIv){ setStatus(st, ""); $("ivBox").hidden = true; setStatus($("statusProb"), done); $("probList").scrollIntoView({behavior:"smooth", block:"start"}); }
+      else setStatus(st, done);
     } catch(e){ setStatus(st, errText(e), "err"); }
-    finally { busy = false; $("probDraft").disabled = false; }
+    finally { busy = false; $("probDraft").disabled = false; $("ivDone").disabled = false; renderIv(); }
+  }
+
+  // ---------- the interview: follow-up questions that feed the cards ----------
+  S.interview = [];
+  const IV_KEEP = 40;
+  const ivAnswers = () => (S.interview || []).filter(t => t.role === "user").length;
+  function ivTranscript(){
+    return (S.interview || []).map(t => (t.role === "user" ? "Them: " : "Interviewer: ") + t.content).join("\n\n");
+  }
+  function ivBubble(role, text){
+    const d = document.createElement("div"); d.className = "bubble " + (role === "user" ? "me" : "ai"); d.textContent = text;
+    $("ivLog").append(d); return d;
+  }
+  function renderIv(){
+    clear($("ivLog")); (S.interview || []).forEach(t => ivBubble(t.role, t.content));
+    const n = ivAnswers();
+    $("ivDone").hidden = n < 2; $("ivReset").hidden = !(S.interview || []).length;
+    $("probInterview").textContent = (S.interview || []).length ? "Continue my interview" : "Interview me first";
+  }
+  function ivRules(){
+    const kept = (S.problems || []).filter(p => p.ok).map(p => p.title);
+    return `You are a warm, curious interviewer inside Generalist Compass, an app that helps generalists show companies the problems they have already solved. Your job: help this person remember the real situations behind their story, so we can write 3 to 5 "problems I've solved" cards. Each card needs: what was wrong or missing at the start, what they did themselves, and what changed afterwards.
+
+How to interview:
+- Ask ONE question per message. Max 45 words. Plain text, no markdown, no lists.
+- Start by picking the most promising moment from their story and ask about it in concrete terms (name the job or project).
+- Dig for what is missing: the problem at the start, their own part (not the team's), and the result. Ask for a number, a before and after, or who noticed, when it would help.
+- When one situation is clear, move to another. Cover 3 to 5 different situations over the interview.
+- Briefly reflect what you heard in a few words before the next question, so they feel listened to. Never flatter.
+- Never invent facts. If they don't remember a detail, accept it and move on.
+- If they say they want to stop, or after about 8 answers, thank them and tell them to tap "Write my cards from this".
+- Reply in the language of their story or their last answer. No em dashes.${kept.length ? "\n- They already have approved cards on these, so pick other situations: " + kept.join("; ") + "." : ""}
+
+Their story:
+"""
+${cut(S.profile, 8000)}
+"""${S.map && S.map.thread ? "\n\nThe thread we already saw in their career: " + cut(str(S.map.thread), 600) : ""}`;
+  }
+  let ivCtl = null;
+  async function ivAsk(){
+    const st = $("statusIv");
+    if (!sample){ setStatus(st, sampleReady ? "The interview works when the page is opened in Claude or on the website." : "Getting ready, try again in a moment.", "err"); return false; }
+    let hist = (S.interview || []).slice(-IV_KEEP);
+    if (hist.length && hist[0].role === "user") hist = hist.slice(1);
+    const turns = [{role:"user", content: ivRules() + "\n\nStart the interview now with your first question."}].concat(hist.length ? hist : []);
+    // the API needs alternating turns ending with the person
+    if (hist.length && hist[hist.length - 1].role !== "user") return false;
+    const out = ivBubble("assistant", "Thinking..."); out.classList.add("wait");
+    ivCtl = new AbortController(); $("ivSend").disabled = true; $("ivStop").hidden = false; setStatus(st, "");
+    try {
+      const { text } = await sample(turns, { cache:false, signal:ivCtl.signal, onText: ({text}) => { out.classList.remove("wait"); out.textContent = text; } });
+      const q = str(text).trim();
+      if (!q) throw {code:"empty_completion"};
+      out.classList.remove("wait"); out.textContent = q;
+      S.interview.push({role:"assistant", content:q}); save(); renderIv();
+      return true;
+    } catch(e){
+      out.remove();
+      if (!e || e.code !== "cancelled") setStatus(st, errText(e), "err");
+      return false;
+    } finally { ivCtl = null; $("ivSend").disabled = false; $("ivStop").hidden = true; }
+  }
+  $("probInterview").onclick = async () => {
+    const st = $("statusProb");
+    if (S.example) return;
+    if (!S.profile || S.profile.length < 30){ setStatus(st, "Add your story in step 1 first.", "err"); return; }
+    const box = $("ivBox");
+    if (!box.hidden){ $("ivReply").focus(); return; }
+    box.hidden = false; setStatus(st, ""); renderIv();
+    box.scrollIntoView({behavior:"smooth", block:"start"});
+    const last = (S.interview || [])[S.interview.length - 1];
+    if (!last) await ivAsk();
+    else if (last.role === "user") await ivAsk();
+    setTimeout(() => $("ivReply").focus(), 300);
+  };
+  // Send an answer. With an empty box after a failed reply, Send asks the question again.
+  $("ivSend").onclick = async () => {
+    if (ivCtl || busy) return;
+    const text = $("ivReply").value.trim();
+    const last = (S.interview || [])[S.interview.length - 1];
+    if (!text){ if (last && last.role === "user"){ const ok = await ivAsk(); $("ivSend").textContent = ok ? "Send" : "Try again"; } return; }
+    if (last && last.role === "user") last.content = cut(last.content + "\n" + text, 3000);
+    else S.interview.push({role:"user", content: cut(text, 3000)});
+    save(); renderIv(); $("ivReply").value = "";
+    const ok = await ivAsk();
+    $("ivSend").textContent = ok ? "Send" : "Try again";
+  };
+  $("ivReply").addEventListener("input", () => { $("ivSend").textContent = "Send"; });
+  $("ivStop").onclick = () => ivCtl && ivCtl.abort();
+  $("ivReply").addEventListener("keydown", ev => { if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) $("ivSend").click(); });
+  $("ivDone").onclick = () => { if (ivCtl) ivCtl.abort(); draftCards(true); };
+  $("ivClose").onclick = () => { if (ivCtl) ivCtl.abort(); $("ivBox").hidden = true; renderIv(); $("probCard").scrollIntoView({behavior:"smooth", block:"start"}); };
+  $("ivReset").onclick = async () => {
+    if (ivCtl || busy) return;
+    if (!confirm("Start the interview over? Your answers so far will be cleared. Your cards stay.")) return;
+    S.interview = []; save(); renderIv(); setStatus($("statusIv"), ""); await ivAsk();
   };
 
   // ---------- render step 3 ----------
@@ -2191,6 +2320,8 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
   wireMic({btn:"mic", label:"micLabel", hint:"micHint", box:"profile", idle:"Talk instead",
     tipExtra:"Don't worry about structure. Ramble about your jobs, projects, and what you loved.",
     onText: v => { S.profile = v; save(); }});
+  wireMic({btn:"mic3", label:"micLabel3", hint:"micHint3", box:"ivReply", idle:"Talk your answer",
+    tipExtra:"Tell it like a story. Then press Send."});
   wireMic({btn:"mic2", label:"micLabel2", hint:"micHint2", box:"reply", idle:"Talk your reply",
     tipExtra:"Say what feels off, what scares you, or what you want to know. Then press Send."});
 
@@ -2570,6 +2701,7 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     if (saved.name){ S.name = saved.name; $("myName").value = saved.name; }
     if (saved.base){ S.base = saved.base; $("baseIn").value = saved.base; }
     if (saved.helper && saved.helper.who){ S.helper = saved.helper; $("openHelper").hidden = false; }
+    if (Array.isArray(saved.interview)){ S.interview = saved.interview.filter(t => t && (t.role==="user"||t.role==="assistant") && typeof t.content === "string" && t.content.trim()).slice(-IV_KEEP); renderIv(); }
     if (Array.isArray(saved.chat)){ S.chat = saved.chat.filter(t => t && (t.role==="user"||t.role==="assistant") && t.content); renderChat(); }
   }
   if (S.map){ $("continueBtn").hidden = false; const due = S.lastBatch && Date.now() - S.lastBatch > 6.5 * 864e5; if (due){ $("continueBtn").textContent = "Your next 3 targets are ready"; $("continueBtn").className = "btn"; } }
