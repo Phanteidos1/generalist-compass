@@ -2353,7 +2353,16 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
       if (a !== Infinity && b > a){ try { return JSON.parse(text.slice(a, b+1)); } catch(e){} }
       throw {code:"invalid_json", message:"no JSON", text};
     };
-    call.json = async (input, opts = {}) => parseJson((await call(input, {...opts, json:true})).text);
+    // If the answer comes back cut off or broken, ask once more for a shorter, clean version.
+    call.json = async (input, opts = {}) => {
+      const r = await call(input, {...opts, json:true});
+      try { if (r.truncated) throw {code:"invalid_json"}; return parseJson(r.text); }
+      catch(e){
+        if (e.code !== "invalid_json") throw e;
+        const again = typeof input === "string" ? input + "\n\nImportant: keep every text value short so the whole answer fits. Reply with ONLY the JSON." : input;
+        return parseJson((await call(again, {...opts, json:true})).text);
+      }
+    };
     sample = call; sampleReady = true;
     downloads = { save: ({filename, data}) => { const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data])); const a = document.createElement("a"); a.href = url; a.download = filename; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); return Promise.resolve({status:"saved"}); } };
   }
