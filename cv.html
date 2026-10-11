@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Living CV</title>
+<meta name="description" content="A CV you can click. Every date opens the story behind it. Made with Generalist Compass.">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}img{max-width:100%}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Living CV, part of Generalist Compass. Same palette: ink blue for structure, compass-needle amber for what you can touch. */
+:root{
+  --bg:#F1F3F5; --surface:#FFFFFF; --ink:#18202B; --muted:#5A6573; --line:#D9DFE6;
+  --accent:#22457A; --accent-soft:#E2E9F3; --on-accent:#FFFFFF; --needle:#C9842A; --needle-soft:#F6EBDC;
+  --head:"Familjen Grotesk","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#10151C; --surface:#18202A; --ink:#E7EBF0; --muted:#98A3B2; --line:#2A3441;
+  --accent:#93B3E6; --accent-soft:#1D2939; --on-accent:#0F1724; --needle:#E7AA4C; --needle-soft:#2B2416; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10151C; --surface:#18202A; --ink:#E7EBF0; --muted:#98A3B2; --line:#2A3441;
+  --accent:#93B3E6; --accent-soft:#1D2939; --on-accent:#0F1724; --needle:#E7AA4C; --needle-soft:#2B2416; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55;padding-inline:16px}
+.wrap{max-width:880px;margin:0 auto;padding-block:20px 60px;display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{font-family:var(--head);margin:0;line-height:1.1;text-wrap:balance}
+p{margin:0}
+a{color:var(--accent);text-underline-offset:3px}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--needle);outline-offset:2px;border-radius:6px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.top b{font-family:var(--head);color:var(--ink);font-size:16px}
+.tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px}
+.tabs button{border:0;background:transparent;color:var(--muted);border-radius:999px;padding:7px 14px;font-weight:700;font-size:14px}
+.tabs button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:clamp(18px,3vw,28px);display:flex;flex-direction:column;gap:14px;min-width:0}
+.btn{border:2px solid var(--accent);background:var(--accent);color:var(--on-accent);border-radius:999px;padding:10px 18px;font-weight:700}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:default}
+.small{font-size:14px;color:var(--muted)}
+.status{font-size:15px;color:var(--muted);min-height:1.4em}
+.status.err{color:#B4442E}
+.status.thinking::after{content:"";display:inline-block;width:1.2em;text-align:left;animation:dots 1.2s steps(4) infinite}
+@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+
+/* the CV itself */
+.hero{display:flex;flex-direction:column;gap:10px}
+.hero .who{font-size:clamp(34px,6vw,52px);letter-spacing:-.01em}
+.hero .line{font-size:clamp(18px,2.2vw,21px);max-width:62ch}
+.hero .meta{font-size:15px;color:var(--muted);display:flex;gap:6px 16px;flex-wrap:wrap}
+.hint{font-size:14px;color:var(--needle);font-weight:700;display:flex;align-items:center;gap:8px}
+.hint::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--needle);animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.6);opacity:.5}}
+
+/* the years bar: every chapter on one line */
+.years{position:relative;height:56px;margin-top:4px}
+.years .axis{position:absolute;left:0;right:0;top:34px;height:1px;background:var(--line)}
+.years .tick{position:absolute;top:40px;font-size:12px;color:var(--muted);transform:translateX(-50%);font-variant-numeric:tabular-nums}
+.years .tick:first-of-type{transform:none}
+.years button{position:absolute;top:8px;height:22px;border-radius:6px;border:0;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 6px;transition:background .2s,color .2s}
+.years button:hover,.years button.on{background:var(--needle);color:var(--surface)}
+.years-scroll{overflow-x:auto;max-width:100%;min-width:0}
+.wrap > *{min-width:0;max-width:100%}
+.years-inner{min-width:560px}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:14px;font-weight:700}
+.chip:hover{border-color:var(--needle)}
+.chip[aria-pressed="true"]{background:var(--needle-soft);border-color:var(--needle);color:var(--ink)}
+
+.roles{display:flex;flex-direction:column;gap:10px}
+.role{border:1px solid var(--line);border-radius:16px;background:var(--surface);transition:opacity .3s,border-color .3s,box-shadow .3s}
+.role.dim{opacity:.35}
+.role.match{border-color:var(--needle);box-shadow:0 0 0 3px var(--needle-soft)}
+.role > button{all:unset;box-sizing:border-box;width:100%;cursor:pointer;display:grid;grid-template-columns:118px minmax(0,1fr) auto;gap:4px 16px;align-items:start;padding:16px 18px}
+.role > button:focus-visible{outline:3px solid var(--needle);outline-offset:-3px;border-radius:16px}
+.role .when{font-family:var(--head);font-weight:600;color:var(--needle);font-variant-numeric:tabular-nums;font-size:15px;padding-top:2px}
+.role .what b{font-family:var(--head);font-size:19px;display:block;line-height:1.25}
+.role .what span{font-size:15px;color:var(--muted)}
+.role .plus{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;color:var(--accent);font-weight:700;transition:transform .3s}
+.role.open .plus{transform:rotate(45deg);border-color:var(--needle);color:var(--needle)}
+.story{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s ease}
+.role.open .story{grid-template-rows:1fr}
+.story > div{overflow:hidden}
+.story .in{padding:0 18px 18px;display:flex;flex-direction:column;gap:14px;border-top:1px dashed var(--line);margin:0 18px;padding-inline:0;padding-top:16px}
+.beats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.beat{background:var(--bg);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.beat small{font-family:var(--head);font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--needle)}
+.beat p{font-size:15.5px}
+.behind{font-style:italic;color:var(--muted);border-left:3px solid var(--needle);padding-left:12px;font-size:16px}
+.story ul{margin:0;padding-left:20px;font-size:15px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.askthis{align-self:flex-start;border:0;background:none;color:var(--accent);font-weight:700;padding:0;font-size:15px}
+
+/* ask this CV */
+.ask form{display:flex;gap:8px;flex-wrap:wrap}
+.ask input,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 14px;flex:1 1 260px;min-width:0}
+textarea{width:100%;min-height:180px;resize:vertical}
+.suggest{display:flex;flex-wrap:wrap;gap:6px}
+.suggest button{border:1px dashed var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:5px 11px;font-size:14px}
+.answer{font-size:17px;white-space:pre-line}
+.answer:empty{display:none}
+
+/* the interview */
+.chat{display:flex;flex-direction:column;gap:10px}
+.msg{max-width:88%;padding:10px 14px;border-radius:16px;font-size:16px;white-space:pre-line}
+.msg.ai{background:var(--accent-soft);align-self:flex-start;border-bottom-left-radius:4px}
+.msg.me{background:var(--needle-soft);align-self:flex-end;border-bottom-right-radius:4px}
+.progress{font-family:var(--head);font-weight:600;font-size:14px;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.linkbox{display:flex;gap:8px;flex-wrap:wrap}
+.linkbox input{flex:1 1 260px;min-width:0;font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+footer{font-size:14px;color:var(--muted);text-align:center}
+
+@media (max-width:640px){
+  .role > button{grid-template-columns:minmax(0,1fr) auto}
+  .role .when{grid-column:1 / -1;order:-1}
+  .beats{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <span><b>Living CV</b> · by <a href="/">Generalist Compass</a></span>
+    <div class="tabs" role="group" aria-label="Mode">
+      <button type="button" id="tabView" aria-pressed="true">See the CV</button>
+      <button type="button" id="tabMake" aria-pressed="false">Make your own</button>
+    </div>
+  </div>
+
+  <!-- the CV, as an employer sees it -->
+  <section id="view" class="wrap" style="padding:0">
+    <div class="card">
+      <div class="hero">
+        <p class="small" id="exampleNote">Example: Michael Ender's own CV</p>
+        <h1 class="who" id="cvName"></h1>
+        <p class="line" id="cvLine"></p>
+        <p class="meta" id="cvMeta"></p>
+      </div>
+      <p class="hint">Tap any date or job to open the story behind it.</p>
+      <div class="years-scroll"><div class="years-inner"><div class="years" id="years"></div></div></div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:20px">What are you looking for?</h2>
+      <p class="small">Tap a strength to see where it shows up.</p>
+      <div class="chips" id="chips"></div>
+    </div>
+
+    <div class="roles" id="roles"></div>
+
+    <div class="card ask">
+      <h2 style="font-size:22px">Ask this CV</h2>
+      <p class="small">Ask what you'd ask in a first call. The answer only uses what's in this CV and its stories.</p>
+      <div class="suggest" id="suggest"></div>
+      <form id="askForm"><label class="sr" for="askQ" hidden>Your question</label><input id="askQ" placeholder="Has this person ever opened a new market?" autocomplete="off"><button class="btn" type="submit">Ask</button></form>
+      <p class="status" id="askStatus" role="status"></p>
+      <p class="answer" id="askAnswer"></p>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:22px">Want to talk?</h2>
+      <p id="cvContact"></p>
+    </div>
+  </section>
+
+  <!-- making your own -->
+  <section id="make" class="wrap" style="padding:0" hidden>
+    <div class="card" id="mk1">
+      <span class="progress">Step 1 of 3 · Your CV</span>
+      <h2 style="font-size:26px">Paste your CV</h2>
+      <p class="small">Copy the text from your CV (Word, PDF, LinkedIn) and paste it here. Nothing is stored until you choose to share it.</p>
+      <textarea id="cvText" placeholder="Paste your CV here"></textarea>
+      <div class="row"><button class="btn" id="readCv" type="button">Read my CV</button><span class="status" id="st1" role="status"></span></div>
+    </div>
+
+    <div class="card" id="mk2" hidden>
+      <span class="progress" id="ivProgress">Step 2 of 3 · The stories</span>
+      <h2 style="font-size:26px" id="ivRole"></h2>
+      <p class="small">A CV says what you did. This is where you say what it meant. Answer like you'd answer a friend.</p>
+      <div class="chat" id="chat"></div>
+      <textarea id="ivAnswer" style="min-height:110px" placeholder="Your answer, in your own words"></textarea>
+      <div class="row">
+        <button class="btn" id="ivSend" type="button">Send</button>
+        <button class="btn ghost" id="ivSkip" type="button">Skip this one</button>
+        <span class="status" id="st2" role="status"></span>
+      </div>
+    </div>
+
+    <div class="card" id="mk3" hidden>
+      <span class="progress">Step 3 of 3 · Your link</span>
+      <h2 style="font-size:26px">Your Living CV is ready</h2>
+      <p class="small">Open it to check every story. Send the link to an employer instead of, or next to, your PDF.</p>
+      <div class="linkbox"><input id="myLink" readonly aria-label="Your link"><button class="btn" id="copyLink" type="button">Copy link</button></div>
+      <div class="row"><button class="btn ghost" id="openMine" type="button">Open my Living CV</button></div>
+    </div>
+  </section>
+
+  <footer>Made with <a href="/">Generalist Compass</a>: people known by the problems they've solved.</footer>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const NOW = new Date().getFullYear();
+
+  // Michael's own CV, the example. Stories are a first draft from his CV and book, for him to rewrite.
+  const EXAMPLE = {
+    name: "Michael Ender",
+    line: "I open new markets and make unfinished things real.",
+    meta: ["Based in Thailand (GMT+7), works remote", "French, English, Dutch, Hebrew, some Spanish"],
+    contact: "endermike@gmail.com · linkedin.com/in/michaelender",
+    skills: ["New markets","Partnerships","Negotiation","Building with AI","Community","Pressure"],
+    roles: [
+      {start:2026, end:null, title:"Founder & Builder", org:"Generalist Compass", place:"Remote", skills:["Building with AI","New markets"],
+       problem:"People with mixed careers get filtered out because no job title fits their story.",
+       did:"Designed and built an AI career guide end to end with Claude: the product, the prompts, the backend on Vercel, even the intro video.",
+       changed:"It's live. It reads a mixed career as one story and shows the side doors into work, including this Living CV.",
+       behind:"I built it for myself first. I was the generalist nobody knew where to put.",
+       bullets:["Hidden-jobs radar that scans the news for expanding companies","LinkedIn network analyzer","Shareable profile pages"]},
+      {start:2022, end:null, title:"Professional Poker Player, Coach & Community Organizer", org:"Self-employed", place:"Remote and Koh Phangan", skills:["Pressure","Community"],
+       problem:"Tournament poker is long stretches of losing, even when you play well. Most players break mentally before their edge shows.",
+       did:"Played international tournaments for a living, coached a standing group of 10 players every week, and started a weekly in-person circle in Thailand.",
+       changed:"Won the Sunday Million, reached several SCOOP and WCOOP final tables, and built a coaching business from pricing to delivery.",
+       behind:"The table teaches you to make the right call with half the information, and then to live with the result.",
+       bullets:["Winner of the Sunday Million","Multiple SCOOP and WCOOP final tables","10 coaching clients weekly"]},
+      {start:2017, end:2020, title:"Founder", org:"Endertainment", place:"Brussels, Belgium", skills:["Community","Negotiation"],
+       problem:"I wanted to bring some soul to Brussels nightlife and give people a place to belong.",
+       did:"Founded Résidence L, a community and events brand, created the Dhamar Tal festival, and booked and managed international artists.",
+       changed:"A regular community of about 200 people and a festival of about 700. COVID closed it, the friendships stayed.",
+       behind:"Here I learned that the event is the excuse. The people are the point.",
+       bullets:["Résidence L, about 200 regular members","Dhamar Tal festival, about 700 guests","Booked international artists and DJs"]},
+      {start:2011, end:2017, title:"Partner & Manager", org:"Alpilex Diamond MFG", place:"Antwerp, Belgium", skills:["Partnerships","Negotiation","New markets"],
+       problem:"A family diamond business with strong buying, but almost no presence online.",
+       did:"Ran buying, sales and operations as a partner, managed relationships across China, and built the web shop antwerpdiamonds.direct.",
+       changed:"Revenue doubled from €5M to €10M, and the web shop grew into one of Belgium's leading online diamond stores.",
+       behind:"Diamonds run on trust. A handshake in Antwerp still means something.",
+       bullets:["Revenue from €5M to €10M","Built antwerpdiamonds.direct","Leading supplier of IF polished diamonds in a specialized size"]},
+      {start:2009, end:2011, title:"Buyer & Country Manager", org:"Partners Metal", place:"Mexico and South America", skills:["New markets","Negotiation","Pressure"],
+       problem:"The company had nobody in Mexico and needed a steady flow of metal for Asia.",
+       did:"Set up the Mexico subsidiary from zero: found suppliers, opened a warehouse, ran logistics in a high-risk area.",
+       changed:"500 to 1,000 tons a month of steel, copper, brass and cable shipped from South America to Asia.",
+       behind:"Days in the sun in Juárez, waiting for trucks to load and sharing cigarettes with the workers.",
+       bullets:["Built the subsidiary from the ground up","500 to 1,000 tons a month","Warehouse and logistics in a high-risk environment"]},
+      {start:2006, end:2009, title:"Business Administration (BBA)", org:"Hong Kong University", place:"Hong Kong, with an exchange in Spain", skills:["New markets"],
+       problem:"", did:"International business and global management, with an exchange at the University of Navarra.", changed:"",
+       behind:"My first big poker cash came here: a three-dollar rebuy tournament.", bullets:[]},
+      {start:2005, end:2006, title:"Chinese Language Program", org:"Fudan University", place:"Shanghai", skills:[],
+       problem:"", did:"A year of Mandarin in Shanghai.", changed:"", behind:"", bullets:[]},
+      {start:2003, end:2005, title:"Military service", org:"Israel Defense Forces", place:"Paratroopers", skills:["Pressure"],
+       problem:"", did:"Served in a paratrooper unit.", changed:"", behind:"", bullets:[]}
+    ]
+  };
+
+  let CV = EXAMPLE, isExample = true;
+  const span = r => r.start + (r.end === null || r.end === undefined ? " – now" : r.end !== r.start ? " – " + r.end : "");
+
+  function render(){
+    $("exampleNote").hidden = !isExample;
+    $("cvName").textContent = CV.name || "";
+    $("cvLine").textContent = CV.line || "";
+    $("cvMeta").innerHTML = (CV.meta || []).map(m => "<span>" + esc(m) + "</span>").join("");
+    $("cvContact").textContent = CV.contact || "";
+    document.title = (CV.name ? CV.name + " · " : "") + "Living CV";
+
+    // years bar
+    const roles = CV.roles || [], starts = roles.map(r => r.start).filter(Number.isFinite);
+    const y0 = Math.min(...starts), y1 = Math.max(NOW, ...roles.map(r => r.end || NOW)) + 1, pct = y => ((y - y0) / (y1 - y0) * 100);
+    const lanes = []; let html = '<div class="axis"></div>';
+    for (let y = y0; y <= y1; y += (y1 - y0 > 16 ? 4 : 2)) html += '<span class="tick" style="left:' + pct(y).toFixed(2) + '%">' + y + "</span>";
+    $("years").innerHTML = html;
+    roles.slice().sort((a, b) => a.start - b.start).forEach(r => {
+      const i = roles.indexOf(r), end = (r.end || NOW) + (r.end === r.start ? 1 : r.end ? 0 : 1);
+      const b = document.createElement("button"); b.type = "button"; b.dataset.i = i; b.title = r.org + " · " + span(r);
+      b.style.left = pct(r.start).toFixed(2) + "%"; b.style.width = "calc(" + Math.max(3, pct(end) - pct(r.start)).toFixed(2) + "% - 3px)";
+      b.textContent = r.org; b.onclick = () => openRole(i, true); $("years").append(b);
+    });
+    $("years").style.height = "56px";
+
+    // strengths
+    $("chips").innerHTML = (CV.skills || []).map(s => '<button class="chip" type="button" aria-pressed="false">' + esc(s) + "</button>").join("");
+    $("chips").querySelectorAll(".chip").forEach(c => c.onclick = () => {
+      const on = c.getAttribute("aria-pressed") !== "true";
+      $("chips").querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", "false"));
+      c.setAttribute("aria-pressed", on ? "true" : "false");
+      document.querySelectorAll(".role").forEach((el, i) => { const m = on && (roles[i].skills || []).includes(c.textContent); el.classList.toggle("match", m); el.classList.toggle("dim", on && !m); });
+    });
+
+    // roles
+    $("roles").innerHTML = roles.map((r, i) => {
+      const beats = [["The problem", r.problem], ["What I did", r.did], ["What changed", r.changed]].filter(b => b[1]);
+      return '<article class="role" id="role' + i + '"><button type="button" aria-expanded="false" aria-controls="st' + i + 'x">'
+        + '<span class="when">' + esc(span(r)) + '</span><span class="what"><b>' + esc(r.title) + '</b><span>' + esc([r.org, r.place].filter(Boolean).join(" · ")) + '</span></span><span class="plus" aria-hidden="true">+</span></button>'
+        + '<div class="story" id="st' + i + 'x"><div><div class="in">'
+        + (beats.length ? '<div class="beats" style="grid-template-columns:repeat(' + Math.min(3, beats.length) + ',minmax(0,1fr))">' + beats.map(b => '<div class="beat"><small>' + b[0] + '</small><p>' + esc(b[1]) + '</p></div>').join("") + "</div>" : "")
+        + (r.behind ? '<p class="behind">' + esc(r.behind) + "</p>" : "")
+        + ((r.bullets || []).length ? "<ul>" + r.bullets.map(x => "<li>" + esc(x) + "</li>").join("") + "</ul>" : "")
+        + '<button class="askthis" type="button" data-i="' + i + '">Ask about this →</button>'
+        + "</div></div></div></article>";
+    }).join("");
+    document.querySelectorAll(".role > button").forEach((b, i) => b.onclick = () => openRole(i));
+    document.querySelectorAll(".askthis").forEach(b => b.onclick = () => { const r = roles[b.dataset.i]; $("askQ").value = "Tell me more about the time at " + r.org + "."; $("askQ").focus(); $("askQ").scrollIntoView({behavior:"smooth", block:"center"}); });
+
+    const sugg = ["Has this person opened a new market?","How do they handle pressure?","What would they bring to a small startup?"];
+    $("suggest").innerHTML = sugg.map(s => '<button type="button">' + esc(s) + "</button>").join("");
+    $("suggest").querySelectorAll("button").forEach(b => b.onclick = () => { $("askQ").value = b.textContent; ask(); });
+    $("askAnswer").textContent = ""; setStatus($("askStatus"), "");
+  }
+  function openRole(i, scroll){
+    const el = $("role" + i), open = !el.classList.contains("open") || scroll;
+    el.classList.toggle("open", open); el.querySelector("button").setAttribute("aria-expanded", open);
+    document.querySelectorAll(".years button").forEach(b => b.classList.toggle("on", Number(b.dataset.i) === i && open));
+    if (scroll) el.scrollIntoView({behavior:"smooth", block:"center"});
+  }
+
+  // AI helpers (Compass's own bridge)
+  function setStatus(el, t, cls){ el.textContent = t; el.className = "status" + (cls ? " " + cls : ""); }
+  async function claude(input, tier){
+    const r = await fetch("/api/claude", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({input, tier: tier || "default"})});
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.code === "rate_limited" ? "Busy right now. Try again in a minute." : "The AI isn't reachable here. It works on the website.");
+    return d.text || "";
+  }
+  async function claudeJson(input, tier){ const t = await claude(input, tier); try { return JSON.parse(t); } catch(e){ throw new Error("That didn't come back right. Try again."); } }
+
+  async function ask(){
+    const q = $("askQ").value.trim(); if (!q) return;
+    const st = $("askStatus"); setStatus(st, "Thinking", "thinking"); $("askAnswer").textContent = "";
+    try {
+      const a = await claude(`You answer an employer's question about one person, using ONLY their Living CV below. Speak about them in the third person, warmly and plainly, in 2 to 4 short sentences. Point to the specific role and result. If the CV doesn't say, answer "The CV doesn't say. Worth asking ${CV.name ? CV.name.split(" ")[0] : "them"} directly." Never invent facts. No em dashes.
+
+Living CV (JSON):
+${JSON.stringify(CV).slice(0, 14000)}
+
+Question: ${q.slice(0, 300)}`, "quick");
+      setStatus(st, ""); $("askAnswer").textContent = a.trim();
+    } catch(e){ setStatus(st, e.message, "err"); }
+  }
+  $("askForm").addEventListener("submit", e => { e.preventDefault(); ask(); });
+
+  // sharing: the whole CV travels inside the link, nothing stored on a server
+  const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+  async function pack(obj){ const s = new Blob([JSON.stringify(obj)]).stream().pipeThrough(new CompressionStream("deflate-raw")); return "cv=" + b64u(await new Response(s).arrayBuffer()); }
+  async function unpack(tok){ const s = new Blob([unb64u(tok)]).stream().pipeThrough(new DecompressionStream("deflate-raw")); return JSON.parse(await new Response(s).text()); }
+
+  // modes
+  function mode(m){
+    $("view").hidden = m !== "view"; $("make").hidden = m !== "make";
+    $("tabView").setAttribute("aria-pressed", m === "view"); $("tabMake").setAttribute("aria-pressed", m === "make");
+    window.scrollTo(0, 0);
+  }
+  $("tabView").onclick = () => mode("view");
+  $("tabMake").onclick = () => mode("make");
+
+  // making your own: read, interview, link
+  let draft = null, ri = 0, turns = [];
+  $("readCv").onclick = async () => {
+    const text = $("cvText").value.trim(), st = $("st1");
+    if (text.length < 200){ setStatus(st, "Paste the whole CV, it looks too short.", "err"); return; }
+    setStatus(st, "Reading your CV", "thinking"); $("readCv").disabled = true;
+    try {
+      draft = await claudeJson(`Turn this CV into structured data. Reply with ONLY a JSON object like:
+{"name":"...","line":"one sentence in first person: what they do best, max 14 words, no bragging","meta":["location and how they work","languages"],"contact":"email and links as written","skills":["4 to 6 short strengths, 1 to 3 words each"],"roles":[{"start":2019,"end":2022,"title":"...","org":"...","place":"...","skills":["subset of skills"],"bullets":["max 3 short results, as written in the CV"]}]}
+Rules: newest first. end is null when ongoing. Include education and service as roles too. Copy facts exactly, never invent. No em dashes. Write in the language of the CV.
+
+CV:
+"""
+${text.slice(0, 20000)}
+"""`);
+      if (!draft || !Array.isArray(draft.roles) || !draft.roles.length) throw new Error("I couldn't find the jobs in that text. Try pasting it again.");
+      draft.roles = draft.roles.slice(0, 10).map(r => ({...r, problem:"", did:"", changed:"", behind:""}));
+      ri = 0; startRole(); $("mk1").hidden = true; $("mk2").hidden = false; setStatus(st, "");
+    } catch(e){ setStatus(st, e.message, "err"); }
+    finally { $("readCv").disabled = false; }
+  };
+  function addMsg(who, text){ const d = document.createElement("div"); d.className = "msg " + who; d.textContent = text; $("chat").append(d); }
+  function startRole(){
+    const r = draft.roles[ri]; turns = []; $("chat").innerHTML = ""; $("ivAnswer").value = "";
+    $("ivProgress").textContent = "Step 2 of 3 · Story " + (ri + 1) + " of " + draft.roles.length;
+    $("ivRole").textContent = r.title + (r.org ? ", " + r.org : "");
+    const q = "What do you want an employer to understand about this one? How would you explain it in your own words?";
+    turns.push({role:"assistant", content:q}); addMsg("ai", q);
+  }
+  async function nextRole(){
+    ri++;
+    if (ri < draft.roles.length) return startRole();
+    $("mk2").hidden = true; $("mk3").hidden = false;
+    const tok = await pack(draft), link = location.origin + location.pathname + "#" + tok;
+    $("myLink").value = link;
+  }
+  $("ivSkip").onclick = () => nextRole();
+  $("ivSend").onclick = async () => {
+    const a = $("ivAnswer").value.trim(), st = $("st2"), r = draft.roles[ri];
+    if (!a) return;
+    addMsg("me", a); turns.push({role:"user", content:a}); $("ivAnswer").value = "";
+    const asked = turns.filter(t => t.role === "assistant").length;
+    setStatus(st, "Listening", "thinking"); $("ivSend").disabled = true;
+    try {
+      const d = await claudeJson(`You help someone turn one line of their CV into a short story an employer can click open. You are warm, curious and brief.
+Role: ${JSON.stringify({title:r.title, org:r.org, place:r.place, start:r.start, end:r.end, bullets:r.bullets})}
+Conversation so far:
+${turns.map(t => (t.role === "user" ? "Them: " : "You: ") + t.content).join("\n")}
+
+${asked < 2 ? 'If one thing is still missing (the problem they faced, what they did, or what changed), ask ONE short follow-up question about it. Otherwise write the story.' : "Write the story now."}
+Reply with ONLY a JSON object, either {"ask":"your one follow-up question"} or {"story":{"problem":"max 22 words","did":"max 28 words","changed":"max 22 words, a concrete result","behind":"one short, human line in their own voice, max 20 words, or empty"}}.
+Use their own words where you can, first person. Never invent facts or numbers they didn't give. No em dashes.`);
+      setStatus(st, "");
+      if (d.ask && asked < 2){ turns.push({role:"assistant", content:d.ask}); addMsg("ai", d.ask); return; }
+      const s = d.story || {}; Object.assign(r, {problem:s.problem || "", did:s.did || "", changed:s.changed || "", behind:s.behind || ""});
+      addMsg("ai", "Here's how it will read:\n\nThe problem: " + r.problem + "\nWhat I did: " + r.did + "\nWhat changed: " + r.changed + (r.behind ? "\n\n" + r.behind : ""));
+      const row = document.createElement("div"); row.className = "row";
+      row.innerHTML = '<button class="btn" type="button">Looks right, next</button><button class="btn ghost" type="button">Say it differently</button>';
+      row.children[0].onclick = () => nextRole();
+      row.children[1].onclick = () => { row.remove(); const q = "What would you change? Tell me in your own words."; turns.push({role:"assistant", content:q}); addMsg("ai", q); $("ivAnswer").focus(); };
+      $("chat").append(row);
+    } catch(e){ setStatus(st, e.message, "err"); }
+    finally { $("ivSend").disabled = false; }
+  };
+  $("copyLink").onclick = () => { const el = $("myLink"); try { navigator.clipboard.writeText(el.value).then(() => $("copyLink").textContent = "Copied", () => el.select()); } catch(e){ el.select(); } };
+  $("openMine").onclick = () => { CV = draft; isExample = false; render(); mode("view"); try { history.replaceState(null, "", $("myLink").value); } catch(e){} };
+
+  // start: a shared CV in the link, or Michael's example
+  (async () => {
+    const m = (location.hash || "").match(/^#cv=([A-Za-z0-9_-]+)$/);
+    if (m){ try { CV = await unpack(m[1]); isExample = false; } catch(e){ CV = EXAMPLE; } }
+    render();
+  })();
+})();
+</script>
+</body>
+</html>
