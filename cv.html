@@ -165,6 +165,13 @@ footer{font-size:14px;color:var(--muted);text-align:center}
     <div class="card">
       <h2 style="font-size:22px">Want to talk?</h2>
       <p id="cvContact"></p>
+      <div class="row"><button class="btn" id="introBtn" type="button">Ask for an intro</button></div>
+      <form id="introForm" hidden style="display:flex;flex-direction:column;gap:10px">
+        <div class="ask" style="display:flex;gap:8px;flex-wrap:wrap"><input id="inName" placeholder="Your name and company" autocomplete="organization"><input id="inWhy" placeholder="The problem you'd like help with"></div>
+        <div class="row"><button class="btn" type="submit">Write my intro</button></div>
+        <textarea id="introMsg" style="min-height:120px" hidden aria-label="Your intro message"></textarea>
+        <div class="row" id="introActions" hidden><button class="btn ghost" id="copyIntro" type="button">Copy message</button><a class="btn ghost" id="mailIntro" href="#" style="text-decoration:none">Open in email</a></div>
+      </form>
     </div>
   </section>
 
@@ -173,7 +180,8 @@ footer{font-size:14px;color:var(--muted);text-align:center}
     <div class="card" id="mk1">
       <span class="progress">Step 1 of 3 · Your CV</span>
       <h2 style="font-size:26px">Paste your CV</h2>
-      <p class="small">Copy the text from your CV (Word, PDF, LinkedIn) and paste it here. Nothing is stored until you choose to share it.</p>
+      <p class="small">Upload your CV as a PDF or Word file, or paste the text. Nothing is stored until you choose to share it.</p>
+      <div class="row"><label class="btn ghost" for="cvFile" style="display:inline-block">Upload PDF or Word</label><input id="cvFile" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" hidden><span class="small" id="fileNote">or paste below</span></div>
       <textarea id="cvText" placeholder="Paste your CV here"></textarea>
       <div class="row"><button class="btn" id="readCv" type="button">Read my CV</button><span class="status" id="st1" role="status"></span></div>
     </div>
@@ -348,6 +356,42 @@ Question: ${q.slice(0, 300)}`, "quick");
   const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
   async function pack(obj){ const s = new Blob([JSON.stringify(obj)]).stream().pipeThrough(new CompressionStream("deflate-raw")); return "cv=" + b64u(await new Response(s).arrayBuffer()); }
   async function unpack(tok){ const s = new Blob([unb64u(tok)]).stream().pipeThrough(new DecompressionStream("deflate-raw")); return JSON.parse(await new Response(s).text()); }
+
+  // ask for an intro: a short, warm message the employer can send
+  $("introBtn").onclick = () => { $("introForm").hidden = false; $("introBtn").hidden = true; $("inName").focus(); };
+  $("introForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const who = $("inName").value.trim(), why = $("inWhy").value.trim(), first = (CV.name || "").split(" ")[0] || "there";
+    if (!who || !why){ $("inWhy").placeholder = "Add both, so the intro makes sense"; return; }
+    const msg = "Hi " + first + ",\n\nI'm " + who + ". I read your Living CV and I think you could help us with this: " + why + ".\n\nWould you be open to a short call this week?\n\nBest,\n" + who.split(",")[0];
+    $("introMsg").value = msg; $("introMsg").hidden = false; $("introActions").hidden = false;
+    const mail = ((CV.contact || "").match(/[^\s@·,;]+@[^\s@·,;]+\.[a-z]{2,}/i) || [""])[0];
+    $("mailIntro").hidden = !mail;
+    if (mail) $("mailIntro").href = "mailto:" + mail + "?subject=" + encodeURIComponent("Intro via your Living CV") + "&body=" + encodeURIComponent(msg);
+  });
+  $("copyIntro").onclick = () => { try { navigator.clipboard.writeText($("introMsg").value).then(() => $("copyIntro").textContent = "Copied", () => $("introMsg").select()); } catch(e){ $("introMsg").select(); } };
+
+  // upload a CV: PDF (pdf.js) or Word (mammoth), loaded only when needed
+  const loadScript = src => new Promise((ok, no) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = no; document.head.append(s); });
+  $("cvFile").addEventListener("change", async () => {
+    const f = $("cvFile").files[0], note = $("fileNote"); if (!f) return;
+    note.textContent = "Reading " + f.name + "...";
+    try {
+      let text = "";
+      if (/\.pdf$/i.test(f.name)){
+        if (!window.pdfjsLib) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        const pdf = await pdfjsLib.getDocument({data: await f.arrayBuffer()}).promise;
+        for (let i = 1; i <= Math.min(pdf.numPages, 8); i++){ const c = await (await pdf.getPage(i)).getTextContent(); text += c.items.map(it => it.str + (it.hasEOL ? "\n" : " ")).join("") + "\n"; }
+      } else if (/\.docx$/i.test(f.name)){
+        if (!window.mammoth) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js");
+        text = (await mammoth.extractRawText({arrayBuffer: await f.arrayBuffer()})).value;
+      } else text = await f.text();
+      text = text.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+      if (text.length < 100) throw 0;
+      $("cvText").value = text; note.textContent = "Got it. Check the text below, then press Read my CV.";
+    } catch(e){ note.textContent = "I couldn't read that file. Try another format, or paste the text."; }
+  });
 
   // modes
   function mode(m){
