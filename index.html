@@ -438,6 +438,19 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
 #statusRv:empty{display:none}
 #rVerify .mail{overflow-wrap:anywhere}
 .ireq{background:var(--needle-soft);border:1px solid var(--needle);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.ireq p{margin:0}
+.ireq .why{font-style:italic}
+.ireq .row{margin-top:4px}
+.ireq.done{background:var(--surface);border-color:var(--line)}
+.ireq input,.ireq textarea,.askform textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;margin-top:4px}
+.ireq textarea,.askform textarea{min-height:70px}
+.askform{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.askform[hidden]{display:none}
+.ist{display:inline-block;align-self:flex-start;font-size:13px;font-weight:700;border-radius:999px;padding:3px 10px;background:var(--needle-soft);color:var(--needle)}
+.ist.yes{background:var(--good);color:var(--surface)}
+.ist.no{background:var(--line);color:var(--muted)}
+.wkleft{font-size:14px;color:var(--muted);margin:0}
+.reach{overflow-wrap:anywhere}
 .tstat{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 .tstat button{font:inherit;font-size:13px;font-weight:700;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
 .tstat button[aria-pressed="true"]{border-color:var(--good);background:var(--good);color:var(--surface)}
@@ -822,7 +835,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
       <div class="card optcard" id="optCard" hidden>
         <span class="tag">Be found</span>
         <h3>Let recruiters find you</h3>
-        <p class="hint">We publish an anonymous version of your reading: your type, your thread, your edge and the problem cards you approved. No name, no contact details. When a recruiter wants to meet you, you see their request and decide.</p>
+        <p class="hint">We publish an anonymous version of your reading: your type, your thread, your edge and the problem cards you approved. No name, no contact details. When a recruiter wants to meet you, you see their request and why they picked you. Say yes and you both get each other's contact details. Say no and they never learn who you are.</p>
         <p class="hint" id="optProbs"></p>
         <p class="hint" id="optAcct" hidden></p>
         <div><label class="q" for="optRegion">Where are you based?</label><input id="optRegion" type="text" placeholder="e.g. Thailand, works remote" autocomplete="off"></div>
@@ -967,6 +980,12 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
       <h2 class="sech">Your briefs</h2>
       <p class="lead" style="margin-top:-12px">Only you see this list. Remove a brief once the role is filled.</p>
       <div class="joblist" id="rMine"></div>
+    </div>
+    <div id="rSentWrap" hidden style="display:flex;flex-direction:column;gap:20px">
+      <h2 class="sech">Your intro requests</h2>
+      <p class="lead" style="margin-top:-12px">People stay anonymous until they say yes. Then you see their name and how to reach them here.</p>
+      <p class="wkleft" id="rWeek"></p>
+      <div class="joblist" id="rSent"></div>
     </div>
     <h2 class="sech">On the board</h2>
     <p class="lead" style="margin-top:-12px">What recruiters are looking for right now.</p>
@@ -2532,7 +2551,7 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     tipExtra:"Say what feels off, what scares you, or what you want to know. Then press Send."});
 
   // ---------- recruiters & matching (demo; needs the shared db) ----------
-  var db = null, uid = null, myProfile = null, needs = [], intros = [], myBriefs = [];
+  var db = null, uid = null, myProfile = null, needs = [], intros = [], myBriefs = [], sentIntros = [], introWeek = null;
   const WEB = { on: false, token: null };
   async function api(action, payload){
     const r = await fetch("/api/board", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify(Object.assign({action}, payload || {}))});
@@ -2578,8 +2597,10 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
         myProfile = mine.profile || null; uid = myProfile ? myProfile.id : null;
         intros = (mine.intros || []).map(x => Object.assign({profile: uid}, x));
         myBriefs = Array.isArray(mine.briefs) ? mine.briefs : [];
-      } else { myProfile = null; uid = null; intros = []; myBriefs = []; }
-      renderBoards(); renderOpt(); renderMyIntros(); renderAcctBoard();
+        sentIntros = Array.isArray(mine.sent) ? mine.sent : [];
+        introWeek = mine.week || null;
+      } else { myProfile = null; uid = null; intros = []; myBriefs = []; sentIntros = []; introWeek = null; }
+      renderBoards(); renderOpt(); renderMyIntros(); renderSent(); renderAcctBoard();
     } catch(e){ /* board offline: keep the rest of the app working */ }
   }
   const RX = { pool: [], brief: null, needId: null };
@@ -2615,9 +2636,31 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     if (needForIntro){
       const row = document.createElement("div"); row.className = "row";
       const btn = document.createElement("button"); btn.type = "button"; btn.className = "btn"; btn.textContent = "Request an intro";
-      const st = document.createElement("div"); st.className = "status";
-      btn.onclick = () => requestIntro(p, btn, st);
-      row.append(btn); c.append(row, st);
+      const st = document.createElement("div"); st.className = "status"; st.setAttribute("role", "status");
+      // Each request carries a short "why you" note. The match reason is a starting point to edit.
+      const form = document.createElement("div"); form.className = "askform"; form.hidden = true;
+      const fid = "why-" + str(p._id).replace(/[^A-Za-z0-9_-]/g, "");
+      const lab = document.createElement("label"); lab.className = "q"; lab.htmlFor = fid; lab.textContent = "Why them? They read this first";
+      const ta = document.createElement("textarea"); ta.id = fid; ta.maxLength = 300; ta.value = why ? str(why).slice(0, 300) : "";
+      ta.placeholder = "e.g. You opened a market from zero before. That's exactly our spring in Spain.";
+      const left = document.createElement("p"); left.className = "wkleft";
+      const frow = document.createElement("div"); frow.className = "row";
+      const send = document.createElement("button"); send.type = "button"; send.className = "btn"; send.textContent = "Send request";
+      const cancel = document.createElement("button"); cancel.type = "button"; cancel.className = "link"; cancel.textContent = "Cancel";
+      frow.append(send, cancel); form.append(lab, ta, left, frow);
+      btn.onclick = () => {
+        if (p.example){ requestIntro(p, btn, st, ""); return; }
+        if (mustVerify()){ askVerify(st); return; }
+        left.textContent = weekLeftText(); form.hidden = false; btn.hidden = true; setStatus(st, ""); ta.focus();
+      };
+      cancel.onclick = () => { form.hidden = true; btn.hidden = false; setStatus(st, ""); };
+      send.onclick = async () => {
+        send.disabled = true;
+        const ok = await requestIntro(p, btn, st, ta.value.trim());
+        send.disabled = false;
+        if (ok){ form.hidden = true; btn.hidden = false; }
+      };
+      row.append(btn); c.append(row, form, st);
     }
     return c;
   }
@@ -2744,16 +2787,72 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
   function renderMyIntros(){
     const box = $("myIntros"); clear(box);
     if (!uid || !myProfile) return;
-    intros.filter(x => x.profile === uid).sort((a, z) => (z.at || 0) - (a.at || 0)).forEach(x => {
-      const d = document.createElement("div"); d.className = "ireq";
-      const h = document.createElement("b"); h.textContent = (str(x.company) || "A recruiter") + " wants to meet you";
-      const p = document.createElement("p"); p.textContent = str(x.title) + (x.note ? ". " + str(x.note) : "");
-      const v = document.createElement("p"); v.className = "hint";
-      if (x.verified){ const sp = document.createElement("span"); sp.className = "verified"; sp.textContent = "Work email verified: " + str(x.verified); v.append(sp); }
-      else v.textContent = "Work email not verified. Check who they are before you share anything.";
-      const r = document.createElement("p"); r.className = "hint"; r.textContent = x.contact ? "Interested? Reach them at: " + str(x.contact) : "They didn't leave contact details.";
-      d.append(h, p, v, r); box.append(d);
-    });
+    intros.filter(x => x.profile === uid).sort((a, z) => (z.at || 0) - (a.at || 0)).forEach(x => box.append(introCard(x)));
+  }
+  // Seeker side: one request. Older requests (before double opt-in) show their contact as before.
+  function introCard(x){
+    const d = document.createElement("div"); d.className = "ireq";
+    const h = document.createElement("b"); h.textContent = (str(x.company) || "A recruiter") + " wants to meet you";
+    const p = document.createElement("p"); p.textContent = str(x.title);
+    d.append(h, p);
+    if (x.note){ const w = document.createElement("p"); w.className = "why"; w.textContent = "Why you: " + str(x.note); d.append(w); }
+    const v = document.createElement("p"); v.className = "hint";
+    if (x.verified){ const sp = document.createElement("span"); sp.className = "verified"; sp.textContent = "Work email verified: " + str(x.verified); v.append(sp); }
+    else v.textContent = "Work email not verified. Check who they are before you share anything.";
+    d.append(v);
+    if (!x.id){
+      const r = document.createElement("p"); r.className = "hint reach"; r.textContent = x.contact ? "Interested? Reach them at: " + str(x.contact) : "They didn't leave contact details.";
+      d.append(r); return d;
+    }
+    const st = document.createElement("div"); st.className = "status"; st.setAttribute("role", "status");
+    if (x.status === "yes"){
+      d.classList.add("done");
+      const b = document.createElement("span"); b.className = "ist yes"; b.textContent = "You said yes";
+      const r = document.createElement("p"); r.className = "reach"; const k = document.createElement("b"); k.textContent = "Reach them at: "; r.append(k, str(x.contact));
+      const n = document.createElement("p"); n.className = "hint"; n.textContent = "They now see your name and how to reach you" + (x.seeker && x.seeker.contact ? " (" + str(x.seeker.contact) + ")" : "") + ".";
+      d.append(b, r, n); return d;
+    }
+    if (x.status === "no"){
+      d.classList.add("done");
+      const b = document.createElement("span"); b.className = "ist no"; b.textContent = "You passed";
+      const n = document.createElement("p"); n.className = "hint"; n.textContent = "They only see \u201cnot this time\u201d. They never learn who you are.";
+      d.append(b, n); return d;
+    }
+    const ask = document.createElement("p"); ask.className = "hint"; ask.textContent = "Say yes and you both get each other's contact details. Say no and you stay anonymous.";
+    const row = document.createElement("div"); row.className = "row";
+    const yes = document.createElement("button"); yes.type = "button"; yes.className = "btn"; yes.textContent = "Yes, introduce us";
+    const no = document.createElement("button"); no.type = "button"; no.className = "link"; no.textContent = "Not this time";
+    row.append(yes, no);
+    const form = document.createElement("div"); form.className = "askform"; form.hidden = true;
+    const k = str(x.id);
+    const mk = (id, label, el) => { const l = document.createElement("label"); l.className = "q"; l.htmlFor = id; l.textContent = label; el.id = id; return [l, el]; };
+    const nm = document.createElement("input"); nm.type = "text"; nm.autocomplete = "name"; nm.maxLength = 80; nm.placeholder = "e.g. Mike Peeters";
+    nm.value = $("pgName").value.trim();
+    const ct = document.createElement("input"); ct.type = "text"; ct.autocomplete = "off"; ct.maxLength = 120; ct.placeholder = "Email or LinkedIn link";
+    ct.value = $("pgContact").value.trim() || (signedIn() ? str(AUTH.user.email) : "");
+    const nt = document.createElement("textarea"); nt.maxLength = 300; nt.placeholder = "e.g. Happy to talk. Mornings work best for me (Bangkok time).";
+    const frow = document.createElement("div"); frow.className = "row";
+    const share = document.createElement("button"); share.type = "button"; share.className = "btn"; share.textContent = "Share my details";
+    const back = document.createElement("button"); back.type = "button"; back.className = "link"; back.textContent = "Cancel";
+    frow.append(share, back);
+    form.append(...mk("iyName-" + k, "Your name", nm), ...mk("iyReach-" + k, "How they can reach you", ct), ...mk("iyNote-" + k, "A short note back (optional)", nt), frow);
+    yes.onclick = () => { form.hidden = false; row.hidden = true; ask.hidden = true; (nm.value ? ct : nm).focus(); };
+    back.onclick = () => { form.hidden = true; row.hidden = false; ask.hidden = false; setStatus(st, ""); };
+    const answer = async (isYes, btn) => {
+      if (isYes && nm.value.trim().length < 2){ setStatus(st, "Add your name, so they know who to expect.", "err"); nm.focus(); return; }
+      if (isYes && ct.value.trim().length < 5){ setStatus(st, "Add how they can reach you: an email or a LinkedIn link.", "err"); ct.focus(); return; }
+      btn.disabled = true; setStatus(st, isYes ? "Sharing your details" : "Saving", "thinking");
+      try {
+        const r = await boardApi("intro.answer", Object.assign(who(false), {id: x.id, yes: isYes, name: nm.value.trim(), contact: ct.value.trim(), note: nt.value.trim()}));
+        const i = intros.findIndex(y => y.id === x.id);
+        if (i >= 0 && r && r.intro) intros[i] = Object.assign({profile: uid}, r.intro);
+        renderMyIntros();
+      } catch(e){ btn.disabled = false; setStatus(st, e.message || "That didn't go through. Try again.", "err"); }
+    };
+    share.onclick = () => answer(true, share);
+    no.onclick = () => answer(false, no);
+    d.append(ask, row, form, st);
+    return d;
   }
   function profileFromMap(){
     const m = S.map || {}, a = m.archetype || {};
@@ -2858,19 +2957,71 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     catch(e){
       if (e && e.why === "need_work_email"){ askVerify(st); return; } setStatus(st, e && e.code === "invalid_argument" ? "In this demo, only invited testers can post." : (e && e.code === "web" ? e.message : "That didn't save. Try again in a moment."), "err"); }
   };
-  async function requestIntro(p, btn, st){
-    if (!db && !WEB.on){ setStatus(st, "Intros aren't available right now.", "err"); return; }
-    if (p.example){ btn.disabled = true; btn.textContent = "Requested"; setStatus(st, "This is an example profile, so nobody will get it. With a real profile, they'd see your request and decide whether to reply."); return; }
-    if (mustVerify()){ askVerify(st); return; }
-    if (!$("rContact").value.trim()){ setStatus(st, "Add how candidates can reach you first (above).", "err"); $("rContact").focus(); return; }
+  function weekLeftText(){
+    if (!WEB.on || !introWeek) return "You can send 5 intro requests a week, so pick the people you're surest about.";
+    const n = introWeek.left;
+    return n <= 0 ? "You've used this week's intro requests. New ones open on Monday."
+      : (n === 1 ? "1 intro request" : n + " intro requests") + " left this week, of " + introWeek.limit + ". New ones open on Monday.";
+  }
+  async function requestIntro(p, btn, st, note){
+    if (!db && !WEB.on){ setStatus(st, "Intros aren't available right now.", "err"); return false; }
+    if (p.example){ btn.disabled = true; btn.textContent = "Requested"; setStatus(st, "This is an example profile, so nobody will get it. With a real profile, they'd see your note, then say yes or no. Only after a yes do you both get each other's details."); return true; }
+    if (mustVerify()){ askVerify(st); return false; }
+    if (!$("rContact").value.trim()){ setStatus(st, "Add how candidates can reach you first (above). They only see it if they say yes.", "err"); $("rContact").focus(); return false; }
+    if (str(note).length < 15){ setStatus(st, "Add a line or two on why them: what made you pick this person.", "err"); return false; }
+    if (WEB.on && introWeek && introWeek.left <= 0){ setStatus(st, weekLeftText(), "err"); return false; }
     try {
       const needId = await postNeed();
-      if (WEB.on){ await boardApi("intro.request", {...(signedIn() ? {session: AUTH.session} : {}), profileId: p._id, needId, title: RX.brief.title, company: $("rCompany").value.trim().slice(0, 80), contact: $("rContact").value.trim().slice(0, 120)}); }
-      else await db.collection("intros").add({profile: p._id, need: needId, title: RX.brief.title, company: $("rCompany").value.trim().slice(0, 80), contact: $("rContact").value.trim().slice(0, 120), note: "", at: Date.now(), by: uid || ""});
-      btn.disabled = true; btn.textContent = "Requested"; setStatus(st, "Sent. They'll see your request and contact you if they're interested.");
+      if (WEB.on){
+        const r = await boardApi("intro.request", {...who(true), profileId: p._id, needId, title: RX.brief.title, company: $("rCompany").value.trim().slice(0, 80), contact: $("rContact").value.trim().slice(0, 120), note: str(note).slice(0, 300)});
+        if (introWeek && typeof r.left === "number") introWeek.left = r.left;
+        webRefresh();
+      }
+      else await db.collection("intros").add({profile: p._id, need: needId, title: RX.brief.title, company: $("rCompany").value.trim().slice(0, 80), contact: $("rContact").value.trim().slice(0, 120), note: str(note).slice(0, 300), at: Date.now(), by: uid || ""});
+      btn.disabled = true; btn.textContent = "Requested";
+      setStatus(st, "Sent. They see your note and decide. If they say yes, their name and contact show up under Your intro requests.");
+      return true;
     } catch(e){
-      if (e && e.why === "need_work_email"){ askVerify(st); return; }
-      setStatus(st, e && e.code === "invalid_argument" ? "In this demo, only invited testers can send requests." : (e && e.code === "web" ? e.message : "That didn't go through. Try again."), "err"); }
+      if (e && e.why === "need_work_email"){ askVerify(st); return false; }
+      if (e && e.why === "week_limit" && introWeek) introWeek.left = 0;
+      if (e && e.why === "already"){ btn.disabled = true; btn.textContent = "Requested"; }
+      setStatus(st, e && e.code === "invalid_argument" ? "In this demo, only invited testers can send requests." : (e && e.code === "web" ? e.message : "That didn't go through. Try again."), "err");
+      return false;
+    }
+  }
+  // Recruiter side: every request sent, and the answer.
+  function renderSent(){
+    const box = $("rSent"); if (!box) return; clear(box);
+    $("rSentWrap").hidden = !(WEB.on && sentIntros.length);
+    if ($("rSentWrap").hidden) return;
+    $("rWeek").textContent = weekLeftText();
+    sentIntros.slice().sort((a, z) => (z.at || 0) - (a.at || 0)).forEach(x => {
+      const c = document.createElement("div"); c.className = "job";
+      const t = document.createElement("div"); t.className = "jt";
+      const pr = x.profile;
+      t.textContent = x.status === "yes" && x.seeker ? str(x.seeker.name) : (pr ? str(pr.type) + (pr.second ? " · " + str(pr.second) : "") : "A generalist");
+      const m = document.createElement("div"); m.className = "jm";
+      [str(x.title), pr && pr.region ? str(pr.region) : "", postedAgo(x.at).replace("Posted", "Asked")].filter(Boolean).forEach(v => { const sp = document.createElement("span"); sp.textContent = v; m.append(sp); });
+      const badge = document.createElement("span"); badge.className = "ist";
+      if (x.status === "yes"){ badge.className += " yes"; badge.textContent = "Said yes"; }
+      else if (x.status === "no"){ badge.className += " no"; badge.textContent = "Not this time"; }
+      else if (x.gone){ badge.className += " no"; badge.textContent = "Left the board"; }
+      else badge.textContent = "Waiting for their answer";
+      c.append(t, m, badge);
+      if (pr && pr.thread && x.status !== "yes"){ const p = document.createElement("p"); p.textContent = str(pr.thread); c.append(p); }
+      if (x.status === "yes" && x.seeker){
+        const r = document.createElement("p"); r.className = "reach"; const b = document.createElement("b"); b.textContent = "Reach them at: "; r.append(b, str(x.seeker.contact)); c.append(r);
+        if (x.seeker.note){ const n = document.createElement("p"); n.className = "hint"; n.textContent = "Their note: " + str(x.seeker.note); c.append(n); }
+        const h = document.createElement("p"); h.className = "hint"; h.textContent = "They said yes to your note. Write to them soon, while it's warm."; c.append(h);
+      } else if (x.status === "no"){
+        const h = document.createElement("p"); h.className = "hint"; h.textContent = "They passed on this one. Their name stays private."; c.append(h);
+      } else if (x.gone){
+        const h = document.createElement("p"); h.className = "hint"; h.textContent = "They took their profile off the board before answering."; c.append(h);
+      } else {
+        const h = document.createElement("p"); h.className = "hint"; h.textContent = "Your note: " + str(x.note); c.append(h);
+      }
+      box.append(c);
+    });
   }
   async function startDb(){
     if (!(window.claude && typeof window.claude.use === "function")){
@@ -2991,7 +3142,7 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     const s = AUTH.session; putSession(null); AUTH.user = null; AUTH.linkErr = ""; setStatus($("statusSiIn"), "");
     try { if (s) await authApi("logout", {session: s}); } catch(e){}
     renderAcct(); setStatus($("statusSi"), "You're signed out.");
-    if (WEB.on){ myProfile = null; uid = null; intros = []; myBriefs = []; renderOpt(); renderMyIntros(); renderMyBriefs(); webRefresh(); }
+    if (WEB.on){ myProfile = null; uid = null; intros = []; myBriefs = []; sentIntros = []; introWeek = null; renderOpt(); renderMyIntros(); renderMyBriefs(); renderSent(); webRefresh(); }
   };
   // Right after signing in: bring this browser's board profile into the account, then reload it.
   async function linkBoard(){

@@ -17,6 +17,16 @@
 //   Once email sign-in is switched on (RESEND_API_KEY set), posting a brief or asking for
 //   an intro REQUIRES a verified work email: no anonymous recruiters. Before that, the
 //   board stays open so the preview keeps working.
+//
+// Intros are double opt-in:
+//   1. A recruiter asks for an intro with a short "why you" note (5 a week per recruiter,
+//      the week starts on Monday). The person sees the company, the brief, the note and
+//      whether the work email is verified, but not the recruiter's contact details yet.
+//   2. The person says yes (and shares a name and how to reach them) or "not this time".
+//   3. Only after a yes do both sides see each other's contact details.
+//   Records live in the hash gc:intro (id -> JSON). gc:intros:<profile id> lists the ids a
+//   person received, gc:sent:<owner id> the ids a recruiter sent. Older lists may still hold
+//   whole JSON requests from before double opt-in; those are shown as they were.
 
 import { createHash, randomBytes } from "node:crypto";
 import { userFromSession, workDomain } from "./auth.js";
@@ -26,6 +36,10 @@ const TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TO
 
 const TYPES = ["The Opener","The Connector","The Translator","The Fixer","The Operator","The Explorer","The Storyteller","The Strategist"];
 const WORK = ["Remote","On-site or hybrid","Project or freelance"];
+const INTROS_PER_WEEK = 5;
+// Weeks are counted from Monday 00:00 UTC.
+const weekNo = (now = Date.now()) => Math.floor((now / 86400000 + 3) / 7);
+const weekEnds = (now = Date.now()) => (weekNo(now) + 1) * 7 * 86400000 - 3 * 86400000;
 
 // Shown until enough real people are on the board. Clearly flagged as examples.
 const EXAMPLE_PROFILES = [
@@ -62,6 +76,28 @@ const problems = v => (Array.isArray(v) ? v : []).slice(0, 6).map(x => x && type
   title: s(x.title, 90), situation: s(x.situation, 240), did: s(x.did, 300), result: s(x.result, 240),
 } : null).filter(x => x && x.title && (x.situation || x.did || x.result));
 const parse = x => { try { return JSON.parse(x); } catch (e) { return null; } };
+const isIntroId = x => typeof x === "string" && /^i[0-9a-f]{16}$/.test(x);
+
+// What each side may see of an intro. Contact details only after a yes.
+function forSeeker(r) {
+  const { from, pid, contact, seeker, ...pub } = r;
+  return { ...pub, ...(r.status === "yes" ? { contact, seeker } : {}) };
+}
+function forRecruiter(r, prof) {
+  const { from, contact, seeker, ...pub } = r;
+  const who = prof ? { type: prof.type, second: prof.second || "", thread: prof.thread || "", region: prof.region || "" } : null;
+  return { ...pub, profile: who, gone: r.status === "closed" || (!prof && r.status === "waiting"), ...(r.status === "yes" ? { seeker } : {}) };
+}
+async function loadIntros(ids) {
+  ids = (ids || []).filter(isIntroId);
+  if (!ids.length) return [];
+  const [vals] = await redis([["HMGET", "gc:intro", ...ids]]);
+  return (vals || []).map(parse).filter(Boolean);
+}
+async function weekUsed(rid) {
+  const [n] = await redis([["GET", "gc:wk:intro:" + rid + ":" + weekNo()]]);
+  return Number(n) || 0;
+}
 
 // Whose profile is this call about? The signed-in account wins over the browser key.
 // Returns { id, uid } or { error, status }.
@@ -136,7 +172,11 @@ export default async function handler(req, res) {
         const o = await owner(b, true);
         if (o.error) return fail(res, o);
         const id = o.id;
-        await redis([["HDEL", "gc:profiles", id], ["DEL", "gc:intros:" + id]]);
+        // Requests still waiting for an answer close with the profile.
+        const [ids] = await redis([["LRANGE", "gc:intros:" + id, 0, 49]]);
+        const closing = (await loadIntros(ids)).filter(r => r.status === "waiting")
+          .map(r => ["HSET", "gc:intro", r.id, JSON.stringify({ ...r, status: "closed", answeredAt: Date.now() })]);
+        await redis([["HDEL", "gc:profiles", id], ["DEL", "gc:intros:" + id], ...closing]);
         return res.status(200).json({ ok: true });
       }
       case "need.post": {
@@ -159,28 +199,84 @@ export default async function handler(req, res) {
       case "intro.request": {
         const r = await recruiter(b);
         if (r.error) return fail(res, r);
+        const o = await owner(b, true);
+        if (o.error) return fail(res, o);
         if (await limited(req, "intro", 20)) return res.status(429).json({ error: "Too many requests. Try again later." });
         const pid = s(b.profileId, 40);
         if (!/^p[0-9a-f]{16}$/.test(pid)) return res.status(400).json({ error: "That profile can't receive requests." });
-        const [exists] = await redis([["HEXISTS", "gc:profiles", pid]]);
+        if (pid === o.id) return res.status(400).json({ error: "That's your own profile." });
+        const [exists, sentIds] = await redis([["HEXISTS", "gc:profiles", pid], ["LRANGE", "gc:sent:" + o.id, 0, 99]]);
         if (!exists) return res.status(404).json({ error: "That profile is no longer on the board." });
+        const note = s(b.note, 300);
+        if (note.length < 15) return res.status(400).json({ error: "Add a line or two on why them: what made you pick this person.", code: "need_note" });
         const contact = s(b.contact, 120);
-        if (contact.length < 5) return res.status(400).json({ error: "Add how candidates can reach you." });
-        const intro = { need: s(b.needId, 40), title: s(b.title, 120), company: s(b.company, 80), contact, at: Date.now(), ...(r.domain ? { verified: r.domain } : {}) };
-        await redis([["LPUSH", "gc:intros:" + pid, JSON.stringify(intro)], ["LTRIM", "gc:intros:" + pid, 0, 49]]);
-        return res.status(200).json({ ok: true });
+        if (contact.length < 5) return res.status(400).json({ error: "Add how candidates can reach you.", code: "need_contact" });
+        const sent = await loadIntros(sentIds);
+        if (sent.some(x => x.pid === pid && x.status !== "no")) return res.status(409).json({ error: "You already asked this person. Their answer will show under Your intro requests.", code: "already" });
+        // Weekly limit: count first, give the slot back if we went over.
+        const wk = "gc:wk:intro:" + o.id + ":" + weekNo();
+        const [used] = await redis([["INCR", wk], ["EXPIRE", wk, 8 * 86400]]);
+        if (used > INTROS_PER_WEEK) {
+          await redis([["DECR", wk]]);
+          return res.status(429).json({ error: `You've used your ${INTROS_PER_WEEK} intro requests for this week. New ones open on Monday, so pick the people you're surest about.`, code: "week_limit", left: 0, limit: INTROS_PER_WEEK });
+        }
+        const intro = {
+          id: "i" + randomBytes(8).toString("hex"), pid, from: o.id,
+          need: s(b.needId, 40), title: s(b.title, 120), company: s(b.company, 80), note, contact,
+          at: Date.now(), status: "waiting", ...(r.domain ? { verified: r.domain } : {}),
+        };
+        await redis([
+          ["HSET", "gc:intro", intro.id, JSON.stringify(intro)],
+          ["LPUSH", "gc:intros:" + pid, intro.id], ["LTRIM", "gc:intros:" + pid, 0, 49],
+          ["LPUSH", "gc:sent:" + o.id, intro.id], ["LTRIM", "gc:sent:" + o.id, 0, 99],
+        ]);
+        return res.status(200).json({ ok: true, id: intro.id, left: INTROS_PER_WEEK - used, limit: INTROS_PER_WEEK });
+      }
+      case "intro.answer": {
+        const o = await owner(b, true);
+        if (o.error) return fail(res, o);
+        if (await limited(req, "answer", 60)) return res.status(429).json({ error: "Too many changes. Try again later." });
+        const iid = s(b.id, 40);
+        if (!isIntroId(iid)) return res.status(400).json({ error: "That request can't be found." });
+        const [raw] = await redis([["HGET", "gc:intro", iid]]);
+        const rec = parse(raw);
+        if (!rec || rec.pid !== o.id) return res.status(404).json({ error: "That request can't be found." });
+        if (rec.status !== "waiting") return res.status(409).json({ error: "You already answered this one.", code: "answered" });
+        if (b.yes) {
+          const name = s(b.name, 80), contact = s(b.contact, 120);
+          if (name.length < 2) return res.status(400).json({ error: "Add your name, so they know who to expect.", code: "need_name" });
+          if (contact.length < 5) return res.status(400).json({ error: "Add how they can reach you: an email or a LinkedIn link.", code: "need_contact" });
+          rec.status = "yes"; rec.seeker = { name, contact, note: s(b.note, 300) };
+        } else rec.status = "no";
+        rec.answeredAt = Date.now();
+        await redis([["HSET", "gc:intro", iid, JSON.stringify(rec)]]);
+        return res.status(200).json({ intro: forSeeker(rec) });
       }
       case "mine": {
         const o = await owner(b, true);
         if (o.error) return fail(res, o);
         const id = o.id;
-        const [p, intros] = await redis([["HGET", "gc:profiles", id], ["LRANGE", "gc:intros:" + id, 0, 49]]);
+        const [p, introList, sentIds] = await redis([["HGET", "gc:profiles", id], ["LRANGE", "gc:intros:" + id, 0, 49], ["LRANGE", "gc:sent:" + id, 0, 99]]);
         let briefs = [];
         if (o.uid) {
           const [all] = await redis([["LRANGE", "gc:needs", 0, 199]]);
           briefs = (all || []).map(parse).filter(n => n && n.owner === o.uid).map(({ token, owner, ...n }) => n);
         }
-        return res.status(200).json({ profile: parse(p), intros: (intros || []).map(parse).filter(Boolean), briefs, account: !!o.uid });
+        // Received: new double opt-in records by id, plus older whole requests as they were.
+        const got = await loadIntros(introList);
+        const byId = new Map(got.map(x => [x.id, x]));
+        const intros = (introList || []).map(x => isIntroId(x) ? (byId.has(x) ? forSeeker(byId.get(x)) : null) : parse(x)).filter(Boolean);
+        // Sent: with a short anonymous view of the person, or their details after a yes.
+        const sentRecs = await loadIntros(sentIds);
+        const pids = [...new Set(sentRecs.map(x => x.pid))];
+        const profs = pids.length ? (await redis([["HMGET", "gc:profiles", ...pids]]))[0] : [];
+        const pmap = new Map(pids.map((x, i) => [x, parse((profs || [])[i])]));
+        const sent = sentRecs.map(x => forRecruiter(x, pmap.get(x.pid)));
+        const used = await weekUsed(id);
+        return res.status(200).json({
+          profile: parse(p), intros, sent, briefs, account: !!o.uid,
+          week: { used, left: Math.max(0, INTROS_PER_WEEK - used), limit: INTROS_PER_WEEK, resets: weekEnds() },
+        });
       }
       case "claim": {
         // First sign-in on a browser that already had a profile: move it into the account.
@@ -190,22 +286,35 @@ export default async function handler(req, res) {
         if (await limited(req, "claim", 30)) return res.status(429).json({ error: "Too many tries. Try again later." });
         const from = idOf(b.token), to = o.id;
         if (from === to) return res.status(200).json({ moved: false });
-        const [oldP, newP, oldI, newI] = await redis([
+        const [oldP, newP, oldI, newI, oldS, newS] = await redis([
           ["HGET", "gc:profiles", from], ["HGET", "gc:profiles", to],
           ["LRANGE", "gc:intros:" + from, 0, 49], ["LRANGE", "gc:intros:" + to, 0, 49],
+          ["LRANGE", "gc:sent:" + from, 0, 99], ["LRANGE", "gc:sent:" + to, 0, 99],
         ]);
         const a = parse(oldP), z = parse(newP);
-        if (!a && !(oldI || []).length) return res.status(200).json({ moved: false });
+        if (!a && !(oldI || []).length && !(oldS || []).length) return res.status(200).json({ moved: false });
         const cmds = [];
         // Keep whichever profile was updated last, under the account's id.
         if (a && (!z || (a.at || 0) > (z.at || 0))) cmds.push(["HSET", "gc:profiles", to, JSON.stringify({ ...a, id: to })]);
-        const intros = (newI || []).concat(oldI || []).map(parse).filter(Boolean)
-          .sort((x, y) => (y.at || 0) - (x.at || 0)).slice(0, 50);
+        // Requests this browser received and sent now belong to the account.
+        const moveRecs = async (ids, field) => {
+          for (const r of await loadIntros(ids)) cmds.push(["HSET", "gc:intro", r.id, JSON.stringify({ ...r, [field]: to })]);
+        };
         if ((oldI || []).length) {
+          await moveRecs(oldI, "pid");
+          const atOf = x => isIntroId(x) ? 0 : ((parse(x) || {}).at || 0);
+          const merged = [...new Set((newI || []).concat(oldI || []))].slice(0, 50);
+          // Newest first: id entries keep their list order, older whole requests sort by date among them.
+          const ordered = merged.filter(isIntroId).concat(merged.filter(x => !isIntroId(x) && parse(x)).sort((x, y) => atOf(y) - atOf(x)));
           cmds.push(["DEL", "gc:intros:" + to]);
-          if (intros.length) cmds.push(["RPUSH", "gc:intros:" + to, ...intros.map(x => JSON.stringify(x))]);
+          if (ordered.length) cmds.push(["RPUSH", "gc:intros:" + to, ...ordered]);
         }
-        cmds.push(["HDEL", "gc:profiles", from], ["DEL", "gc:intros:" + from]);
+        if ((oldS || []).length) {
+          await moveRecs(oldS, "from");
+          const merged = [...new Set((newS || []).concat(oldS || []))].slice(0, 100);
+          cmds.push(["DEL", "gc:sent:" + to], ["RPUSH", "gc:sent:" + to, ...merged]);
+        }
+        cmds.push(["HDEL", "gc:profiles", from], ["DEL", "gc:intros:" + from], ["DEL", "gc:sent:" + from]);
         await redis(cmds);
         return res.status(200).json({ moved: true });
       }
