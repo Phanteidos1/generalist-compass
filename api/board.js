@@ -37,6 +37,13 @@
 //   3. Only after a yes do both sides see each other's contact details.
 //   Records live in the hash gc:pitch (id -> JSON). gc:pitched:<profile id> lists the ids a
 //   seeker sent, gc:pitches:<brief id> the ids a brief received.
+//
+// Messages: after a yes (on an intro or a pitch), both sides can write to each other here.
+//   The thread id is the intro or pitch id. Only its two sides can read or write, and only
+//   once the status is "yes". Each side is "person" (the seeker) or "company".
+//   gc:msg:<thread id> is a list of JSON messages {by, text, at}, the last 200 kept.
+//   gc:msgc:<thread id> is a hash of counters: <side> = messages that side sent,
+//   seen:<side> = how many of the other side's messages that side has opened.
 
 import { createHash, randomBytes } from "node:crypto";
 import { userFromSession, workDomain } from "./auth.js";
@@ -153,6 +160,38 @@ async function recruiter(b) {
   if (verifyOn() && !u) return { status: 403, error: "Verify your work email first, so candidates know who you are.", code: "need_work_email" };
   if (verifyOn() && !domain) return { status: 403, error: "Sign in with your work email to post or ask for intros. Personal addresses like Gmail can't show which company you're with.", code: "need_work_email" };
   return { uid: u ? u.id : "", domain };
+}
+// Which side of a thread is this caller on? Returns { rec, side, other } or { status, error }.
+const MSG_KEEP = 200;
+async function threadFor(b) {
+  const tid = s(b.id, 40);
+  if (!isIntroId(tid) && !isPitchId(tid)) return { status: 400, error: "That conversation can't be found.", code: "no_thread" };
+  const o = await owner(b, false);
+  if (o.error) return o;
+  const [raw] = await redis([["HGET", isIntroId(tid) ? "gc:intro" : "gc:pitch", tid]]);
+  const rec = parse(raw);
+  let side = "";
+  if (rec && isIntroId(tid)) side = rec.pid === o.id ? "person" : rec.from === o.id ? "company" : "";
+  if (rec && isPitchId(tid)) side = rec.from === o.id ? "person" : (o.uid && rec.owner === o.uid) ? "company" : "";
+  if (!side) return { status: 404, error: "That conversation can't be found.", code: "no_thread" };
+  if (rec.status !== "yes") return { status: 409, error: "Messages open once both of you have said yes.", code: "not_yes" };
+  return { tid, rec, side, other: side === "person" ? "company" : "person" };
+}
+// Counters for many threads at once: { [id]: { total, unread } } from the given side's view.
+async function chatMeta(items) {
+  items = items.filter(x => x && x.id && x.side);
+  if (!items.length) return {};
+  const rows = await redis(items.map(x => ["HGETALL", "gc:msgc:" + x.id]));
+  const out = {};
+  items.forEach((x, i) => {
+    const r = rows[i] || [], h = {};
+    if (Array.isArray(r)) for (let j = 0; j + 1 < r.length; j += 2) h[r[j]] = Number(r[j + 1]) || 0;
+    else Object.assign(h, r);
+    const other = x.side === "person" ? "company" : "person";
+    const total = (Number(h.person) || 0) + (Number(h.company) || 0);
+    out[x.id] = { total, unread: Math.max(0, (Number(h[other]) || 0) - (Number(h["seen:" + x.side]) || 0)) };
+  });
+  return out;
 }
 const fail = (res, o) => res.status(o.status).json({ error: o.error, code: o.code });
 const needPublic = ({ contact, token, owner, ...pub }) => ({ ...pub, pitchable: !!owner });
@@ -373,9 +412,17 @@ export default async function handler(req, res) {
         const profs = pids.length ? (await redis([["HMGET", "gc:profiles", ...pids]]))[0] : [];
         const pmap = new Map(pids.map((x, i) => [x, parse((profs || [])[i])]));
         const sent = sentRecs.map(x => forRecruiter(x, pmap.get(x.pid)));
+        // Message counters for every conversation that is open (both said yes).
+        const yesItems = [
+          ...intros.filter(x => x.id && x.status === "yes").map(x => ({ id: x.id, side: "person" })),
+          ...sent.filter(x => x.status === "yes").map(x => ({ id: x.id, side: "company" })),
+          ...pitches.filter(x => x.status === "yes").map(x => ({ id: x.id, side: "person" })),
+          ...briefs.flatMap(n => (n.pitches || []).filter(x => x.status === "yes").map(x => ({ id: x.id, side: "company" }))),
+        ];
+        const chats = await chatMeta(yesItems);
         const used = await weekUsed(id), pUsed = await weekUsed(id, "pitch");
         return res.status(200).json({
-          profile: parse(p), intros, sent, briefs, pitches, account: !!o.uid,
+          profile: parse(p), intros, sent, briefs, pitches, chats, account: !!o.uid,
           week: { used, left: Math.max(0, INTROS_PER_WEEK - used), limit: INTROS_PER_WEEK, resets: weekEnds() },
           pitchWeek: { used: pUsed, left: Math.max(0, PITCHES_PER_WEEK - pUsed), limit: PITCHES_PER_WEEK, resets: weekEnds() },
         });
@@ -439,6 +486,30 @@ export default async function handler(req, res) {
           .map(k => ["HSET", "gc:pitch", k.id, JSON.stringify({ ...k, status: "closed", answeredAt: Date.now() })]);
         await redis([["LREM", "gc:needs", 1, raw], ...closing]);
         return res.status(200).json({ ok: true });
+      }
+      case "msg.list": {
+        const th = await threadFor(b);
+        if (th.error) return fail(res, th);
+        const [raw, counts] = await redis([["LRANGE", "gc:msg:" + th.tid, 0, MSG_KEEP - 1], ["HGET", "gc:msgc:" + th.tid, th.other]]);
+        // Opening the thread marks the other side's messages as read.
+        await redis([["HSET", "gc:msgc:" + th.tid, "seen:" + th.side, Number(counts) || 0]]);
+        const messages = (raw || []).map(parse).filter(Boolean).map(m => ({ mine: m.by === th.side, text: m.text, at: m.at }));
+        return res.status(200).json({ messages, side: th.side });
+      }
+      case "msg.send": {
+        const th = await threadFor(b);
+        if (th.error) return fail(res, th);
+        if (await limited(req, "msg", 60)) return res.status(429).json({ error: "That's a lot of messages in one hour. Take a breath and try again later." });
+        const text = String(b.text == null ? "" : b.text).replace(/\r\n?/g, "\n").replace(/[\u0000-\u0009\u000B-\u001F]+/g, " ").replace(/\n{3,}/g, "\n\n").trim().slice(0, 1000);
+        if (!text) return res.status(400).json({ error: "Write something first.", code: "empty" });
+        const msg = { by: th.side, text, at: Date.now() };
+        const [, , mine, otherN] = await redis([
+          ["RPUSH", "gc:msg:" + th.tid, JSON.stringify(msg)], ["LTRIM", "gc:msg:" + th.tid, -MSG_KEEP, -1],
+          ["HINCRBY", "gc:msgc:" + th.tid, th.side, 1], ["HGET", "gc:msgc:" + th.tid, th.other],
+        ]);
+        // Writing back means you have read what they sent so far.
+        await redis([["HSET", "gc:msgc:" + th.tid, "seen:" + th.side, Number(otherN) || 0]]);
+        return res.status(200).json({ ok: true, message: { mine: true, text: msg.text, at: msg.at }, count: mine });
       }
       default:
         return res.status(400).json({ error: "Unknown action" });
