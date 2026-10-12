@@ -27,6 +27,16 @@
 //   Records live in the hash gc:intro (id -> JSON). gc:intros:<profile id> lists the ids a
 //   person received, gc:sent:<owner id> the ids a recruiter sent. Older lists may still hold
 //   whole JSON requests from before double opt-in; those are shown as they were.
+//
+// Pitches are the other direction, also double opt-in:
+//   1. A seeker with a board profile writes to a brief with a short plan (3 a week, week
+//      starts Monday). Their name and contact go with it but stay hidden.
+//   2. The company that posted the brief (signed in, so it has an owner) sees the anonymous
+//      profile and the plan, then says "Yes, let's talk" (sharing how to reach them) or
+//      "Not this time". Briefs posted signed out can't receive pitches.
+//   3. Only after a yes do both sides see each other's contact details.
+//   Records live in the hash gc:pitch (id -> JSON). gc:pitched:<profile id> lists the ids a
+//   seeker sent, gc:pitches:<brief id> the ids a brief received.
 
 import { createHash, randomBytes } from "node:crypto";
 import { userFromSession, workDomain } from "./auth.js";
@@ -37,6 +47,7 @@ const TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TO
 const TYPES = ["The Opener","The Connector","The Translator","The Fixer","The Operator","The Explorer","The Storyteller","The Strategist"];
 const WORK = ["Remote","On-site or hybrid","Project or freelance"];
 const INTROS_PER_WEEK = 5;
+const PITCHES_PER_WEEK = 3;
 // Weeks are counted from Monday 00:00 UTC.
 const weekNo = (now = Date.now()) => Math.floor((now / 86400000 + 3) / 7);
 const weekEnds = (now = Date.now()) => (weekNo(now) + 1) * 7 * 86400000 - 3 * 86400000;
@@ -77,6 +88,8 @@ const problems = v => (Array.isArray(v) ? v : []).slice(0, 6).map(x => x && type
 } : null).filter(x => x && x.title && (x.situation || x.did || x.result));
 const parse = x => { try { return JSON.parse(x); } catch (e) { return null; } };
 const isIntroId = x => typeof x === "string" && /^i[0-9a-f]{16}$/.test(x);
+const isPitchId = x => typeof x === "string" && /^k[0-9a-f]{16}$/.test(x);
+const isNeedId = x => typeof x === "string" && /^n[0-9a-f]{16}$/.test(x);
 
 // What each side may see of an intro. Contact details only after a yes.
 function forSeeker(r) {
@@ -94,9 +107,26 @@ async function loadIntros(ids) {
   const [vals] = await redis([["HMGET", "gc:intro", ...ids]]);
   return (vals || []).map(parse).filter(Boolean);
 }
-async function weekUsed(rid) {
-  const [n] = await redis([["GET", "gc:wk:intro:" + rid + ":" + weekNo()]]);
+async function weekUsed(rid, kind = "intro") {
+  const [n] = await redis([["GET", "gc:wk:" + kind + ":" + rid + ":" + weekNo()]]);
   return Number(n) || 0;
+}
+async function loadPitches(ids) {
+  ids = [...new Set((ids || []).filter(isPitchId))];
+  if (!ids.length) return [];
+  const [vals] = await redis([["HMGET", "gc:pitch", ...ids]]);
+  return (vals || []).map(parse).filter(Boolean);
+}
+// The seeker sees their own pitch, and the company's reply only after a yes.
+function forPitcher(k) {
+  const { owner, from, reply, ...pub } = k;
+  return { ...pub, ...(k.status === "yes" ? { reply } : {}) };
+}
+// The company sees the anonymous profile and the plan; name and contact only after a yes.
+function forBriefOwner(k, prof) {
+  const { owner, from, name, contact, reply, ...pub } = k;
+  const who = prof ? { type: prof.type, second: prof.second || "", name: prof.name || "", thread: prof.thread || "", edge: prof.edge || "", region: prof.region || "", remote: !!prof.remote, problems: prof.problems || [] } : null;
+  return { ...pub, profile: who, gone: !prof && k.status === "waiting", ...(k.status === "yes" ? { name, contact, reply } : {}) };
 }
 
 // Whose profile is this call about? The signed-in account wins over the browser key.
@@ -125,7 +155,7 @@ async function recruiter(b) {
   return { uid: u ? u.id : "", domain };
 }
 const fail = (res, o) => res.status(o.status).json({ error: o.error, code: o.code });
-const needPublic = ({ contact, token, owner, ...pub }) => pub;
+const needPublic = ({ contact, token, owner, ...pub }) => ({ ...pub, pitchable: !!owner });
 
 async function limited(req, bucket, max) {
   const ip = s((req.headers["x-forwarded-for"] || "").split(",")[0] || req.socket?.remoteAddress || "x", 64);
@@ -173,10 +203,13 @@ export default async function handler(req, res) {
         if (o.error) return fail(res, o);
         const id = o.id;
         // Requests still waiting for an answer close with the profile.
-        const [ids] = await redis([["LRANGE", "gc:intros:" + id, 0, 49]]);
+        const [ids, pids] = await redis([["LRANGE", "gc:intros:" + id, 0, 49], ["LRANGE", "gc:pitched:" + id, 0, 99]]);
         const closing = (await loadIntros(ids)).filter(r => r.status === "waiting")
           .map(r => ["HSET", "gc:intro", r.id, JSON.stringify({ ...r, status: "closed", answeredAt: Date.now() })]);
-        await redis([["HDEL", "gc:profiles", id], ["DEL", "gc:intros:" + id], ...closing]);
+        // Pitches still waiting are withdrawn: the company no longer sees them.
+        const withdrawn = (await loadPitches(pids)).filter(k => k.status === "waiting")
+          .map(k => ["HSET", "gc:pitch", k.id, JSON.stringify({ ...k, status: "withdrawn", answeredAt: Date.now() })]);
+        await redis([["HDEL", "gc:profiles", id], ["DEL", "gc:intros:" + id], ...closing, ...withdrawn]);
         return res.status(200).json({ ok: true });
       }
       case "need.post": {
@@ -252,16 +285,84 @@ export default async function handler(req, res) {
         await redis([["HSET", "gc:intro", iid, JSON.stringify(rec)]]);
         return res.status(200).json({ intro: forSeeker(rec) });
       }
+      case "pitch.send": {
+        const o = await owner(b, true);
+        if (o.error) return fail(res, o);
+        if (await limited(req, "pitch", 20)) return res.status(429).json({ error: "Too many tries. Try again later." });
+        const nid = s(b.needId, 40);
+        if (!isNeedId(nid)) return res.status(400).json({ error: "That brief can't receive pitches.", code: "not_pitchable" });
+        const [myP, all, sentIds] = await redis([["HGET", "gc:profiles", o.id], ["LRANGE", "gc:needs", 0, 199], ["LRANGE", "gc:pitched:" + o.id, 0, 99]]);
+        if (!myP) return res.status(400).json({ error: "Make yourself findable first, so they can see the problems you've solved.", code: "need_profile" });
+        const need = (all || []).map(parse).find(n => n && n.id === nid);
+        if (!need || need.hidden) return res.status(404).json({ error: "That brief is no longer on the board.", code: "gone" });
+        if (!need.owner) return res.status(400).json({ error: "This company posted without an account, so it can't receive pitches yet.", code: "not_pitchable" });
+        if (o.uid && need.owner === o.uid) return res.status(400).json({ error: "That's your own brief.", code: "own" });
+        const plan = s(b.plan, 600);
+        if (plan.length < 40) return res.status(400).json({ error: "Write a few lines on how you'd tackle it: what you'd do first, and why you.", code: "need_plan" });
+        const name = s(b.name, 80), contact = s(b.contact, 120);
+        if (name.length < 2) return res.status(400).json({ error: "Add your name. They only see it if they say yes.", code: "need_name" });
+        if (contact.length < 5) return res.status(400).json({ error: "Add how they can reach you: an email or a LinkedIn link.", code: "need_contact" });
+        const sent = await loadPitches(sentIds);
+        if (sent.some(k => k.need === nid && k.status !== "withdrawn")) return res.status(409).json({ error: "You already pitched this one. Their answer will show under Your pitches.", code: "already" });
+        const wk = "gc:wk:pitch:" + o.id + ":" + weekNo();
+        const [used] = await redis([["INCR", wk], ["EXPIRE", wk, 8 * 86400]]);
+        if (used > PITCHES_PER_WEEK) {
+          await redis([["DECR", wk]]);
+          return res.status(429).json({ error: `You've sent your ${PITCHES_PER_WEEK} pitches for this week. New ones open on Monday, so save them for the problems you know best.`, code: "week_limit", left: 0, limit: PITCHES_PER_WEEK });
+        }
+        const pitch = {
+          id: "k" + randomBytes(8).toString("hex"), need: nid, owner: need.owner, from: o.id,
+          title: s(need.title, 120), company: s(need.company, 80), ...(need.verified ? { verified: need.verified } : {}),
+          plan, name, contact, at: Date.now(), status: "waiting",
+        };
+        await redis([
+          ["HSET", "gc:pitch", pitch.id, JSON.stringify(pitch)],
+          ["LPUSH", "gc:pitched:" + o.id, pitch.id], ["LTRIM", "gc:pitched:" + o.id, 0, 99],
+          ["LPUSH", "gc:pitches:" + nid, pitch.id], ["LTRIM", "gc:pitches:" + nid, 0, 199],
+        ]);
+        return res.status(200).json({ ok: true, pitch: forPitcher(pitch), left: PITCHES_PER_WEEK - used, limit: PITCHES_PER_WEEK });
+      }
+      case "pitch.answer": {
+        // Only the signed-in recruiter who posted the brief can answer.
+        const o = await owner({ session: b.session }, false);
+        if (o.error) return fail(res, o);
+        if (await limited(req, "panswer", 60)) return res.status(429).json({ error: "Too many changes. Try again later." });
+        const kid = s(b.id, 40);
+        if (!isPitchId(kid)) return res.status(400).json({ error: "That pitch can't be found." });
+        const [raw] = await redis([["HGET", "gc:pitch", kid]]);
+        const rec = parse(raw);
+        if (!rec || rec.owner !== o.uid) return res.status(404).json({ error: "That pitch can't be found." });
+        if (rec.status !== "waiting") return res.status(409).json({ error: rec.status === "withdrawn" ? "They took their profile off the board." : "You already answered this one.", code: "answered" });
+        if (b.yes) {
+          const contact = s(b.contact, 120);
+          if (contact.length < 5) return res.status(400).json({ error: "Add how they can reach you: an email or a LinkedIn link.", code: "need_contact" });
+          rec.status = "yes"; rec.reply = { contact, note: s(b.note, 300) };
+        } else rec.status = "no";
+        rec.answeredAt = Date.now();
+        await redis([["HSET", "gc:pitch", kid, JSON.stringify(rec)]]);
+        const [p] = await redis([["HGET", "gc:profiles", rec.from]]);
+        return res.status(200).json({ pitch: forBriefOwner(rec, parse(p)) });
+      }
       case "mine": {
         const o = await owner(b, true);
         if (o.error) return fail(res, o);
         const id = o.id;
-        const [p, introList, sentIds] = await redis([["HGET", "gc:profiles", id], ["LRANGE", "gc:intros:" + id, 0, 49], ["LRANGE", "gc:sent:" + id, 0, 99]]);
+        const [p, introList, sentIds, pitchedIds] = await redis([["HGET", "gc:profiles", id], ["LRANGE", "gc:intros:" + id, 0, 49], ["LRANGE", "gc:sent:" + id, 0, 99], ["LRANGE", "gc:pitched:" + id, 0, 99]]);
         let briefs = [];
         if (o.uid) {
           const [all] = await redis([["LRANGE", "gc:needs", 0, 199]]);
           briefs = (all || []).map(parse).filter(n => n && n.owner === o.uid).map(({ token, owner, ...n }) => n);
+          // Pitches each brief received, with a fresh anonymous view of each person.
+          if (briefs.length) {
+            const lists = await redis(briefs.map(n => ["LRANGE", "gc:pitches:" + n.id, 0, 199]));
+            const recs = await loadPitches(lists.flat());
+            const froms = [...new Set(recs.map(k => k.from))];
+            const profs = froms.length ? (await redis([["HMGET", "gc:profiles", ...froms]]))[0] : [];
+            const pm = new Map(froms.map((x, i) => [x, parse((profs || [])[i])]));
+            briefs = briefs.map(n => ({ ...n, pitches: recs.filter(k => k.need === n.id && k.owner === o.uid && k.status !== "withdrawn").map(k => forBriefOwner(k, pm.get(k.from))) }));
+          }
         }
+        const pitches = (await loadPitches(pitchedIds)).map(forPitcher);
         // Received: new double opt-in records by id, plus older whole requests as they were.
         const got = await loadIntros(introList);
         const byId = new Map(got.map(x => [x.id, x]));
@@ -272,10 +373,11 @@ export default async function handler(req, res) {
         const profs = pids.length ? (await redis([["HMGET", "gc:profiles", ...pids]]))[0] : [];
         const pmap = new Map(pids.map((x, i) => [x, parse((profs || [])[i])]));
         const sent = sentRecs.map(x => forRecruiter(x, pmap.get(x.pid)));
-        const used = await weekUsed(id);
+        const used = await weekUsed(id), pUsed = await weekUsed(id, "pitch");
         return res.status(200).json({
-          profile: parse(p), intros, sent, briefs, account: !!o.uid,
+          profile: parse(p), intros, sent, briefs, pitches, account: !!o.uid,
           week: { used, left: Math.max(0, INTROS_PER_WEEK - used), limit: INTROS_PER_WEEK, resets: weekEnds() },
+          pitchWeek: { used: pUsed, left: Math.max(0, PITCHES_PER_WEEK - pUsed), limit: PITCHES_PER_WEEK, resets: weekEnds() },
         });
       }
       case "claim": {
@@ -286,13 +388,14 @@ export default async function handler(req, res) {
         if (await limited(req, "claim", 30)) return res.status(429).json({ error: "Too many tries. Try again later." });
         const from = idOf(b.token), to = o.id;
         if (from === to) return res.status(200).json({ moved: false });
-        const [oldP, newP, oldI, newI, oldS, newS] = await redis([
+        const [oldP, newP, oldI, newI, oldS, newS, oldK, newK] = await redis([
           ["HGET", "gc:profiles", from], ["HGET", "gc:profiles", to],
           ["LRANGE", "gc:intros:" + from, 0, 49], ["LRANGE", "gc:intros:" + to, 0, 49],
           ["LRANGE", "gc:sent:" + from, 0, 99], ["LRANGE", "gc:sent:" + to, 0, 99],
+          ["LRANGE", "gc:pitched:" + from, 0, 99], ["LRANGE", "gc:pitched:" + to, 0, 99],
         ]);
         const a = parse(oldP), z = parse(newP);
-        if (!a && !(oldI || []).length && !(oldS || []).length) return res.status(200).json({ moved: false });
+        if (!a && !(oldI || []).length && !(oldS || []).length && !(oldK || []).length) return res.status(200).json({ moved: false });
         const cmds = [];
         // Keep whichever profile was updated last, under the account's id.
         if (a && (!z || (a.at || 0) > (z.at || 0))) cmds.push(["HSET", "gc:profiles", to, JSON.stringify({ ...a, id: to })]);
@@ -314,7 +417,12 @@ export default async function handler(req, res) {
           const merged = [...new Set((newS || []).concat(oldS || []))].slice(0, 100);
           cmds.push(["DEL", "gc:sent:" + to], ["RPUSH", "gc:sent:" + to, ...merged]);
         }
-        cmds.push(["HDEL", "gc:profiles", from], ["DEL", "gc:intros:" + from], ["DEL", "gc:sent:" + from]);
+        if ((oldK || []).length) {
+          for (const k of await loadPitches(oldK)) cmds.push(["HSET", "gc:pitch", k.id, JSON.stringify({ ...k, from: to })]);
+          const merged = [...new Set((newK || []).concat(oldK || []))].slice(0, 100);
+          cmds.push(["DEL", "gc:pitched:" + to], ["RPUSH", "gc:pitched:" + to, ...merged]);
+        }
+        cmds.push(["HDEL", "gc:profiles", from], ["DEL", "gc:intros:" + from], ["DEL", "gc:sent:" + from], ["DEL", "gc:pitched:" + from]);
         await redis(cmds);
         return res.status(200).json({ moved: true });
       }
@@ -325,7 +433,11 @@ export default async function handler(req, res) {
         const [all] = await redis([["LRANGE", "gc:needs", 0, 199]]);
         const raw = (all || []).find(x => { const n = parse(x); return n && n.id === nid && n.owner === o.uid; });
         if (!raw) return res.status(404).json({ error: "That brief is already gone." });
-        await redis([["LREM", "gc:needs", 1, raw]]);
+        // Pitches still waiting close with the brief; the seeker sees it was taken down.
+        const [kids] = await redis([["LRANGE", "gc:pitches:" + nid, 0, 199]]);
+        const closing = (await loadPitches(kids)).filter(k => k.status === "waiting")
+          .map(k => ["HSET", "gc:pitch", k.id, JSON.stringify({ ...k, status: "closed", answeredAt: Date.now() })]);
+        await redis([["LREM", "gc:needs", 1, raw], ...closing]);
         return res.status(200).json({ ok: true });
       }
       default:

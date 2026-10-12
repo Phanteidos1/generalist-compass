@@ -451,6 +451,10 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
 .ist.no{background:var(--line);color:var(--muted)}
 .wkleft{font-size:14px;color:var(--muted);margin:0}
 .reach{overflow-wrap:anywhere}
+.plan{white-space:pre-wrap;overflow-wrap:anywhere}
+.pitches{display:flex;flex-direction:column;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.pitches .job{background:var(--bg)}
+.mypitch{margin-top:10px}
 .tstat{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 .tstat button{font:inherit;font-size:13px;font-weight:700;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
 .tstat button[aria-pressed="true"]{border-color:var(--good);background:var(--good);color:var(--surface)}
@@ -857,7 +861,8 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
         <div class="row"><button class="btn" id="optOn" type="button">Make me findable</button><button class="link" id="optOff" type="button" hidden>Remove my profile</button></div>
         <div class="status" id="statusOpt" role="status"></div>
         <div id="myIntros" style="display:flex;flex-direction:column;gap:10px"></div>
-        <div id="seekBoardWrap" hidden><div class="q" style="margin:6px 0 8px">Recruiters are looking for</div><div class="joblist" id="seekBoard"></div>
+        <div id="myPitchesWrap" hidden style="display:flex;flex-direction:column;gap:10px"><div class="q" style="margin-top:6px">Your pitches</div><p class="wkleft" id="pWeek"></p><div id="myPitches" style="display:flex;flex-direction:column;gap:10px"></div></div>
+        <div id="seekBoardWrap" hidden><div class="q" style="margin:6px 0 4px">Recruiters are looking for</div><p class="hint" style="margin:0 0 8px">Solved something like this before? Pitch them your plan. 3 pitches a week, so pick the ones you know best.</p><div class="joblist" id="seekBoard"></div>
           <div class="row" style="margin-top:10px"><button class="link" id="seekAll" type="button">See all open problems</button></div></div>
       </div>
       <div class="card again" id="againCard"><b id="againHead">Come back in a week</b><p class="hint" id="againText">New companies raise money and expand every week. Come back for 3 fresh targets for your door.</p>
@@ -993,7 +998,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
     </div>
     <div id="rMineWrap" hidden style="display:flex;flex-direction:column;gap:20px">
       <h2 class="sech">Your briefs</h2>
-      <p class="lead" style="margin-top:-12px">Only you see this list. Remove a brief once the role is filled.</p>
+      <p class="lead" style="margin-top:-12px">Only you see this list. Generalists can pitch you a plan for each brief: you see what they've solved, they stay anonymous until you say yes. Remove a brief once the role is filled.</p>
       <div class="joblist" id="rMine"></div>
     </div>
     <div id="rSentWrap" hidden style="display:flex;flex-direction:column;gap:20px">
@@ -1028,7 +1033,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
     <div class="row bcount"><p class="hint" id="bCount" role="status" aria-live="polite"></p><button class="link" id="bClear" type="button" hidden>Clear filters</button></div>
     <div class="joblist" id="bList"></div>
     <div class="row"><button class="ghost" id="bMore" type="button" hidden>Show more</button></div>
-    <p class="hint" id="bSeek" hidden>Something here fits you? <button class="link" id="bStory" type="button">Get your reading</button> and make yourself findable, so the company can ask for an intro.</p>
+    <p class="hint" id="bSeek" hidden>Something here fits you? <button class="link" id="bStory" type="button">Get your reading</button> and make yourself findable, so the company can ask for an intro, or so you can pitch them your plan.</p>
   </section>
 
   <!-- SIGN IN -->
@@ -2604,7 +2609,7 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     tipExtra:"Say what feels off, what scares you, or what you want to know. Then press Send."});
 
   // ---------- recruiters & matching (demo; needs the shared db) ----------
-  var db = null, uid = null, myProfile = null, needs = [], intros = [], myBriefs = [], sentIntros = [], introWeek = null;
+  var db = null, uid = null, myProfile = null, needs = [], intros = [], myBriefs = [], sentIntros = [], introWeek = null, myPitches = [], pitchWeek = null;
   const WEB = { on: false, token: null };
   async function api(action, payload){
     const r = await fetch("/api/board", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify(Object.assign({action}, payload || {}))});
@@ -2652,8 +2657,10 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
         myBriefs = Array.isArray(mine.briefs) ? mine.briefs : [];
         sentIntros = Array.isArray(mine.sent) ? mine.sent : [];
         introWeek = mine.week || null;
-      } else { myProfile = null; uid = null; intros = []; myBriefs = []; sentIntros = []; introWeek = null; }
-      renderBoards(); renderOpt(); renderMyIntros(); renderSent(); renderAcctBoard();
+        myPitches = Array.isArray(mine.pitches) ? mine.pitches : [];
+        pitchWeek = mine.pitchWeek || null;
+      } else { myProfile = null; uid = null; intros = []; myBriefs = []; sentIntros = []; introWeek = null; myPitches = []; pitchWeek = null; }
+      renderBoards(); renderOpt(); renderMyIntros(); renderSent(); renderAcctBoard(); renderMyPitches();
     } catch(e){ /* board offline: keep the rest of the app working */ }
   }
   const RX = { pool: [], brief: null, needId: null };
@@ -2717,7 +2724,7 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     }
     return c;
   }
-  function needCard(n){
+  function needCard(n, opts){
     const c = document.createElement("div"); c.className = "job need";
     const t = document.createElement("div"); t.className = "jt"; t.textContent = str(n.title);
     if (n.example){ const b = document.createElement("span"); b.className = "badge"; b.textContent = "Example"; t.append(b); }
@@ -2728,6 +2735,172 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     c.append(t, m, p);
     const myType = S.map && S.map.archetype && !S.example ? S.map.archetype.type : "";
     if (myType && n.type === myType){ const f = document.createElement("div"); f.className = "fitme"; f.textContent = "Fits your type"; c.append(f); }
+    if (opts && opts.pitch) pitchUi(c, n);
+    return c;
+  }
+
+  // ---------- pitches: a seeker writes to a brief with a plan (double opt-in) ----------
+  const PITCH_LIMIT = 3;
+  function pitchLeftText(){
+    if (!WEB.on || !pitchWeek) return "You can send " + PITCH_LIMIT + " pitches a week, so save them for the problems you know best.";
+    const n = pitchWeek.left;
+    return n <= 0 ? "You've sent this week's pitches. New ones open on Monday."
+      : (n === 1 ? "1 pitch" : n + " pitches") + " left this week, of " + pitchWeek.limit + ". New ones open on Monday.";
+  }
+  const pitchFor = id => myPitches.find(k => k.need === id && k.status !== "withdrawn");
+  const PITCH_STATE = { waiting: "Pitched, waiting for their answer", yes: "They said yes", no: "Not this time", closed: "Brief taken down", withdrawn: "Withdrawn" };
+  function toFindable(){
+    if (!(S.map && !S.example)){ go(1); return; }
+    // The Be found card sits at the end of the results path; open it straight away.
+    if ((S.stage || 2) < 5){ S.stage = 5; applyStage(); save(); }
+    go(2); setTimeout(() => $("optCard").scrollIntoView({behavior:"smooth", block:"start"}), 600);
+  }
+  function pitchUi(c, n){
+    const id = str(n._id || n.id);
+    if (myBriefs.some(b => b.id === id)) return;
+    const done = pitchFor(id);
+    if (done){
+      const b = document.createElement("span"); b.className = "ist" + (done.status === "yes" ? " yes" : done.status === "waiting" ? "" : " no");
+      b.textContent = PITCH_STATE[done.status] || "Pitched"; c.append(b);
+      if (done.status === "yes" && done.reply){ const r = document.createElement("p"); r.className = "reach"; const k = document.createElement("b"); k.textContent = "Reach them at: "; r.append(k, str(done.reply.contact)); c.append(r); }
+      return;
+    }
+    const row = document.createElement("div"); row.className = "row";
+    const btn = document.createElement("button"); btn.type = "button"; btn.className = "ghost"; btn.textContent = "Pitch your plan";
+    const st = document.createElement("div"); st.className = "status"; st.setAttribute("role", "status");
+    const form = document.createElement("div"); form.className = "askform"; form.hidden = true;
+    const k = id.replace(/[^A-Za-z0-9_-]/g, "");
+    const mk = (fid, label, el) => { const l = document.createElement("label"); l.className = "q"; l.htmlFor = fid; l.textContent = label; el.id = fid; return [l, el]; };
+    const plan = document.createElement("textarea"); plan.maxLength = 600;
+    plan.placeholder = "e.g. I opened Portugal from zero for a travel startup: first 10 partners in 8 weeks. For Spain I'd start with the 20 agencies that already sell your kind of trip, then hire one local lead by month two.";
+    const hint = document.createElement("p"); hint.className = "hint"; hint.textContent = "They see your plan with your anonymous profile and approved problem cards. Your name and contact stay hidden until they say yes.";
+    const nm = document.createElement("input"); nm.type = "text"; nm.autocomplete = "name"; nm.maxLength = 80; nm.placeholder = "e.g. Mike Peeters";
+    const ct = document.createElement("input"); ct.type = "text"; ct.autocomplete = "off"; ct.maxLength = 120; ct.placeholder = "Email or LinkedIn link";
+    const left = document.createElement("p"); left.className = "wkleft";
+    const frow = document.createElement("div"); frow.className = "row";
+    const send = document.createElement("button"); send.type = "button"; send.className = "btn"; send.textContent = "Send my pitch";
+    const cancel = document.createElement("button"); cancel.type = "button"; cancel.className = "link"; cancel.textContent = "Cancel";
+    frow.append(send, cancel);
+    form.append(...mk("pPlan-" + k, "Your plan: how you'd tackle it, and why you", plan), hint, ...mk("pName-" + k, "Your name (hidden until they say yes)", nm), ...mk("pReach-" + k, "How they can reach you (hidden until they say yes)", ct), left, frow);
+    btn.onclick = () => {
+      setStatus(st, "");
+      if (!n.example){
+        if (!WEB.on){ setStatus(st, "Pitches aren't available right now.", "err"); return; }
+        if (!n.pitchable){ setStatus(st, "This company posted without an account, so it can't receive pitches yet. Make yourself findable and they can still ask you for an intro.", "err"); return; }
+        if (!myProfile){
+          clear(st); st.className = "status err";
+          st.append("Make yourself findable first, so they can see the problems you've solved. ");
+          const go2 = document.createElement("button"); go2.type = "button"; go2.className = "link"; go2.textContent = S.map && !S.example ? "Make me findable" : "Get your reading"; go2.onclick = toFindable;
+          st.append(go2); return;
+        }
+        if (pitchWeek && pitchWeek.left <= 0){ setStatus(st, pitchLeftText(), "err"); return; }
+      }
+      if (!nm.value) nm.value = $("pgName").value.trim();
+      if (!ct.value) ct.value = $("pgContact").value.trim() || (signedIn() ? str(AUTH.user.email) : "");
+      left.textContent = n.example ? "This is an example brief: try it, nothing gets sent." : pitchLeftText();
+      form.hidden = false; row.hidden = true; plan.focus();
+    };
+    cancel.onclick = () => { form.hidden = true; row.hidden = false; setStatus(st, ""); };
+    send.onclick = async () => {
+      const pl = plan.value.trim();
+      if (pl.length < 40){ setStatus(st, "Write a few lines on how you'd tackle it: what you'd do first, and why you.", "err"); plan.focus(); return; }
+      if (nm.value.trim().length < 2){ setStatus(st, "Add your name. They only see it if they say yes.", "err"); nm.focus(); return; }
+      if (ct.value.trim().length < 5){ setStatus(st, "Add how they can reach you: an email or a LinkedIn link.", "err"); ct.focus(); return; }
+      if (n.example){
+        form.hidden = true; row.hidden = false; btn.disabled = true; btn.textContent = "Pitched";
+        setStatus(st, "This is an example brief, so nobody will get it. With a real one, the company reads your plan next to your problem cards and says yes or not this time. Only after a yes do you both get each other's details.");
+        return;
+      }
+      send.disabled = true; setStatus(st, "Sending your pitch", "thinking");
+      try {
+        const r = await boardApi("pitch.send", Object.assign(who(false), {needId: id, plan: pl, name: nm.value.trim(), contact: ct.value.trim()}));
+        if (r && r.pitch) myPitches.unshift(r.pitch);
+        if (pitchWeek && typeof r.left === "number") pitchWeek.left = r.left;
+        form.hidden = true; btn.disabled = true; btn.textContent = "Pitched"; row.hidden = false;
+        setStatus(st, "Sent. They read your plan next to your problem cards. If they say yes, their contact shows up under Your pitches on your results.");
+        renderMyPitches();
+      } catch(e){
+        send.disabled = false;
+        if (e && e.why === "week_limit" && pitchWeek) pitchWeek.left = 0;
+        if (e && e.why === "need_profile"){ myProfile = null; }
+        setStatus(st, e && e.message ? e.message : "That didn't go through. Try again.", "err");
+      }
+    };
+    row.append(btn); c.append(row, form, st);
+  }
+  // Seeker side: every pitch sent, and the answer.
+  function renderMyPitches(){
+    const box = $("myPitches"); if (!box) return; clear(box);
+    const list = myPitches.filter(k => k.status !== "withdrawn");
+    $("myPitchesWrap").hidden = !(WEB.on && list.length);
+    if (!list.length) return;
+    $("pWeek").textContent = pitchLeftText();
+    list.slice().sort((a, z) => (z.at || 0) - (a.at || 0)).forEach(x => {
+      const d = document.createElement("div"); d.className = "ireq" + (x.status === "waiting" ? "" : " done");
+      const h = document.createElement("b"); h.textContent = "To " + (str(x.company) || "a company") + ": " + str(x.title);
+      const b = document.createElement("span"); b.className = "ist" + (x.status === "yes" ? " yes" : x.status === "waiting" ? "" : " no"); b.textContent = PITCH_STATE[x.status] || "Pitched";
+      d.append(h, b);
+      if (x.status === "yes" && x.reply){
+        const r = document.createElement("p"); r.className = "reach"; const k = document.createElement("b"); k.textContent = "Reach them at: "; r.append(k, str(x.reply.contact)); d.append(r);
+        if (x.reply.note){ const n = document.createElement("p"); n.className = "why"; n.textContent = "Their note: " + str(x.reply.note); d.append(n); }
+        const hh = document.createElement("p"); hh.className = "hint"; hh.textContent = "They now see your name and how to reach you. Write to them soon, while it's warm."; d.append(hh);
+      } else if (x.status === "no"){
+        const n = document.createElement("p"); n.className = "hint"; n.textContent = "They passed on this one. They never learned who you are."; d.append(n);
+      } else if (x.status === "closed"){
+        const n = document.createElement("p"); n.className = "hint"; n.textContent = "They took the brief off the board before answering. Your name stayed private."; d.append(n);
+      } else {
+        const n = document.createElement("p"); n.className = "hint plan"; n.textContent = "Your plan: " + str(x.plan); d.append(n);
+      }
+      box.append(d);
+    });
+  }
+  // Recruiter side: pitches under one of their briefs.
+  function pitchCard(x, brief){
+    const pr = x.profile;
+    const c = pr ? profCard(Object.assign({}, pr, {name: x.status === "yes" && x.name ? x.name : pr.name}), "", false) : document.createElement("div");
+    if (!pr){ c.className = "job"; const t = document.createElement("div"); t.className = "jt"; t.textContent = x.status === "yes" && x.name ? str(x.name) : "A generalist"; c.append(t); }
+    const pl = document.createElement("p"); pl.className = "plan"; const pb = document.createElement("b"); pb.textContent = "Their plan: "; pl.append(pb, str(x.plan)); c.append(pl);
+    const ago = postedAgo(x.at).replace("Posted", "Pitched"); if (ago){ const m = document.createElement("p"); m.className = "hint"; m.textContent = ago; c.append(m); }
+    const st = document.createElement("div"); st.className = "status"; st.setAttribute("role", "status");
+    if (x.status === "yes"){
+      const b = document.createElement("span"); b.className = "ist yes"; b.textContent = "You said yes";
+      const r = document.createElement("p"); r.className = "reach"; const k = document.createElement("b"); k.textContent = str(x.name) + " · reach them at: "; r.append(k, str(x.contact));
+      const h = document.createElement("p"); h.className = "hint"; h.textContent = "They now see how to reach you" + (x.reply && x.reply.contact ? " (" + str(x.reply.contact) + ")" : "") + ".";
+      c.append(b, r, h); return c;
+    }
+    if (x.status === "no" || x.status === "closed"){ const b = document.createElement("span"); b.className = "ist no"; b.textContent = x.status === "no" ? "You passed" : "Closed"; c.append(b); return c; }
+    if (x.gone){ const b = document.createElement("span"); b.className = "ist no"; b.textContent = "Left the board"; c.append(b); return c; }
+    const ask = document.createElement("p"); ask.className = "hint"; ask.textContent = "Say yes and you both get each other's contact details. Say no and they stay anonymous.";
+    const row = document.createElement("div"); row.className = "row";
+    const yes = document.createElement("button"); yes.type = "button"; yes.className = "btn"; yes.textContent = "Yes, let's talk";
+    const no = document.createElement("button"); no.type = "button"; no.className = "link"; no.textContent = "Not this time";
+    row.append(yes, no);
+    const form = document.createElement("div"); form.className = "askform"; form.hidden = true;
+    const k = str(x.id).replace(/[^A-Za-z0-9_-]/g, "");
+    const mk = (fid, label, el) => { const l = document.createElement("label"); l.className = "q"; l.htmlFor = fid; l.textContent = label; el.id = fid; return [l, el]; };
+    const ct = document.createElement("input"); ct.type = "text"; ct.autocomplete = "off"; ct.maxLength = 120; ct.placeholder = "Email or LinkedIn link";
+    ct.value = str(brief.contact) || $("rContact").value.trim() || (signedIn() ? str(AUTH.user.email) : "");
+    const nt = document.createElement("textarea"); nt.maxLength = 300; nt.placeholder = "e.g. Loved the agency idea. Free for a call Thursday?";
+    const frow = document.createElement("div"); frow.className = "row";
+    const share = document.createElement("button"); share.type = "button"; share.className = "btn"; share.textContent = "Share my details";
+    const back = document.createElement("button"); back.type = "button"; back.className = "link"; back.textContent = "Cancel";
+    frow.append(share, back);
+    form.append(...mk("kyReach-" + k, "How they can reach you", ct), ...mk("kyNote-" + k, "A short note back (optional)", nt), frow);
+    yes.onclick = () => { form.hidden = false; row.hidden = true; ask.hidden = true; ct.focus(); };
+    back.onclick = () => { form.hidden = true; row.hidden = false; ask.hidden = false; setStatus(st, ""); };
+    const answer = async (isYes, btn) => {
+      if (isYes && ct.value.trim().length < 5){ setStatus(st, "Add how they can reach you: an email or a LinkedIn link.", "err"); ct.focus(); return; }
+      btn.disabled = true; setStatus(st, isYes ? "Sharing your details" : "Saving", "thinking");
+      try {
+        const r = await boardApi("pitch.answer", {session: AUTH.session, id: x.id, yes: isYes, contact: ct.value.trim(), note: nt.value.trim()});
+        const ps = brief.pitches || []; const i = ps.findIndex(y => y.id === x.id);
+        if (i >= 0 && r && r.pitch) ps[i] = r.pitch;
+        renderMyBriefs();
+      } catch(e){ btn.disabled = false; setStatus(st, e && e.message ? e.message : "That didn't go through. Try again.", "err"); }
+    };
+    share.onclick = () => answer(true, share);
+    no.onclick = () => answer(false, no);
+    c.append(ask, row, form, st);
     return c;
   }
   function postedAgo(at){
@@ -2770,7 +2943,7 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
       const b = document.createElement("button"); b.type = "button"; b.className = "link"; b.textContent = "clear the filters"; b.onclick = clearBoardFilters;
       p.append(b, "."); box.append(p);
     }
-    hits.slice(0, BF.shown).forEach(n => box.append(needCard(n)));
+    hits.slice(0, BF.shown).forEach(n => box.append(needCard(n, {pitch: true})));
     $("bMore").hidden = hits.length <= BF.shown;
     $("bMore").textContent = "Show more (" + (hits.length - Math.min(BF.shown, hits.length)) + " left)";
     $("bSeek").hidden = !(hits.length && (!S.map || S.example));
@@ -2811,7 +2984,7 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     const sb = $("seekBoard"); clear(sb);
     const myType = S.map && S.map.archetype ? S.map.archetype.type : "";
     const mine = list.filter(n => n.type === myType).concat(list.filter(n => n.type !== myType)).slice(0, 3);
-    mine.forEach(n => sb.append(needCard(n)));
+    mine.forEach(n => sb.append(needCard(n, {pitch: true})));
     $("seekBoardWrap").hidden = !mine.length;
     $("rAll").hidden = !list.length;
     if (!$("boardSec").hidden) renderBoardPage();
@@ -2834,7 +3007,16 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
         try { await boardApi("need.delete", {session: AUTH.session, id: n.id}); myBriefs = myBriefs.filter(x => x.id !== n.id); needs = needs.filter(x => x._id !== n.id); renderBoards(); webRefresh(); }
         catch(e){ del.disabled = false; setStatus(st, e.message || "That didn't work. Try again.", "err"); }
       };
-      row.append(del); c.append(row, st); box.append(c);
+      row.append(del); c.append(row, st);
+      const ps = (Array.isArray(n.pitches) ? n.pitches : []).slice().sort((a, z) => (z.at || 0) - (a.at || 0));
+      const wrap = document.createElement("div"); wrap.className = "pitches";
+      const lab = document.createElement("div"); lab.className = "q";
+      const waiting = ps.filter(x => x.status === "waiting" && !x.gone).length;
+      lab.textContent = !ps.length ? "No pitches yet" : (ps.length === 1 ? "1 pitch" : ps.length + " pitches") + (waiting ? ", " + waiting + " waiting for your answer" : "");
+      wrap.append(lab);
+      if (!ps.length){ const h = document.createElement("p"); h.className = "hint"; h.textContent = "Generalists who solved something like this can pitch you a plan. They show up here."; wrap.append(h); }
+      ps.forEach(x => wrap.append(pitchCard(x, n)));
+      c.append(wrap); box.append(c);
     });
   }
   function renderMyIntros(){
