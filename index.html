@@ -660,7 +660,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
       </div>
       <div class="traits" id="archTraits"></div>
       <div class="secondrow" id="archSecondRow" hidden><span class="mini" id="archSecondEmb"></span><span id="archSecond"></span></div>
-      <details class="more"><summary>Why this type?</summary><p id="archWhy"></p></details>
+      <details class="more"><summary id="archWhyLabel">Why this type?</summary><p id="archWhy"></p></details>
     </div>
 
     <div class="card threadcard" data-about="The thread in your story">
@@ -681,6 +681,21 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
         <span class="tag">What's holding you back</span>
         <div class="label" id="trapName"></div>
         <p id="trapWhy"></p>
+      </div>
+    </div>
+    <div class="pair" id="deepPair" hidden>
+      <div class="card mirror" id="tensionCard" data-about="The pull inside you">
+        <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7 3 12l4 5M17 7l4 5-4 5M3 12h18"/></svg></div>
+        <span class="tag">The pull inside you</span>
+        <div class="label" id="tensionName"></div>
+        <p id="tensionWhy"></p>
+      </div>
+      <div class="card mirror" id="hiddenCard" data-about="A skill you don't count">
+        <div class="ico good"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <span class="tag">A skill you don't count</span>
+        <div class="label" id="hiddenSkill"></div>
+        <p class="hint" id="hiddenFrom"></p>
+        <p id="hiddenWorth"></p>
       </div>
     </div>
     <div class="reframe"><div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg></div><div><b>Try seeing it this way</b><span id="reframe"></span></div></div>
@@ -1103,7 +1118,9 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
 
   const EXAMPLE_PROFILE = "Ran my family's retail business for 6 years and grew online sales a lot. Then set up a supplier network and warehouse in a new country for a trading company. Organized events and festivals for a few years. Loved building things from nothing and the pressure of live events. Got bored once things ran smoothly. Want something remote.";
   const EXAMPLE_MAP = {
-    archetype:{type:"The Opener",second:"The Fixer",why:"You opened a market abroad, launched an online channel and ran live events. Each time you built from nothing, then moved on once it ran."},
+    archetype:{name:"The First-Year Specialist",line:"You build the thing nobody has built yet, then hand it over once it runs.",type:"The Opener",second:"The Fixer",why:"You opened a market abroad, launched an online channel and ran live events. Each time you built from nothing, then moved on once it ran."},
+    tension:{name:"Builds the system, then leaves it",why:"You love the mess of the first year, but you also make things run without you. Pick roles where leaving is the goal, not a failure."},
+    hidden:{from:"Running live events",skill:"Making a room of strangers trust you fast",worth:"Startups entering a new country pay for this: first partners and first clients decide on trust, not on the deck."},
     pitch:{headline:"I open new markets and launch new lines from zero | Supplier networks, online sales, live events | Looking for a founder who needs it built",about:"I'm at my best in the first year of something new. I set up a supplier network and warehouse from scratch in a new country, grew a family retail business's online sales, and produced events where everything had to work on the night. The thread: I take something that doesn't exist yet and make it run. I'm looking for a young company that's launching a market, a product line or a channel, and needs someone to own it.",intro:"I build things from zero. I opened a supply operation in a new country, grew an online sales channel, and ran live events. I'm best in the messy first year, when nothing exists yet. Right now I'm looking for a founder who's launching something and needs one person to make it happen."},
     thread:"You're the person who gets something from zero to working, then gets restless once it runs itself.",
     say:"I build new things from scratch: new markets, new sales channels, new events. I'm best in the messy first year.",
@@ -1251,15 +1268,32 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
     const a = m.archetype || {}; const t = ARCH[str(a.type)];
     $("archCard").hidden = !t;
     if (!t) return;
-    $("archType").textContent = str(a.type);
-    $("archTag").textContent = t.tag;
-    const tr = $("archTraits"); clear(tr); t.traits.forEach(x => { const sp=document.createElement("span"); sp.textContent=x; tr.append(sp); });
+    const own = !!str(a.name);
+    $("archType").textContent = own ? str(a.name) : str(a.type);
+    $("archTag").textContent = own && a.line ? str(a.line) : t.tag;
+    const tr = $("archTraits"); clear(tr); tr.hidden = own;
+    if (!own) t.traits.forEach(x => { const sp=document.createElement("span"); sp.textContent=x; tr.append(sp); });
     $("archWhy").textContent = str(a.why);
+    $("archWhyLabel").textContent = own ? "Why this name?" : "Why this type?";
     $("archEmblem").innerHTML = embSvg(str(a.type));
     const sec = $("archSecond"); clear(sec);
     const has2 = ARCH[str(a.second)] && a.second !== a.type;
-    $("archSecondRow").hidden = !has2;
-    if (has2){ const b=document.createElement("b"); b.textContent=str(a.second); sec.append("With a strong streak of ", b); $("archSecondEmb").innerHTML = embSvg(str(a.second)); }
+    $("archSecondRow").hidden = !(has2 || own);
+    if (own){
+      const b=document.createElement("b"); b.textContent=str(a.type); sec.append("Closest family: ", b);
+      if (has2){ const b2=document.createElement("b"); b2.textContent=str(a.second); sec.append(", with a streak of ", b2); }
+      $("archSecondEmb").innerHTML = embSvg(str(a.type));
+    } else if (has2){ const b=document.createElement("b"); b.textContent=str(a.second); sec.append("With a strong streak of ", b); $("archSecondEmb").innerHTML = embSvg(str(a.second)); }
+  }
+  function renderDeep(m){
+    const te = m.tension || {}, hi = m.hidden || {};
+    const hasT = !!str(te.name), hasH = !!str(hi.skill);
+    $("deepPair").hidden = !(hasT || hasH);
+    $("tensionCard").hidden = !hasT; $("hiddenCard").hidden = !hasH;
+    $("tensionName").textContent = str(te.name); $("tensionWhy").textContent = str(te.why);
+    $("hiddenSkill").textContent = str(hi.skill);
+    $("hiddenFrom").textContent = hi.from ? "From: " + str(hi.from) : ""; $("hiddenFrom").hidden = !hi.from;
+    $("hiddenWorth").textContent = str(hi.worth);
   }
   function renderKit(m){
     const k = m.pitch || {};
@@ -1291,7 +1325,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
 
   // ---------- render step 2 ----------
   function renderMap(m){
-    renderArch(m); renderKit(m);
+    renderArch(m); renderDeep(m); renderKit(m);
     $("flag2").hidden = !S.example;
     $("thread").textContent = str(m.thread);
     $("say").textContent = m.say ? "\u201C" + str(m.say) + "\u201D" : "";
@@ -1743,11 +1777,22 @@ What makes you different from a generic AI answer:
 - Recommend non-traditional routes in, tailored to their exact background: pitching a problem directly to a company, starting with a project or trial, warm introductions, creating a role that does not exist yet, fractional work, showing their thinking publicly, communities, and similar. Pick the 3 that fit THEM best.
 - Every sentence must reference something specific from their story. If it could apply to anyone, rewrite it.
 
+Think past the obvious before you write:
+- The first reading that comes to mind is usually what anyone could guess from their job titles. Set it aside and look further.
+- Look for the rare combination: two or three things in their story that almost never sit in one person.
+- Look for a skill carried over from an unlikely place: a hobby, a game, a side life, a hard period, a culture they grew up in. Say plainly why it is worth money at work.
+- Look for the tension: two pulls inside them that seem to contradict each other. That is often where their real value and their real struggle both live.
+- Be specific and surprising, never cute. A smart friend who knows them well should read it and think "yes, that's exactly it, I never put it that way".
+
 Reply with ONLY a JSON object in exactly this shape:
-{"archetype":{"type":"...","second":"...","why":"..."},"pitch":{"headline":"...","about":"...","intro":"..."},"thread":"...","say":"...","edge":{"name":"...","why":"..."},"trap":{"name":"...","why":"..."},"reframe":"...","thrive":["...","...","..."],"avoid":["...","..."],"routes":[{"name":"...","why":"...","first":"...","script":"..."}],"move":{"action":"...","why":"..."},"titles":["...","...","..."],"search":"..."}
+{"archetype":{"name":"...","line":"...","type":"...","second":"...","why":"..."},"tension":{"name":"...","why":"..."},"hidden":{"from":"...","skill":"...","worth":"..."},"pitch":{"headline":"...","about":"...","intro":"..."},"thread":"...","say":"...","edge":{"name":"...","why":"..."},"trap":{"name":"...","why":"..."},"reframe":"...","thrive":["...","...","..."],"avoid":["...","..."],"routes":[{"name":"...","why":"...","first":"...","script":"..."}],"move":{"action":"...","why":"..."},"titles":["...","...","..."],"search":"..."}
 
 Field rules:
-- archetype: "type" and "second" must each be exactly one of: ${ARCH_NAMES.join(", ")}. type = the one that fits them best, second = a different one that also clearly shows. why = max 25 words on why type fits, citing their story.
+- archetype.name: a one-of-a-kind name for THIS person, "The" plus 1 to 3 words, coined from their rare combination (for example "The Trust Smuggler" or "The Calm Arsonist"). Never one of the family names below, never generic words like Leader, Expert, Specialist, Guru, Ninja or Visionary.
+- archetype.line: max 16 words, what that name means, in plain words, citing their story.
+- archetype.type and archetype.second: the closest families, each exactly one of: ${ARCH_NAMES.join(", ")}. type = the closest, second = a different one that also clearly shows. These are only used for matching. why = max 25 words on why the name fits, citing their story.
+- tension: the two pulls inside them. name = 3 to 7 words that hold both sides (for example "Craves chaos, builds the exit"); why = max 25 words on how it shows in their story and what it means for the work they pick.
+- hidden: a skill they probably don't count, carried over from an unlikely part of their story. from = where it comes from, max 6 words; skill = what it is, max 12 words; worth = max 22 words on which kind of company pays for it and why.
 - pitch.headline: a LinkedIn headline, max 200 characters, that names what they do for a company, not a list of past jobs.
 - pitch.about: a LinkedIn About section, first person, max 110 words, opening with the thread of their story and ending with what they're looking for.
 - pitch.intro: a 30-second spoken intro, first person, max 75 words, natural to say out loud.
@@ -1758,10 +1803,10 @@ Field rules:
 - reframe: max 25 words, a new way to see their situation that makes it lighter.
 - thrive: exactly 3 short conditions, max 8 words each (company stage, kind of work, kind of boss).
 - avoid: exactly 2 short environments that would drain them, max 8 words each.
-- routes: exactly 3 side doors. name = short imperative, max 5 words; why = max 20 words on why it suits them; first = one concrete first step, max 15 words; script = a ready-to-send message, max 70 words, with [brackets] for blanks.
+- routes: exactly 3 side doors. One of them must be a role that doesn't exist yet: name it, and let its script pitch that role to a company that needs it. name = short imperative, max 5 words; why = max 20 words on why it suits them; first = one concrete first step, max 15 words; script = a ready-to-send message, max 70 words, with [brackets] for blanks.
 - move: the single most useful action for this week, doable in under an hour, max 18 words, plus why in one sentence of max 15 words.
 - titles: 3 job titles, only as a fallback for browsing. search: 2 to 4 words for a job board.
-- Language: write every text value in the same language the person wrote their story in (for example Dutch, French, Hebrew or Spanish). Keep the JSON keys, and the archetype type names, exactly as given in English.
+- Language: write every text value in the same language the person wrote their story in (for example Dutch, French, Hebrew or Spanish). Keep the JSON keys, and the archetype type and second names, exactly as given in English. Write archetype.name in their language too.
 - Plain, warm, direct words. No jargon, no flattery, no invented facts.
 
 What they find hardest right now: ${S.stuck.length ? S.stuck.join("; ") : "not stated"}.
@@ -1957,7 +2002,11 @@ ${cut(JSON.stringify(S.map), 8000)}`;
     const n = myName();
     let h = `<div class="mast"><b>${MARK}Generalist Compass</b><span>${esc(today())}</span></div>`;
     h += `<div class="blk"><div class="kicker">${esc(n ? n + "'s generalist type" : "Your generalist type")}</div>`;
-    if (t){
+    if (t && a.name){
+      h += `<div class="big">${esc(a.name)}</div><p class="tl">${esc(a.line || t.tag)}</p>`;
+      if (a.why) h += `<p style="margin-top:12px">${esc(a.why)}</p>`;
+      h += `<p style="margin-top:6px;color:#5A6573">Closest family: <b style="color:#18202B">${esc(a.type)}</b>${ARCH[str(a.second)] && a.second !== a.type ? `, with a streak of <b style="color:#18202B">${esc(a.second)}</b>` : ""}.</p>`;
+    } else if (t){
       h += `<div class="big">${esc(a.type)}</div><p class="tl">${esc(t.tag)}</p><div class="chips">${t.traits.map(x=>`<span>${esc(x)}</span>`).join("")}</div>`;
       if (a.why) h += `<p style="margin-top:12px">${esc(a.why)}</p>`;
       if (ARCH[str(a.second)] && a.second !== a.type) h += `<p style="margin-top:6px;color:#5A6573">With a strong streak of <b style="color:#18202B">${esc(a.second)}</b>.</p>`;
@@ -1965,6 +2014,7 @@ ${cut(JSON.stringify(S.map), 8000)}`;
     h += `</div>`;
     h += `<div class="blk"><h4>The thread in the story</h4><p class="quote">${esc(m.thread)}</p>${m.say ? `<p class="say">When someone asks what I do: "${esc(m.say)}"</p>` : ""}</div>`;
     h += `<div class="blk cols"><div class="panel"><div class="kicker">The edge</div><div class="lbl">${esc(m.edge && m.edge.name)}</div><p>${esc(m.edge && m.edge.why)}</p></div><div class="panel"><div class="kicker">What holds me back</div><div class="lbl">${esc(m.trap && m.trap.name)}</div><p>${esc(m.trap && m.trap.why)}</p></div></div>`;
+    if ((m.tension && m.tension.name) || (m.hidden && m.hidden.skill)) h += `<div class="blk cols">${m.tension && m.tension.name ? `<div class="panel"><div class="kicker">The pull inside</div><div class="lbl">${esc(m.tension.name)}</div><p>${esc(m.tension.why)}</p></div>` : ""}${m.hidden && m.hidden.skill ? `<div class="panel"><div class="kicker">A skill I didn't count</div><div class="lbl">${esc(m.hidden.skill)}</div><p>${m.hidden.from ? esc("From " + m.hidden.from + ". ") : ""}${esc(m.hidden.worth)}</p></div>` : ""}</div>`;
     if (m.reframe) h += `<div class="blk panel sand"><div class="kicker">Seen another way</div><p style="margin-top:4px;font-size:15px">${esc(m.reframe)}</p></div>`;
     h += `<div class="blk cols"><div><h4>Where I thrive</h4><ul>${arr(m.thrive).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div><div><h4>What I walk away from</h4><ul>${arr(m.avoid).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div></div>`;
     const k = m.pitch || {};
@@ -1995,9 +2045,12 @@ ${cut(JSON.stringify(S.map), 8000)}`;
   }
   function ownText(m){
     const a = m.archetype || {}; const L = [];
-    if (a.type) L.push("MY GENERALIST TYPE: " + a.type + (a.second && a.second !== a.type ? " (with a streak of " + a.second + ")" : ""), a.why || "", "");
+    if (a.name) L.push("WHO I AM AT WORK: " + a.name, str(a.line), a.why || "", "Closest family: " + a.type + (a.second && a.second !== a.type ? ", with a streak of " + a.second : ""), "");
+    else if (a.type) L.push("MY GENERALIST TYPE: " + a.type + (a.second && a.second !== a.type ? " (with a streak of " + a.second + ")" : ""), a.why || "", "");
     L.push("THE THREAD", str(m.thread), m.say ? 'When someone asks what I do: "' + m.say + '"' : "", "");
     L.push("MY EDGE: " + str(m.edge && m.edge.name), str(m.edge && m.edge.why), "", "WHAT HOLDS ME BACK: " + str(m.trap && m.trap.name), str(m.trap && m.trap.why), "", "SEEN ANOTHER WAY", str(m.reframe), "");
+    if (m.tension && m.tension.name) L.push("THE PULL INSIDE: " + str(m.tension.name), str(m.tension.why), "");
+    if (m.hidden && m.hidden.skill) L.push("A SKILL I DIDN'T COUNT: " + str(m.hidden.skill), (m.hidden.from ? "From " + str(m.hidden.from) + ". " : "") + str(m.hidden.worth), "");
     L.push("WHERE I THRIVE", ...arr(m.thrive).map(x => "- " + x), "", "WHAT I WALK AWAY FROM", ...arr(m.avoid).map(x => "- " + x), "");
     (m.routes || []).forEach((d,i) => L.push("SIDE DOOR " + (i+1) + ": " + str(d.name), str(d.why), "Start: " + str(d.first), ""));
     if (m.move) L.push("ONE MOVE THIS WEEK", str(m.move.action));
@@ -2422,7 +2475,7 @@ ${cut(brief, 20000)}`, { cache:false });
     const k = document.createElement("div"); k.className = "kicker"; k.textContent = "Generalist Compass";
     const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = str(pg.name);
     hero.append(k, nm);
-    if (ARCH[str(pg.type)]){ const bd = document.createElement("span"); bd.className = "cp-badge"; bd.innerHTML = embSvg(str(pg.type)); bd.append(str(pg.type)); hero.append(bd); }
+    if (ARCH[str(pg.type)]){ const bd = document.createElement("span"); bd.className = "cp-badge"; bd.innerHTML = embSvg(str(pg.type)); bd.append(pg.sig ? str(pg.sig) : str(pg.type)); hero.append(bd); }
     const hl = document.createElement("p"); hl.className = "hl"; hl.textContent = str(pg.headline); hero.append(hl);
     v.append(hero);
     const sec = (title, el) => { const d = document.createElement("div"); d.className = "cp-sec"; const h = document.createElement("h3"); h.textContent = title; d.append(h, el); v.append(d); };
@@ -2484,7 +2537,7 @@ Their reading (JSON):
 ${cut(JSON.stringify({type:S.map.archetype, thread:S.map.thread, edge:S.map.edge, thrive:S.map.thrive, pitch:S.map.pitch}), 5000)}
 ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the reading):\n" + cut(S.chat.map(t => (t.role === "user" ? "Them: " : "Mentor: ") + t.content).join("\n\n"), 4000) : ""}`, { cache:false });
       if (!pg || !pg.headline) throw {code:"invalid_json"};
-      const page = {...pg, name, contact: $("pgContact").value.trim(), type: (S.map.archetype && S.map.archetype.type) || ""};
+      const page = {...pg, name, contact: $("pgContact").value.trim(), type: (S.map.archetype && S.map.archetype.type) || "", sig: (S.map.archetype && str(S.map.archetype.name).slice(0, 60)) || ""};
       S.page = page; save();
       const tok = await packPage(page);
       const link = location.origin + location.pathname + "#" + tok;
@@ -2618,9 +2671,9 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     const g = document.createElement("div"); g.className = "prof";
     const em = document.createElement("div"); em.className = "em"; em.innerHTML = embSvg(str(p.type));
     const body = document.createElement("div");
-    const t = document.createElement("div"); t.className = "jt"; t.textContent = str(p.type) + (p.second ? " · " + str(p.second) : "");
+    const t = document.createElement("div"); t.className = "jt"; t.textContent = p.name ? str(p.name) : str(p.type) + (p.second ? " · " + str(p.second) : "");
     if (p.example){ const b = document.createElement("span"); b.className = "badge"; b.textContent = "Example"; t.append(b); }
-    const m = document.createElement("div"); m.className = "jm"; [str(p.region), p.remote ? "Open to remote" : ""].filter(Boolean).forEach(v => { const sp = document.createElement("span"); sp.textContent = v; m.append(sp); });
+    const m = document.createElement("div"); m.className = "jm"; [p.name ? str(p.type) : "", str(p.region), p.remote ? "Open to remote" : ""].filter(Boolean).forEach(v => { const sp = document.createElement("span"); sp.textContent = v; m.append(sp); });
     const th = document.createElement("p"); th.textContent = str(p.thread);
     body.append(t, m, th);
     if (p.edge){ const e = document.createElement("p"); e.className = "fit"; const b = document.createElement("b"); b.textContent = "Edge: "; e.append(b, str(p.edge)); body.append(e); }
@@ -2856,7 +2909,7 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
   }
   function profileFromMap(){
     const m = S.map || {}, a = m.archetype || {};
-    return { type: str(a.type), second: str(a.second), thread: str(m.thread), say: str(m.say), edge: m.edge ? str(m.edge.name) + ": " + str(m.edge.why) : "", thrive: arr(m.thrive).slice(0,3), problems: approvedProblems(), region: $("optRegion").value.trim().slice(0, 60), remote: S.prefs.includes("Remote only") || /remote/i.test($("optRegion").value), at: Date.now(), example: false };
+    return { type: str(a.type), second: str(a.second), name: str(a.name).slice(0, 60), thread: str(m.thread), say: str(m.say), edge: m.edge ? str(m.edge.name) + ": " + str(m.edge.why) : "", thrive: arr(m.thrive).slice(0,3), problems: approvedProblems(), region: $("optRegion").value.trim().slice(0, 60), remote: S.prefs.includes("Remote only") || /remote/i.test($("optRegion").value), at: Date.now(), example: false };
   }
   function renderOpt(){
     $("optCard").hidden = !(db || WEB.on) || !S.map || S.example;

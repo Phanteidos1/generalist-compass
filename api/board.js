@@ -161,7 +161,7 @@ export default async function handler(req, res) {
         const id = o.id;
         const prof = {
           id, type: p.type, second: TYPES.includes(p.second) ? p.second : "",
-          thread: s(p.thread, 240), say: s(p.say, 200), edge: s(p.edge, 240),
+          name: s(p.name, 60), thread: s(p.thread, 240), say: s(p.say, 200), edge: s(p.edge, 240),
           thrive: list(p.thrive, 3, 80), problems: problems(p.problems), region: s(p.region, 60), remote: !!p.remote,
           at: Date.now(), example: false,
         };
