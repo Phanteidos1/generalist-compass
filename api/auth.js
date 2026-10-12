@@ -23,7 +23,6 @@ const SESSION_DAYS = 30;
 const DEFAULT_FROM = "Generalist Compass <onboarding@resend.dev>";
 const DEFAULT_URL = "https://generalist-compass.vercel.app";
 
-const emailReady = () => !!process.env.RESEND_API_KEY;
 const token = () => randomBytes(32).toString("base64url");
 const okToken = t => typeof t === "string" && /^[A-Za-z0-9_-]{40,60}$/.test(t);
 
@@ -33,7 +32,7 @@ export function cleanEmail(v) {
 }
 
 // Where the link in the email points. Only our own addresses, never whatever host a caller claims.
-function siteUrl(req) {
+export function siteUrl(req) {
   if (process.env.APP_URL) return process.env.APP_URL.replace(/\/+$/, "");
   const host = s(req.headers["x-forwarded-host"] || req.headers.host, 200).toLowerCase();
   if (/^[a-z0-9-]+\.vercel\.app$/.test(host)) return "https://" + host;
@@ -60,10 +59,16 @@ async function sendLinkEmail(to, link) {
 <p style="color:#5A6573;font-size:14px">It works once and expires in ${LINK_MINUTES} minutes. If you didn't ask for this, you can ignore this email. Nothing happens without the link.</p>
 <p>Mike, Generalist Compass</p>
 </div>`;
+  await sendMail({ to, subject: "Your sign-in link for Generalist Compass", text, html });
+}
+
+// Send one email through Resend. Also used by the weekly email (weekly.js).
+export const emailReady = () => !!process.env.RESEND_API_KEY;
+export async function sendMail({ to, subject, text, html, headers }) {
   const r = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: "Bearer " + process.env.RESEND_API_KEY, "content-type": "application/json" },
-    body: JSON.stringify({ from: process.env.EMAIL_FROM || DEFAULT_FROM, to: [to], subject: "Your sign-in link for Generalist Compass", text, html }),
+    body: JSON.stringify({ from: process.env.EMAIL_FROM || DEFAULT_FROM, to: [to], subject, text, html, ...(headers ? { headers } : {}) }),
   });
   if (!r.ok) {
     const body = await r.text().catch(() => "");

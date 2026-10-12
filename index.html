@@ -70,6 +70,9 @@ textarea:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid va
 .btn:disabled{opacity:.5;cursor:wait}
 .link{font:inherit;font-size:15px;background:none;border:0;color:var(--accent);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:0}
 .status{font-size:15px;color:var(--muted);min-height:1.5em}
+.wkbox{border-top:1px solid var(--line);padding-top:14px;margin-top:4px;display:flex;flex-direction:column;gap:10px}
+.wkbox .chip[aria-pressed="true"]::before{content:"\2713  ";color:var(--accent);font-weight:700}
+.wkframe{width:100%;min-height:320px;border:1px solid var(--line);border-radius:12px;background:#fff;display:block}
 .status.err{color:var(--crit)}
 .thinking::after{content:"";display:inline-block;width:8px;height:8px;margin-left:8px;border-radius:50%;background:var(--needle);animation:pulse 1.2s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.25}}
@@ -1075,6 +1078,14 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
       <p class="hint" id="siBoard" hidden></p>
       <div class="row"><button class="btn" id="siContinue" type="button">Continue</button><button class="ghost" id="siOut" type="button">Sign out</button></div>
       <div class="status" id="statusSiIn" role="status"></div>
+      <div class="wkbox" id="wkBox" hidden>
+        <div class="q">Your weekly email</div>
+        <p class="hint">Every Monday morning: 3 open problems that fit you, one short lesson, and anything waiting on you. Nothing else, and every email has a link to stop it.</p>
+        <div class="row"><button class="chip" id="wkToggle" type="button" aria-pressed="false">Send me the weekly email</button></div>
+        <div class="row"><button class="link" id="wkPreview" type="button">See this week's email</button><button class="link" id="wkSendMe" type="button" hidden>Send it to me now</button></div>
+        <div class="status" id="statusWk" role="status"></div>
+        <iframe class="wkframe" id="wkFrame" title="This week's email" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" hidden></iframe>
+      </div>
     </div>
   </section>
 
@@ -3204,7 +3215,13 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     if (myProfile && !$("optRegion").value) $("optRegion").value = str(myProfile.region);
     const acct = $("optAcct"); clear(acct);
     acct.hidden = !(WEB.on && AUTH.on && (signedIn() || AUTH.enabled));
-    if (signedIn()) acct.textContent = myProfile ? "Saved to your account, so it follows you to any phone or computer you sign in on." : "You're signed in, so your profile will be saved to your account and follow you to any device.";
+    if (signedIn()){
+      acct.textContent = myProfile ? "Saved to your account, so it follows you to any phone or computer you sign in on." : "You're signed in, so your profile will be saved to your account and follow you to any device.";
+      if (myProfile && WK.loaded && !WK.on){
+        const w = document.createElement("button"); w.type = "button"; w.className = "link"; w.textContent = "Get a weekly email"; w.onclick = showSignin;
+        acct.append(" ", w, " with new problems that fit you.");
+      }
+    }
     else if (!acct.hidden){
       acct.append("Want it on every device? ");
       const b = document.createElement("button"); b.type = "button"; b.className = "link"; b.textContent = "Sign in with your email"; b.onclick = showSignin;
@@ -3365,7 +3382,7 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
   async function startDb(){
     if (!(window.claude && typeof window.claude.use === "function")){
       try { const r = await fetch("/api/board", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({action:"needs"})}); if (!r.ok) return; } catch(e){ return; }
-      WEB.on = true; $("navR").hidden = false; $("navB").hidden = false; renderVerify();
+      WEB.on = true; $("navR").hidden = false; $("navB").hidden = false; renderVerify(); renderWk();
       $("recruit").querySelector(".example-flag").textContent = "Early version. Profiles and requests marked Example are made up to show how it works, until real ones fill the board.";
       webRefresh(); setInterval(() => { if (!document.hidden) webRefresh(); }, 60000);
       return;
@@ -3480,6 +3497,7 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
   $("siOut").onclick = async () => {
     const s = AUTH.session; putSession(null); AUTH.user = null; AUTH.linkErr = ""; setStatus($("statusSiIn"), "");
     try { if (s) await authApi("logout", {session: s}); } catch(e){}
+    Object.assign(WK, {loaded:false, on:false, ready:false, last:0}); $("wkFrame").hidden = true; $("wkPreview").textContent = "See this week's email"; setStatus($("statusWk"), "");
     renderAcct(); setStatus($("statusSi"), "You're signed out.");
     if (WEB.on){ myProfile = null; uid = null; intros = []; myBriefs = []; sentIntros = []; introWeek = null; renderOpt(); renderMyIntros(); renderMyBriefs(); renderSent(); webRefresh(); }
   };
@@ -3490,7 +3508,67 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     if (t){ try { const r = await boardApi("claim", {session: AUTH.session, token: t}); if (r && r.moved) setStatus($("statusSiIn"), "Your board profile is now saved to your account."); } catch(e){} }
     webRefresh();
   }
+  // Weekly email (api/weekly.js): opt-in, with a preview of this week's email.
+  const WK = { loaded: false, loading: false, on: false, ready: false, last: 0 };
+  async function wkApi(action, payload){
+    const r = await fetch("/api/weekly", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify(Object.assign({action, session: AUTH.session}, payload || {}))});
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw {status: r.status, code: data.code || "web", message: data.error || "Something went wrong. Try again."};
+    return data;
+  }
+  function renderWk(){
+    const box = $("wkBox"); if (!box) return;
+    box.hidden = !(WEB.on && signedIn());
+    if (box.hidden) return;
+    if (!WK.loaded && !WK.loading) loadWk();
+    const t = $("wkToggle");
+    t.setAttribute("aria-pressed", String(WK.on));
+    t.textContent = WK.on ? "Weekly email is on" : "Send me the weekly email";
+    t.disabled = !WK.loaded;
+    $("wkSendMe").hidden = !WK.ready;
+  }
+  async function loadWk(){
+    WK.loading = true;
+    try { const r = await wkApi("get"); WK.on = !!r.on; WK.ready = !!r.ready; WK.last = r.last || 0; WK.loaded = true; }
+    catch(e){ if (e.status === 401) WK.loaded = false; }
+    WK.loading = false; renderWk(); renderOpt();
+  }
+  $("wkToggle").onclick = async () => {
+    const st = $("statusWk"), want = !WK.on;
+    $("wkToggle").disabled = true;
+    try {
+      const r = await wkApi("set", {on: want}); WK.on = !!r.on;
+      setStatus(st, WK.on ? "Done. Your first one arrives on Monday morning." : "Turned off. No more weekly emails.");
+    } catch(e){ setStatus(st, e.message, "err"); }
+    renderWk(); renderOpt();
+  };
+  $("wkPreview").onclick = async () => {
+    const f = $("wkFrame"), st = $("statusWk"), b = $("wkPreview");
+    if (!f.hidden){ f.hidden = true; b.textContent = "See this week's email"; return; }
+    setStatus(st, "Putting this week's email together", "thinking"); b.disabled = true;
+    try {
+      const m = await wkApi("preview");
+      f.srcdoc = '<!doctype html><html><head><meta charset="utf-8"><base target="_blank"><style>body{margin:0;padding:12px 6px;background:#fff;color-scheme:light}</style></head><body>'
+        + '<p style="font:13px system-ui,sans-serif;color:#5A6573;margin:0 8px 10px">Subject: <b style="color:#18202B"></b></p>' + m.html + '</body></html>';
+      f.onload = () => {
+        try {
+          const d = f.contentDocument; d.querySelector("p b").textContent = m.subject;
+          f.style.height = (d.documentElement.scrollHeight + 4) + "px";
+        } catch(e){}
+      };
+      f.hidden = false; b.textContent = "Hide the preview"; setStatus(st, "");
+    } catch(e){ setStatus(st, e.message, "err"); }
+    b.disabled = false;
+  };
+  $("wkSendMe").onclick = async () => {
+    const st = $("statusWk"), b = $("wkSendMe");
+    b.disabled = true; setStatus(st, "Sending", "thinking");
+    try { const r = await wkApi("sendme"); setStatus(st, "Sent to " + r.to + ". Look in your inbox in a minute."); }
+    catch(e){ setStatus(st, e.message, "err"); }
+    b.disabled = false;
+  };
   function renderAcctBoard(){
+    renderWk();
     const el = $("siBoard"); if (!el) return;
     el.hidden = !(WEB.on && signedIn());
     if (el.hidden) return;
@@ -3548,11 +3626,18 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     AUTH.on = true; AUTH.enabled = true; verifyLogin(loginCode[1]); startAuth();
   } else if (/^c[pq]\.[A-Za-z0-9_-]+$/.test(hashTok)){
     unpackPage(hashTok).then(pg => { renderPage(pg); showPageView(); document.title = (pg.name ? pg.name + " · " : "") + "Generalist Compass"; }).catch(() => go(0));
+  } else if (hashTok === "account" || hashTok === "problems"){
+    history.replaceState(null, "", location.pathname + location.search);
+    if (hashTok === "account") showSignin(); else showBoard();
   } else go(0);
   if (!loginCode) startAuth();
   window.addEventListener("hashchange", () => {
     const m = /^#login\.([A-Za-z0-9_-]{40,60})$/.exec(location.hash || "");
     if (m) verifyLogin(m[1]);
+    else if (location.hash === "#account" || location.hash === "#problems"){
+      const to = location.hash; history.replaceState(null, "", location.pathname + location.search);
+      if (to === "#account") showSignin(); else showBoard();
+    }
   });
 
   if (window.claude && typeof window.claude.use === "function"){

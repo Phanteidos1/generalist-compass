@@ -203,6 +203,64 @@ async function limited(req, bucket, max) {
   return n > max;
 }
 
+// What the weekly email says to one account (see weekly.js). Only real records, never examples.
+//   since: when the last weekly email went out (answers after that count as new).
+// Returns { profile, matches, requests, briefFits, counts }.
+export async function weeklyData(uid, since = 0) {
+  const id = idOf("user:" + uid);
+  const [p, introList, sentIds, pitchedIds, allNeeds] = await redis([
+    ["HGET", "gc:profiles", id], ["LRANGE", "gc:intros:" + id, 0, 49], ["LRANGE", "gc:sent:" + id, 0, 99],
+    ["LRANGE", "gc:pitched:" + id, 0, 99], ["LRANGE", "gc:needs", 0, 199],
+  ]);
+  const profile = parse(p);
+  const needs = (allNeeds || []).map(parse).filter(n => n && !n.hidden && !n.example);
+  const pitches = await loadPitches(pitchedIds);
+  const pitchedNeeds = new Set(pitches.map(k => k.need));
+
+  // Three open problems that fit: same type first, then the second type, newest first.
+  let matches = [];
+  if (profile) {
+    const score = n => (n.type && n.type === profile.type ? 2 : 0) + (n.type && n.type === profile.second ? 1 : 0) + (n.at > since ? 0.5 : 0);
+    matches = needs.filter(n => n.owner !== uid && !pitchedNeeds.has(n.id))
+      .sort((a, z) => score(z) - score(a) || (z.at || 0) - (a.at || 0)).slice(0, 3)
+      .map(n => ({ id: n.id, title: n.title, problem: n.problem, company: n.company || "", type: n.type || "", verified: n.verified || "", work: n.work || [], fresh: (n.at || 0) > since, fit: !!n.type && (n.type === profile.type || n.type === profile.second), pitchable: !!n.owner }));
+  }
+
+  // Requests: what waits for this person, and what was answered since the last email.
+  const got = (await loadIntros(introList)).filter(r => r.pid === id);
+  const sentRecs = (await loadIntros(sentIds)).filter(r => r.from === id);
+  const myBriefs = needs.filter(n => n.owner === uid);
+  const briefLists = myBriefs.length ? await redis(myBriefs.map(n => ["LRANGE", "gc:pitches:" + n.id, 0, 199])) : [];
+  const onBriefs = (await loadPitches(briefLists.flat())).filter(k => k.owner === uid);
+  const requests = {
+    introsWaiting: got.filter(r => r.status === "waiting").map(r => ({ company: r.company || "", title: r.title || "", verified: r.verified || "" })),
+    pitchesAnswered: pitches.filter(k => (k.answeredAt || 0) > since && (k.status === "yes" || k.status === "no")).map(k => ({ title: k.title, company: k.company || "", yes: k.status === "yes" })),
+    pitchesWaiting: onBriefs.filter(k => k.status === "waiting").map(k => ({ title: k.title })),
+    introsAnswered: sentRecs.filter(r => (r.answeredAt || 0) > since && (r.status === "yes" || r.status === "no")).map(r => ({ title: r.title || "", yes: r.status === "yes" })),
+  };
+  const yesItems = [
+    ...got.filter(r => r.status === "yes").map(r => ({ id: r.id, side: "person" })),
+    ...sentRecs.filter(r => r.status === "yes").map(r => ({ id: r.id, side: "company" })),
+    ...pitches.filter(k => k.status === "yes").map(k => ({ id: k.id, side: "person" })),
+    ...onBriefs.filter(k => k.status === "yes").map(k => ({ id: k.id, side: "company" })),
+  ];
+  const chats = await chatMeta(yesItems);
+  requests.unread = Object.values(chats).reduce((t, c) => t + (c.unread || 0), 0);
+
+  // For recruiters: people on the board who fit their newest brief (anonymous).
+  let briefFits = null;
+  const newest = myBriefs.sort((a, z) => (z.at || 0) - (a.at || 0))[0];
+  if (newest && newest.type) {
+    const [all] = await redis([["HVALS", "gc:profiles"]]);
+    const people = (all || []).map(parse).filter(x => x && !x.example && x.id !== id && (x.type === newest.type || x.second === newest.type))
+      .sort((a, z) => (z.type === newest.type) - (a.type === newest.type) || (z.at || 0) - (a.at || 0)).slice(0, 3)
+      .map(x => ({ type: x.type, name: x.name || "", thread: x.thread || "", region: x.region || "" }));
+    briefFits = { title: newest.title, people };
+  }
+  const counts = { intros: INTROS_PER_WEEK, pitches: PITCHES_PER_WEEK };
+  return { profile: profile ? { type: profile.type, second: profile.second || "", name: profile.name || "" } : null, matches, requests, briefFits, hasBriefs: myBriefs.length > 0, counts };
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
   if (!URL_ || !TOKEN) return res.status(503).json({ error: "The board isn't connected to its database yet." });
