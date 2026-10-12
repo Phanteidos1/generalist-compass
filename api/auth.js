@@ -71,6 +71,28 @@ async function sendLinkEmail(to, link) {
   }
 }
 
+// Personal and throwaway mail providers. An address there proves a person, not a company.
+const PERSONAL = new Set(("gmail.com googlemail.com yahoo.com ymail.com rocketmail.com hotmail.com outlook.com live.com msn.com " +
+  "icloud.com me.com mac.com aol.com aim.com proton.me protonmail.com protonmail.ch pm.me gmx.com gmx.net gmx.de gmx.at gmx.ch " +
+  "web.de t-online.de freenet.de mail.com email.com zoho.com zohomail.com yandex.com yandex.ru mail.ru inbox.ru bk.ru list.ru " +
+  "tutanota.com tutanota.de tuta.io tuta.com hey.com fastmail.com fastmail.fm hushmail.com qq.com 163.com 126.com sina.com " +
+  "naver.com daum.net hanmail.net rediffmail.com orange.fr wanadoo.fr free.fr laposte.net sfr.fr libero.it virgilio.it tiscali.it " +
+  "skynet.be telenet.be proximus.be scarlet.be ziggo.nl kpnmail.nl planet.nl hetnet.nl home.nl seznam.cz wp.pl o2.pl onet.pl interia.pl " +
+  "btinternet.com sky.com virginmedia.com ntlworld.com talktalk.net comcast.net verizon.net att.net sbcglobal.net cox.net " +
+  "bellsouth.net charter.net earthlink.net shaw.ca rogers.com sympatico.ca bigpond.com optusnet.com.au xtra.co.nz " +
+  "uol.com.br bol.com.br terra.com.br ig.com.br mailinator.com guerrillamail.com sharklasers.com 10minutemail.com " +
+  "temp-mail.org tempmail.com yopmail.com trashmail.com getnada.com dispostable.com maildrop.cc").split(" "));
+const PERSONAL_FAMILY = /^(yahoo|hotmail|outlook|live|gmx|yandex|aol|icloud)\.[a-z.]{2,6}$/;
+
+// The company domain behind a work email, or "" for personal and throwaway addresses.
+export function workDomain(email) {
+  const e = cleanEmail(email);
+  if (!e) return "";
+  const d = e.split("@")[1];
+  if (PERSONAL.has(d) || PERSONAL_FAMILY.test(d)) return "";
+  return d;
+}
+
 // Look up the account behind a session. Used by other functions later.
 export async function userFromSession(session) {
   if (!okToken(session)) return null;
@@ -80,7 +102,7 @@ export async function userFromSession(session) {
   return parse(u);
 }
 
-const publicUser = u => ({ id: u.id, email: u.email, since: u.created });
+const publicUser = u => ({ id: u.id, email: u.email, since: u.created, work: workDomain(u.email) });
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
@@ -90,6 +112,10 @@ export default async function handler(req, res) {
     switch (b.action) {
       case "status":
         return res.status(200).json({ enabled });
+
+      case "workcheck":
+        // Lets the page warn before sending a link that a personal address can't verify a company.
+        return res.status(200).json({ work: workDomain(b.email) });
 
       case "request": {
         if (!enabled) return res.status(503).json({ error: "Sign-in by email isn't switched on yet.", code: "not_enabled" });

@@ -426,6 +426,12 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
 .badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:2px 7px;background:var(--needle-soft);color:var(--needle);margin-left:6px;vertical-align:middle}
 .need{border-left:4px solid var(--needle)}
 .need .jt{font-size:17px}
+.verified{color:var(--good);font-weight:600}
+.verified::before{content:"\2713\00a0"}
+#rVerify h3{margin:0}
+#rVerify p{margin:0}
+#statusRv:empty{display:none}
+#rVerify .mail{overflow-wrap:anywhere}
 .ireq{background:var(--needle-soft);border:1px solid var(--needle);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
 .tstat{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 .tstat button{font:inherit;font-size:13px;font-weight:700;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
@@ -910,6 +916,17 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
     <h1>Hiring someone who can do a bit of everything?</h1>
     <p class="lead">Describe the problem, not the job title. We match you with generalists whose story fits, and introduce you if they say yes.</p>
     <div class="example-flag">Demo version. Profiles and requests marked <b>Example</b> are made up to show how it works.</div>
+    <p class="hint" id="rVerifySoon" hidden>Coming soon: recruiters verify a work email before posting or asking for intros, so candidates always know who's asking.</p>
+    <div class="card" id="rVerify" hidden>
+      <h3 id="rvHead">Verify your work email</h3>
+      <p id="rvText">Candidates only hear from real companies here. Use your company email: we send you a link, you open it, and your briefs and intro requests show your company's domain as verified. No password.</p>
+      <div id="rvForm">
+        <label class="q" for="rvEmail">Your work email</label>
+        <input id="rvEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@yourcompany.com">
+        <div class="row"><button class="btn" id="rvGo" type="button">Email me a link</button></div>
+      </div>
+      <div class="status" id="statusRv" role="status"></div>
+    </div>
     <div class="card">
       <label class="q" for="rNeed">What do you need solved?</label>
       <textarea id="rNeed" placeholder="e.g. We're launching in Spain in March and need one person to open the market: first partners, first clients, a small local team."></textarea>
@@ -2578,6 +2595,7 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     const t = document.createElement("div"); t.className = "jt"; t.textContent = str(n.title);
     if (n.example){ const b = document.createElement("span"); b.className = "badge"; b.textContent = "Example"; t.append(b); }
     const m = document.createElement("div"); m.className = "jm"; [str(n.company), arr(n.work).join(", "), str(n.type)].filter(Boolean).forEach(v => { const sp = document.createElement("span"); sp.textContent = v; m.append(sp); });
+    if (n.verified){ const v = document.createElement("span"); v.className = "verified"; v.textContent = "Verified " + str(n.verified); m.append(v); }
     const p = document.createElement("p"); p.textContent = str(n.problem);
     c.append(t, m, p); return c;
   }
@@ -2621,8 +2639,11 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
       const d = document.createElement("div"); d.className = "ireq";
       const h = document.createElement("b"); h.textContent = (str(x.company) || "A recruiter") + " wants to meet you";
       const p = document.createElement("p"); p.textContent = str(x.title) + (x.note ? ". " + str(x.note) : "");
+      const v = document.createElement("p"); v.className = "hint";
+      if (x.verified){ const sp = document.createElement("span"); sp.className = "verified"; sp.textContent = "Work email verified: " + str(x.verified); v.append(sp); }
+      else v.textContent = "Work email not verified. Check who they are before you share anything.";
       const r = document.createElement("p"); r.className = "hint"; r.textContent = x.contact ? "Interested? Reach them at: " + str(x.contact) : "They didn't leave contact details.";
-      d.append(h, p, r); box.append(d);
+      d.append(h, p, v, r); box.append(d);
     });
   }
   function profileFromMap(){
@@ -2707,6 +2728,13 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     } catch(e){ setStatus(st, errText(e), "err"); }
     finally { busy = false; $("rGo").disabled = false; }
   };
+  // Recruiter trust: once email sign-in is on, posting and intros need a verified work email.
+  const mustVerify = () => WEB.on && AUTH.on && AUTH.enabled && !(signedIn() && AUTH.user.work);
+  function askVerify(st){
+    setStatus(st, signedIn() ? "Verify your work email first (at the top of this page). Personal addresses can't show which company you're with." : "Verify your work email first (at the top of this page), so candidates know who's asking.", "err");
+    renderVerify(); $("rVerify").scrollIntoView({behavior:"smooth", block:"start"});
+    setTimeout(() => $("rvEmail").focus({preventScroll:true}), 400);
+  }
   async function postNeed(){
     if (RX.needId) return RX.needId;
     const n = {title: RX.brief.title, problem: RX.brief.problem, type: RX.brief.type, company: $("rCompany").value.trim().slice(0, 80), work: workSel(), contact: $("rContact").value.trim().slice(0, 120), at: Date.now(), by: uid || "", example: false};
@@ -2716,24 +2744,29 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
   $("rPost").onclick = async () => {
     const st = $("statusPost");
     if (!db && !WEB.on){ setStatus(st, "The board isn't available right now.", "err"); return; }
+    if (mustVerify()){ askVerify(st); return; }
     try { await postNeed(); $("rPost").disabled = true; $("rPost").textContent = "Posted"; setStatus(st, "Generalists whose type fits will see it on their results page."); }
-    catch(e){ setStatus(st, e && e.code === "invalid_argument" ? "In this demo, only invited testers can post." : (e && e.code === "web" ? e.message : "That didn't save. Try again in a moment."), "err"); }
+    catch(e){
+      if (e && e.why === "need_work_email"){ askVerify(st); return; } setStatus(st, e && e.code === "invalid_argument" ? "In this demo, only invited testers can post." : (e && e.code === "web" ? e.message : "That didn't save. Try again in a moment."), "err"); }
   };
   async function requestIntro(p, btn, st){
     if (!db && !WEB.on){ setStatus(st, "Intros aren't available right now.", "err"); return; }
     if (p.example){ btn.disabled = true; btn.textContent = "Requested"; setStatus(st, "This is an example profile, so nobody will get it. With a real profile, they'd see your request and decide whether to reply."); return; }
+    if (mustVerify()){ askVerify(st); return; }
     if (!$("rContact").value.trim()){ setStatus(st, "Add how candidates can reach you first (above).", "err"); $("rContact").focus(); return; }
     try {
       const needId = await postNeed();
-      if (WEB.on){ await api("intro.request", {profileId: p._id, needId, title: RX.brief.title, company: $("rCompany").value.trim().slice(0, 80), contact: $("rContact").value.trim().slice(0, 120)}); }
+      if (WEB.on){ await boardApi("intro.request", {...(signedIn() ? {session: AUTH.session} : {}), profileId: p._id, needId, title: RX.brief.title, company: $("rCompany").value.trim().slice(0, 80), contact: $("rContact").value.trim().slice(0, 120)}); }
       else await db.collection("intros").add({profile: p._id, need: needId, title: RX.brief.title, company: $("rCompany").value.trim().slice(0, 80), contact: $("rContact").value.trim().slice(0, 120), note: "", at: Date.now(), by: uid || ""});
       btn.disabled = true; btn.textContent = "Requested"; setStatus(st, "Sent. They'll see your request and contact you if they're interested.");
-    } catch(e){ setStatus(st, e && e.code === "invalid_argument" ? "In this demo, only invited testers can send requests." : (e && e.code === "web" ? e.message : "That didn't go through. Try again."), "err"); }
+    } catch(e){
+      if (e && e.why === "need_work_email"){ askVerify(st); return; }
+      setStatus(st, e && e.code === "invalid_argument" ? "In this demo, only invited testers can send requests." : (e && e.code === "web" ? e.message : "That didn't go through. Try again."), "err"); }
   }
   async function startDb(){
     if (!(window.claude && typeof window.claude.use === "function")){
       try { const r = await fetch("/api/board", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({action:"needs"})}); if (!r.ok) return; } catch(e){ return; }
-      WEB.on = true; $("navR").hidden = false;
+      WEB.on = true; $("navR").hidden = false; renderVerify();
       $("recruit").querySelector(".example-flag").textContent = "Early version. Profiles and requests marked Example are made up to show how it works, until real ones fill the board.";
       webRefresh(); setInterval(() => { if (!document.hidden) webRefresh(); }, 60000);
       return;
@@ -2771,6 +2804,7 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     if (AUTH.user) $("siMe").textContent = AUTH.user.email;
     renderAcctBoard();
     $("siOff").hidden = !!AUTH.user || AUTH.enabled;
+    renderVerify();
     $("siForm").hidden = !!AUTH.user || !AUTH.enabled || !$("siSent").hidden;
     if (AUTH.user) $("siSent").hidden = true;
     if (AUTH.linkErr){
@@ -2779,6 +2813,49 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
       if (!AUTH.user) $("siForm").hidden = false;
     }
   }
+  // Recruiter side: verify a work email (the same email link, from a company address).
+  function renderVerify(){
+    const box = $("rVerify"); if (!box) return;
+    $("rVerifySoon").hidden = !(WEB.on && AUTH.on && !AUTH.enabled);
+    box.hidden = !(WEB.on && AUTH.on && AUTH.enabled);
+    if (box.hidden) return;
+    const work = signedIn() && AUTH.user.work;
+    box.classList.toggle("ready", !!work);
+    if (work){
+      $("rvHead").textContent = "Work email verified";
+      clear($("rvText"));
+      const v = document.createElement("span"); v.className = "verified"; v.textContent = AUTH.user.work;
+      $("rvText").append("You post as ", v, ". Candidates see this on your briefs and intro requests.");
+      $("rvForm").hidden = true;
+      if (!$("rContact").value.trim()) $("rContact").value = AUTH.user.email;
+    } else if (signedIn()){
+      $("rvHead").textContent = "Verify your work email";
+      clear($("rvText"));
+      const b = document.createElement("b"); b.className = "mail"; b.textContent = AUTH.user.email;
+      $("rvText").append("You're signed in as ", b, ", a personal address. To post briefs or ask for intros, verify your company email. That signs you in with it instead.");
+      $("rvForm").hidden = false;
+    } else {
+      $("rvHead").textContent = "Verify your work email";
+      $("rvText").textContent = "Candidates only hear from real companies here. Use your company email: we send you a link, you open it, and your briefs and intro requests show your company's domain as verified. No password.";
+      $("rvForm").hidden = false;
+    }
+  }
+  $("rvEmail").addEventListener("keydown", e => { if (e.key === "Enter") $("rvGo").click(); });
+  $("rvGo").onclick = async () => {
+    const st = $("statusRv"), email = $("rvEmail").value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){ setStatus(st, "That doesn't look like an email address.", "err"); $("rvEmail").focus(); return; }
+    $("rvGo").disabled = true; setStatus(st, "Checking your address", "thinking");
+    try {
+      const c = await authApi("workcheck", {email});
+      if (!c.work){ setStatus(st, "That's a personal address, so it can't show which company you're with. Use your work email.", "err"); $("rvEmail").focus(); return; }
+      await authApi("request", {email});
+      try { localStorage.setItem("gc-after-signin", "recruit"); } catch(e){}
+      setStatus(st, "Check your inbox: we sent a link to " + email + ". Open it on this device and you'll come straight back here, verified. It expires in 15 minutes.");
+    } catch(e){
+      if (e.code === "not_enabled"){ AUTH.enabled = false; setStatus(st, ""); renderAcct(); }
+      else setStatus(st, e.message, "err");
+    } finally { $("rvGo").disabled = false; }
+  };
   function showSignin(){
     go(-1); ["home","step1","step2","step3"].forEach(id => $(id).hidden = true);
     $("signin").hidden = false; film.stop(); renderAcct();
@@ -2831,6 +2908,8 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
       const r = await authApi("verify", {code});
       putSession(r.session); AUTH.user = r.user; AUTH.on = true;
       setStatus($("statusSi"), ""); renderAcct(); linkBoard();
+      let next = null; try { next = localStorage.getItem("gc-after-signin"); localStorage.removeItem("gc-after-signin"); } catch(e){}
+      if (next === "recruit"){ showRecruit(); setStatus($("statusRv"), r.user.work ? "" : "That address is personal, so it can't verify a company. Try your work email."); }
     } catch(e){
       AUTH.linkErr = e.message || "That link didn't work. Ask for a new one."; renderAcct();
     }

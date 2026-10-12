@@ -9,9 +9,17 @@
 //     intro requests into the account the first time someone signs in there.
 //   - Briefs posted while signed in remember their owner (never shown publicly), so the
 //     recruiter can see and remove them later.
+//
+// Recruiter trust (work-email verification):
+//   Signing in by email link proves the recruiter owns that address. If it is a company
+//   address (not gmail, outlook and the like), briefs and intro requests carry that
+//   company domain as "verified", and seekers see it.
+//   Once email sign-in is switched on (RESEND_API_KEY set), posting a brief or asking for
+//   an intro REQUIRES a verified work email: no anonymous recruiters. Before that, the
+//   board stays open so the preview keeps working.
 
 import { createHash, randomBytes } from "node:crypto";
-import { userFromSession } from "./auth.js";
+import { userFromSession, workDomain } from "./auth.js";
 
 const URL_ = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
 const TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -66,6 +74,20 @@ async function owner(b, needToken) {
   if (okToken(b.token)) return { id: idOf(b.token), uid: "" };
   return { status: needToken ? 400 : 401, error: needToken ? "Bad token" : "Sign in first.", code: "no_owner" };
 }
+// Who is acting as a recruiter? { uid, domain } from the session, or { uid:"", domain:"" }.
+// When verification is switched on, a missing or personal address is refused.
+const verifyOn = () => !!process.env.RESEND_API_KEY;
+async function recruiter(b) {
+  let u = null;
+  if (b.session) {
+    u = await userFromSession(b.session);
+    if (!u) return { status: 401, error: "You were signed out. Sign in again.", code: "signed_out" };
+  }
+  const domain = u ? workDomain(u.email) : "";
+  if (verifyOn() && !u) return { status: 403, error: "Verify your work email first, so candidates know who you are.", code: "need_work_email" };
+  if (verifyOn() && !domain) return { status: 403, error: "Sign in with your work email to post or ask for intros. Personal addresses like Gmail can't show which company you're with.", code: "need_work_email" };
+  return { uid: u ? u.id : "", domain };
+}
 const fail = (res, o) => res.status(o.status).json({ error: o.error, code: o.code });
 const needPublic = ({ contact, token, owner, ...pub }) => pub;
 
@@ -118,8 +140,9 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true });
       }
       case "need.post": {
-        let uid = "";
-        if (b.session) { const o = await owner({ session: b.session }, false); if (o.error) return fail(res, o); uid = o.uid; }
+        const r = await recruiter(b);
+        if (r.error) return fail(res, r);
+        const uid = r.uid;
         if (await limited(req, "need", 8)) return res.status(429).json({ error: "You've posted a lot today. Try again later." });
         const n = b.need || {};
         const title = s(n.title, 120), problem = s(n.problem, 400);
@@ -128,12 +151,14 @@ export default async function handler(req, res) {
           id: "n" + randomBytes(8).toString("hex"), title, problem,
           type: TYPES.includes(n.type) ? n.type : "", company: s(n.company, 80),
           work: list(n.work, 3, 30).filter(w => WORK.includes(w)), contact: s(n.contact, 120),
-          at: Date.now(), example: false, ...(uid ? { owner: uid } : {}),
+          at: Date.now(), example: false, ...(uid ? { owner: uid } : {}), ...(r.domain ? { verified: r.domain } : {}),
         };
         await redis([["LPUSH", "gc:needs", JSON.stringify(need)], ["LTRIM", "gc:needs", 0, 199]]);
         return res.status(200).json({ id: need.id });
       }
       case "intro.request": {
+        const r = await recruiter(b);
+        if (r.error) return fail(res, r);
         if (await limited(req, "intro", 20)) return res.status(429).json({ error: "Too many requests. Try again later." });
         const pid = s(b.profileId, 40);
         if (!/^p[0-9a-f]{16}$/.test(pid)) return res.status(400).json({ error: "That profile can't receive requests." });
@@ -141,7 +166,7 @@ export default async function handler(req, res) {
         if (!exists) return res.status(404).json({ error: "That profile is no longer on the board." });
         const contact = s(b.contact, 120);
         if (contact.length < 5) return res.status(400).json({ error: "Add how candidates can reach you." });
-        const intro = { need: s(b.needId, 40), title: s(b.title, 120), company: s(b.company, 80), contact, at: Date.now() };
+        const intro = { need: s(b.needId, 40), title: s(b.title, 120), company: s(b.company, 80), contact, at: Date.now(), ...(r.domain ? { verified: r.domain } : {}) };
         await redis([["LPUSH", "gc:intros:" + pid, JSON.stringify(intro)], ["LTRIM", "gc:intros:" + pid, 0, 49]]);
         return res.status(200).json({ ok: true });
       }
