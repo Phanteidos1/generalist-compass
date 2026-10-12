@@ -111,7 +111,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ profiles });
       }
       case "needs": {
-        const [all] = await redis([["LRANGE", "gc:needs", 0, 59]]);
+        const [all] = await redis([["LRANGE", "gc:needs", 0, 199]]);
         const real = (all || []).map(parse).filter(n => n && !n.hidden).map(needPublic);
         const needs = real.length >= 3 ? real : real.concat(EXAMPLE_NEEDS);
         return res.status(200).json({ needs });

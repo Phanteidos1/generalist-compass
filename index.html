@@ -428,6 +428,11 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
 .need .jt{font-size:17px}
 .verified{color:var(--good);font-weight:600}
 .verified::before{content:"\2713\00a0"}
+#boardSec input,#boardSec select{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;width:100%;margin-top:6px}
+#boardSec select{appearance:auto}
+.bcount{justify-content:space-between;min-height:1.5em}
+.bcount .hint{margin:0}
+.need .fitme{font-size:13px;font-weight:700;color:var(--good)}
 #rVerify h3{margin:0}
 #rVerify p{margin:0}
 #statusRv:empty{display:none}
@@ -467,6 +472,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
     <button id="nav0" type="button">Home</button>
     <button id="nav1" type="button" aria-current="step">Your story</button>
     <button id="nav2" type="button" disabled>Your way in</button>
+    <button id="navB" type="button" hidden>Open problems</button>
     <button id="navR" type="button" hidden>For recruiters</button>
     <button id="nav3" type="button" disabled hidden>3 · Check a job</button>
   </nav>
@@ -823,7 +829,8 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
         <div class="row"><button class="btn" id="optOn" type="button">Make me findable</button><button class="link" id="optOff" type="button" hidden>Remove my profile</button></div>
         <div class="status" id="statusOpt" role="status"></div>
         <div id="myIntros" style="display:flex;flex-direction:column;gap:10px"></div>
-        <div id="seekBoardWrap" hidden><div class="q" style="margin:6px 0 8px">Recruiters are looking for</div><div class="joblist" id="seekBoard"></div></div>
+        <div id="seekBoardWrap" hidden><div class="q" style="margin:6px 0 8px">Recruiters are looking for</div><div class="joblist" id="seekBoard"></div>
+          <div class="row" style="margin-top:10px"><button class="link" id="seekAll" type="button">See all open problems</button></div></div>
       </div>
       <div class="card again" id="againCard"><b id="againHead">Come back in a week</b><p class="hint" id="againText">New companies raise money and expand every week. Come back for 3 fresh targets for your door.</p>
         <div class="row"><button class="ghost" id="againBtn" type="button">Find 3 new targets now</button></div></div>
@@ -964,6 +971,30 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
     <h2 class="sech">On the board</h2>
     <p class="lead" style="margin-top:-12px">What recruiters are looking for right now.</p>
     <div class="joblist" id="rBoard"></div>
+    <div class="row"><button class="ghost" id="rAll" type="button">See all open problems</button></div>
+  </section>
+
+  <!-- OPEN PROBLEMS BOARD -->
+  <section id="boardSec" hidden>
+    <span class="stepno">The board</span>
+    <h1>Open problems</h1>
+    <p class="lead">What companies need solved right now, in their own words. Look for one that sounds like something you've already done.</p>
+    <div class="example-flag" id="bFlag" hidden>Briefs marked <b>Example</b> are made up to show how it works, until real ones fill the board.</div>
+    <div class="card" role="search" aria-label="Filter the board">
+      <div><label class="q" for="bQ">Search</label><input id="bQ" type="search" placeholder="e.g. Spain, partners, community" autocomplete="off"></div>
+      <div><label class="q" for="bType">Fits which type</label><select id="bType"><option value="">Any type</option></select></div>
+      <div><div class="q" style="margin-bottom:8px">Setup</div>
+        <div class="chips" id="bWork">
+          <button type="button" class="chip" aria-pressed="false" data-v="Remote">Remote</button>
+          <button type="button" class="chip" aria-pressed="false" data-v="On-site or hybrid">On-site or hybrid</button>
+          <button type="button" class="chip" aria-pressed="false" data-v="Project or freelance">Project or freelance</button>
+          <button type="button" class="chip" aria-pressed="false" id="bVer">Verified companies only</button>
+        </div></div>
+    </div>
+    <div class="row bcount"><p class="hint" id="bCount" role="status" aria-live="polite"></p><button class="link" id="bClear" type="button" hidden>Clear filters</button></div>
+    <div class="joblist" id="bList"></div>
+    <div class="row"><button class="ghost" id="bMore" type="button" hidden>Show more</button></div>
+    <p class="hint" id="bSeek" hidden>Something here fits you? <button class="link" id="bStory" type="button">Get your reading</button> and make yourself findable, so the company can ask for an intro.</p>
   </section>
 
   <!-- SIGN IN -->
@@ -1127,7 +1158,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
 
   // ---------- steps ----------
   function go(n){
-    $("viewer").hidden = true; $("recruit").hidden = true; $("signin").hidden = true; $("navR").removeAttribute("aria-current");
+    $("viewer").hidden = true; $("recruit").hidden = true; $("signin").hidden = true; $("boardSec").hidden = true; $("navR").removeAttribute("aria-current"); $("navB").removeAttribute("aria-current");
     $("home").hidden = n !== 0;
     if (n === 0) $("nav0").setAttribute("aria-current","step"); else $("nav0").removeAttribute("aria-current");
     if (n === 0) film.start(); else { film.stop(); try { $("introVideo").pause(); } catch(e){} }
@@ -2596,9 +2627,85 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     if (n.example){ const b = document.createElement("span"); b.className = "badge"; b.textContent = "Example"; t.append(b); }
     const m = document.createElement("div"); m.className = "jm"; [str(n.company), arr(n.work).join(", "), str(n.type)].filter(Boolean).forEach(v => { const sp = document.createElement("span"); sp.textContent = v; m.append(sp); });
     if (n.verified){ const v = document.createElement("span"); v.className = "verified"; v.textContent = "Verified " + str(n.verified); m.append(v); }
+    const ago = postedAgo(n.at); if (ago && !n.example){ const sp = document.createElement("span"); sp.textContent = ago; m.append(sp); }
     const p = document.createElement("p"); p.textContent = str(n.problem);
-    c.append(t, m, p); return c;
+    c.append(t, m, p);
+    const myType = S.map && S.map.archetype && !S.example ? S.map.archetype.type : "";
+    if (myType && n.type === myType){ const f = document.createElement("div"); f.className = "fitme"; f.textContent = "Fits your type"; c.append(f); }
+    return c;
   }
+  function postedAgo(at){
+    at = Number(at) || 0; if (at < 1e12) return "";
+    const d = Math.floor((Date.now() - at) / 86400000);
+    if (d <= 0) return "Posted today"; if (d === 1) return "Posted yesterday";
+    if (d < 14) return "Posted " + d + " days ago";
+    if (d < 60) return "Posted " + Math.floor(d / 7) + " weeks ago";
+    return "Posted " + Math.floor(d / 30) + " months ago";
+  }
+
+  // ---------- open problems board: every brief, with filters ----------
+  const BF = { q: "", type: "", work: [], verified: false, shown: 12 };
+  ARCH_NAMES.forEach(n => { const o = document.createElement("option"); o.value = n; o.textContent = n; $("bType").append(o); });
+  const norm = v => str(v).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  function boardMatches(n){
+    if (BF.type && n.type !== BF.type) return false;
+    if (BF.work.length && !arr(n.work).some(w => BF.work.includes(w))) return false;
+    if (BF.verified && !n.verified) return false;
+    const words = norm(BF.q).split(/\s+/).filter(Boolean);
+    if (words.length){
+      const hay = norm([n.title, n.problem, n.company, n.type, n.verified, arr(n.work).join(" ")].join(" "));
+      if (!words.every(w => hay.includes(w))) return false;
+    }
+    return true;
+  }
+  const filtersOn = () => !!(BF.q.trim() || BF.type || BF.work.length || BF.verified);
+  function renderBoardPage(){
+    const box = $("bList"); clear(box);
+    const all = needs.slice().sort((a, z) => (z.at || 0) - (a.at || 0));
+    const hits = all.filter(boardMatches);
+    const real = all.filter(n => !n.example).length;
+    $("bFlag").hidden = !all.some(n => n.example);
+    const word = k => k === 1 ? "1 open problem" : k + " open problems";
+    $("bCount").textContent = !all.length ? "" : filtersOn() ? (hits.length ? hits.length + " of " + word(all.length) + " match" : "No match among " + word(all.length) + ".") : word(all.length) + (real && real < all.length ? ", " + real + " from real companies" : "");
+    $("bClear").hidden = !filtersOn();
+    if (!all.length){ const p = document.createElement("p"); p.className = "hint"; p.textContent = "Nothing posted yet. Recruiters can describe what they need under For recruiters."; box.append(p); }
+    else if (!hits.length){
+      const p = document.createElement("p"); p.className = "hint"; p.append("Nothing fits all of these filters. Try fewer words, or ");
+      const b = document.createElement("button"); b.type = "button"; b.className = "link"; b.textContent = "clear the filters"; b.onclick = clearBoardFilters;
+      p.append(b, "."); box.append(p);
+    }
+    hits.slice(0, BF.shown).forEach(n => box.append(needCard(n)));
+    $("bMore").hidden = hits.length <= BF.shown;
+    $("bMore").textContent = "Show more (" + (hits.length - Math.min(BF.shown, hits.length)) + " left)";
+    $("bSeek").hidden = !(hits.length && (!S.map || S.example));
+  }
+  function clearBoardFilters(){
+    BF.q = ""; BF.type = ""; BF.work = []; BF.verified = false; BF.shown = 12;
+    $("bQ").value = ""; $("bType").value = "";
+    document.querySelectorAll("#bWork .chip").forEach(c => c.setAttribute("aria-pressed", "false"));
+    renderBoardPage();
+  }
+  let bTimer = 0;
+  $("bQ").oninput = () => { clearTimeout(bTimer); bTimer = setTimeout(() => { BF.q = $("bQ").value; BF.shown = 12; renderBoardPage(); }, 150); };
+  $("bType").onchange = () => { BF.type = $("bType").value; BF.shown = 12; renderBoardPage(); };
+  document.querySelectorAll("#bWork .chip").forEach(c => c.onclick = () => {
+    const on = c.getAttribute("aria-pressed") !== "true"; c.setAttribute("aria-pressed", String(on));
+    if (c.id === "bVer") BF.verified = on;
+    else BF.work = [...document.querySelectorAll('#bWork .chip[data-v][aria-pressed="true"]')].map(x => x.dataset.v);
+    BF.shown = 12; renderBoardPage();
+  });
+  $("bClear").onclick = clearBoardFilters;
+  $("bMore").onclick = () => { BF.shown += 12; renderBoardPage(); };
+  $("bStory").onclick = () => go(1);
+  function showBoard(type){
+    go(-1); ["home","step1","step2","step3"].forEach(id => $(id).hidden = true);
+    if (typeof type === "string"){ BF.type = type; $("bType").value = type; BF.shown = 12; }
+    $("boardSec").hidden = false; $("navB").setAttribute("aria-current","step"); film.stop();
+    renderBoardPage(); window.scrollTo({top:0, behavior:"smooth"});
+  }
+  $("navB").onclick = () => showBoard();
+  $("rAll").onclick = () => showBoard();
+  $("seekAll").onclick = () => showBoard(S.map && S.map.archetype && !S.example ? str(S.map.archetype.type) : "");
   function renderBoards(){
     const b = $("rBoard"); clear(b);
     const list = needs.slice().sort((a, z) => (z.at || 0) - (a.at || 0));
@@ -2610,6 +2717,8 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     const mine = list.filter(n => n.type === myType).concat(list.filter(n => n.type !== myType)).slice(0, 3);
     mine.forEach(n => sb.append(needCard(n)));
     $("seekBoardWrap").hidden = !mine.length;
+    $("rAll").hidden = !list.length;
+    if (!$("boardSec").hidden) renderBoardPage();
     renderMyBriefs();
     renderMyIntros();
   }
@@ -2766,7 +2875,7 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
   async function startDb(){
     if (!(window.claude && typeof window.claude.use === "function")){
       try { const r = await fetch("/api/board", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({action:"needs"})}); if (!r.ok) return; } catch(e){ return; }
-      WEB.on = true; $("navR").hidden = false; renderVerify();
+      WEB.on = true; $("navR").hidden = false; $("navB").hidden = false; renderVerify();
       $("recruit").querySelector(".example-flag").textContent = "Early version. Profiles and requests marked Example are made up to show how it works, until real ones fill the board.";
       webRefresh(); setInterval(() => { if (!document.hidden) webRefresh(); }, 60000);
       return;
@@ -2774,7 +2883,7 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     try { db = await window.claude.use("db"); } catch(e){ db = null; }
     if (!db) return;
     try { const u = await window.claude.use("user"); uid = u ? await u.id() : null; } catch(e){ uid = null; }
-    $("navR").hidden = false;
+    $("navR").hidden = false; $("navB").hidden = false;
     db.collection("profiles").onSnapshot(snap => {
       RX.pool = snap.docs.filter(d => d.exists).map(d => Object.assign({_id: d.id}, d.data()));
       myProfile = uid ? (RX.pool.find(p => p._id === uid) || null) : null; renderOpt(); renderMyIntros();
