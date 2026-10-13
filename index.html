@@ -401,6 +401,26 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
 .pcard textarea{min-height:76px}
 .pcard input:focus-visible,.pcard textarea:focus-visible{outline:2px solid var(--needle);outline-offset:2px}
 .pcard .btn{padding:9px 16px;font-size:15px}
+.gapcard .glist{display:flex;flex-direction:column;gap:12px}
+.gapstrong{background:var(--accent-soft);border-radius:10px;padding:10px 14px;font-size:15px;margin:0}
+.gapstrong b{display:block;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);margin-bottom:2px}
+.gap{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--bg);display:flex;flex-direction:column;gap:8px;min-width:0}
+.gap.done{border-color:var(--good)}
+.gap .gh{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.gap .gt{font-family:var(--display);font-weight:700;font-size:17px;line-height:1.3;overflow-wrap:anywhere;unicode-bidi:plaintext}
+.gap .gsize{flex:none;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:2px 7px;background:var(--needle-soft);color:var(--needle)}
+.gap.done .gsize{background:transparent;color:var(--good);border:1px solid var(--good)}
+.gap p{margin:0;font-size:15px;overflow-wrap:anywhere;unicode-bidi:plaintext}
+.gap .glabel{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:1px}
+.gap .gtake{background:var(--surface);border-left:3px solid var(--good);border-radius:6px;padding:8px 12px}
+.gap .ivbox{background:var(--surface)}
+.gap .ivbox .bubble{background:var(--bg)}
+.gap .ivbox .bubble.me{background:var(--accent-soft)}
+.gap .lsteps{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
+.gap .lsteps i{width:22px;height:6px;border-radius:99px;background:var(--line);display:inline-block}
+.gap .lsteps i.on{background:var(--needle)}
+.gap .btn{padding:9px 16px;font-size:15px}
+.gap .row{gap:14px}
 .ivbox{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--bg);display:flex;flex-direction:column;gap:12px;min-width:0}
 .ivbox .bubble{background:var(--surface)}
 .ivbox .bubble.me{background:var(--accent-soft)}
@@ -840,6 +860,38 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
         <div class="joblist" id="targetList"></div>
         <p class="credit" id="jobCredit" hidden>Job listings via <a href="https://himalayas.app" target="_blank" rel="noopener">Himalayas</a> and <a href="https://jobicy.com" target="_blank" rel="noopener">Jobicy</a>. Apply on their pages.</p>
       </div>
+      <div class="card gapcard" id="gapCard">
+        <span class="tag">Before you knock</span>
+        <h3>What this door asks that your story doesn't show yet</h3>
+        <p class="hint" id="gapLead">An honest look at the 2 or 3 things a founder behind this door will look for, and where your story is thin. Each one comes with a 10-minute lesson you do right here.</p>
+        <p class="gapstrong" id="gapStrong" hidden></p>
+        <div class="glist" id="gapList"></div>
+        <div class="row"><button class="ghost" id="gapFind" type="button">Show me what's missing</button></div>
+        <div class="status" id="statusGap" role="status"></div>
+        <div class="ivbox" id="lsBox" hidden>
+          <div class="ivhead"><b id="lsHead">A short lesson</b><span class="hint">Your coach explains one idea with your own story, then gives you 3 small practice tasks. Write a rough answer, you get feedback. About 10 minutes.</span></div>
+          <div class="lsteps" id="lsSteps" aria-hidden="true"></div>
+          <div class="thread" id="lsLog" aria-live="polite"></div>
+          <div id="lsAnswer">
+            <div class="copyrow">
+              <label class="q" for="lsReply">Your answer</label>
+              <button type="button" class="mic" id="mic4">
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <span id="micLabel4">Talk your answer</span>
+              </button>
+            </div>
+            <div class="micHint" id="micHint4" hidden></div>
+            <textarea id="lsReply" class="reply-box" placeholder="Type or dictate. A rough first try is the point."></textarea>
+            <div class="row" style="margin-top:10px">
+              <button class="btn" id="lsSend" type="button">Send</button>
+              <button class="link" id="lsStop" type="button" hidden>Stop</button>
+            </div>
+          </div>
+          <div class="row"><button class="ghost" id="lsDone" type="button" hidden>Mark this gap as worked on</button></div>
+          <div class="row ivfoot"><button class="link" id="lsClose" type="button">Close the lesson</button><button class="link" id="lsReset" type="button" hidden>Start the lesson over</button></div>
+          <div class="status" id="statusLs" role="status"></div>
+        </div>
+      </div>
       <div class="pathnext" id="toDoneRow" hidden><button class="btn big" id="toDone" type="button">I've picked who to message &rarr;</button></div>
     </div>
 
@@ -890,6 +942,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
         <button type="button" class="action" data-open="netCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><circle cx="12" cy="5" r="2.5"/><path d="M7 16.5 10.5 7M17 16.5 13.5 7M7.5 18h9"/></svg></span><b>Network X-ray</b><small>Who you already know who can open doors</small></button>
         <button type="button" class="action" data-open="shareCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span><b>Ask someone for help</b><small>A one-page report, made for them</small></button>
         <button type="button" class="action" id="toScanTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span><b>Check a job</b><small>Paste a job post, get your fit</small></button>
+        <button type="button" class="action" id="gapTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l10-4 10 4-10 4z"/><path d="M6 9v5c0 1.7 2.7 3 6 3s6-1.3 6-3V9M22 7v6"/></svg></span><b>Close a skill gap</b><small>What your door asks, and a 10-minute lesson</small></button>
         <button type="button" class="action" id="ownReportTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15l3 3 3-3"/></svg></span><b>Download my report</b><small>Your full reading, as a PDF</small></button>
       </div>
       <div class="card net" id="netCard" hidden>
@@ -1174,7 +1227,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
 
   // ---------- storage (convenience only) ----------
   const load = () => { try { return JSON.parse(localStorage.getItem("gc-state-2")||"null"); } catch(e){ return null; } };
-  const save = () => { if (S.example) return; try { localStorage.setItem("gc-state-2", JSON.stringify({profile:S.profile,stuck:S.stuck,prefs:S.prefs,map:S.example?null:S.map,name:S.name||"",base:S.base||"",page:S.page||null,helper:S.example?null:(S.helper||null),chat:S.example?[]:(S.chat||[]).slice(-20),stage:S.stage||2,door:(S.door==null?null:S.door),targets:S.example?[]:(S.targets||[]).slice(-60),lastBatch:S.lastBatch||0,weeks:S.weeks||[],problems:S.problems||[],interview:(S.interview||[]).slice(-40)})); } catch(e){} };
+  const save = () => { if (S.example) return; try { localStorage.setItem("gc-state-2", JSON.stringify({profile:S.profile,stuck:S.stuck,prefs:S.prefs,map:S.example?null:S.map,name:S.name||"",base:S.base||"",page:S.page||null,helper:S.example?null:(S.helper||null),chat:S.example?[]:(S.chat||[]).slice(-20),stage:S.stage||2,door:(S.door==null?null:S.door),targets:S.example?[]:(S.targets||[]).slice(-60),lastBatch:S.lastBatch||0,weeks:S.weeks||[],problems:S.problems||[],interview:(S.interview||[]).slice(-40),gaps:S.example?null:(S.gaps||null)})); } catch(e){} };
 
   // ---------- helpers ----------
   const clear = el => { while(el.firstChild) el.removeChild(el.firstChild); };
@@ -1903,7 +1956,7 @@ ${cut(job, 10000)}
     try {
       const m = await sample.json(mapPrompt());
       if (!m || !Array.isArray(m.routes)) throw {code:"invalid_json"};
-      S.example = false; S.map = m; S.chat = []; S.stage = 2; S.door = null; clear($("targetList")); renderChat(); applyStage(); save();
+      S.example = false; S.map = m; S.chat = []; S.stage = 2; S.door = null; S.gaps = null; clear($("targetList")); renderChat(); applyStage(); save();
       setStatus(st, "");
       stopSteps(true);
       renderMap(m); go(2); showFeedback();
@@ -2250,6 +2303,7 @@ ${talk ? "\nWhat they added in conversation (overrides the reading where they di
     $("targetStep").hidden = st < 4 || !curDoor();
     $("doneStep").hidden = st < 5;
     try { renderOpt(); } catch(e){}
+    try { renderGaps(); } catch(e){}
     $("toDoneRow").hidden = st >= 5 || !$("targetList").children.length;
   }
   const reveal = id => setTimeout(() => $(id).scrollIntoView({behavior:"smooth", block:"start"}), 60);
@@ -2271,6 +2325,215 @@ ${talk ? "\nWhat they added in conversation (overrides the reading where they di
       $("tModeHint").textContent = roles ? "Remote openings posted this week, picked for your story and your door." : "Companies that just raised money, entered a new market or launched something, and will soon need someone like you.";
     };
   });
+
+  // ---------- skill gaps for the chosen door, each with a short AI-led lesson ----------
+  const GAP_ROUNDS = 3, GAP_KEEP = 24;
+  const noDash = t => str(t).replace(/\s*\u2014\s*/g, ", ");
+  const LS = $("lsBox");
+  let gapOpen = -1, lsCtl = null;
+  function cleanGap(x){
+    if (!x || typeof x !== "object") return null;
+    const skill = cut(noDash(x.skill).trim(), 90); if (!skill) return null;
+    const lesson = (Array.isArray(x.lesson) ? x.lesson : []).filter(t => t && (t.role === "user" || t.role === "assistant") && typeof t.content === "string" && t.content.trim()).slice(-GAP_KEEP);
+    return { skill, why: cut(noDash(x.why).trim(), 300), have: cut(noDash(x.have).trim(), 300), size: x.size === "bigger" ? "bigger" : "small", lesson, done: !!x.done, take: cut(noDash(x.take).trim(), 400) };
+  }
+  function cleanGaps(g){
+    if (!g || typeof g !== "object" || !g.door || !Array.isArray(g.list)) return null;
+    const list = g.list.map(cleanGap).filter(Boolean).slice(0, 3);
+    return list.length ? { door: str(g.door), strong: cut(noDash(g.strong).trim(), 300), list } : null;
+  }
+  function gapsNow(){ const d = curDoor(); return !S.example && d && S.gaps && S.gaps.door === str(d.name) ? S.gaps : null; }
+  function gapView(x, i){
+    const c = document.createElement("div"); c.className = "gap" + (x.done ? " done" : "");
+    const h = document.createElement("div"); h.className = "gh";
+    const t = document.createElement("div"); t.className = "gt"; t.textContent = x.skill;
+    const sz = document.createElement("span"); sz.className = "gsize"; sz.textContent = x.done ? "Worked on" : (x.size === "bigger" ? "Bigger gap" : "Small gap");
+    h.append(t, sz); c.append(h);
+    [["Why this door asks for it", x.why], ["What you already have", x.have]].forEach(([lab, v]) => {
+      if (!v) return; const p = document.createElement("p"); const l = document.createElement("span"); l.className = "glabel"; l.textContent = lab; p.append(l, v); c.append(p);
+    });
+    if (x.done && x.take){ const p = document.createElement("p"); p.className = "gtake"; const l = document.createElement("span"); l.className = "glabel"; l.textContent = "What you can say now"; p.append(l, x.take); c.append(p); }
+    if (gapOpen === i) return c;
+    const row = document.createElement("div"); row.className = "row";
+    const b = document.createElement("button"); b.type = "button"; b.className = x.done ? "link" : "btn";
+    b.textContent = x.done ? "See the lesson again" : (x.lesson.length ? "Continue the lesson" : "Start the 10-minute lesson");
+    b.onclick = () => openLesson(i);
+    row.append(b); c.append(row);
+    return c;
+  }
+  function renderGaps(){
+    if (!$("gapCard")) return;
+    const list = $("gapList"), g = gapsNow();
+    if (!g) gapOpen = -1;
+    LS.hidden = true; $("gapCard").append(LS); clear(list);
+    const sb = $("gapStrong"); clear(sb); sb.hidden = !(g && g.strong);
+    if (g && g.strong){ const b = document.createElement("b"); b.textContent = "What you already bring"; sb.append(b, g.strong); }
+    (g ? g.list : []).forEach((x, i) => {
+      const el = gapView(x, i); list.append(el);
+      if (gapOpen === i){ el.append(LS); LS.hidden = false; renderLesson(); }
+    });
+    const n = g ? g.list.filter(x => x.done).length : 0;
+    $("gapFind").textContent = g ? "Look again" : "Show me what's missing";
+    $("gapLead").textContent = g
+      ? (n === g.list.length ? "You've worked on every gap for this door. Use the lines above in your messages and calls." : n + " of " + g.list.length + " worked on. Each lesson takes about 10 minutes.")
+      : "An honest look at the 2 or 3 things a founder behind this door will look for, and where your story is thin. Each one comes with a 10-minute lesson you do right here.";
+    if (S.example) setStatus($("statusGap"), "Gaps and lessons are made from your own story. Get your own reading to see yours.");
+    else if ($("statusGap").textContent.startsWith("Gaps and lessons are made")) setStatus($("statusGap"), "");
+  }
+  function gapPrompt(d){
+    const a = (S.map && S.map.archetype) || {}, m = S.map || {};
+    const cards = (S.problems || []).filter(p => p.ok).map(p => "- " + p.title + ": " + p.result).join("\n");
+    return `You help a generalist get ready for the one way into work they picked. Look honestly at what this way in asks of them, and where their story is still thin.
+
+Reply with ONLY a JSON object like:
+{"strong":"...","gaps":[{"skill":"...","why":"...","have":"...","size":"small"}]}
+
+Rules:
+- strong: max 25 words, what they already bring to this way in, taken from their story.
+- gaps: 2 or 3 skills or kinds of proof that a founder or hiring manager behind this way in will look for, and that their story does not show yet. Most important first.
+- skill: max 8 words, a concrete skill said plainly, e.g. "Writing a 90-day plan a founder can say yes to". Never a personality trait, a degree or a certificate.
+- why: max 28 words, why it matters for this way in in particular.
+- have: max 25 words, the closest thing in their story they can build on. Be specific. If nothing is close, say where they could start.
+- size: "small" if a few hours of practice closes it, "bigger" if it takes a few weeks of practice.
+- Every gap must be something they can practice in short written lessons. Never invent facts about them. Never call a gap a strength to be kind.
+- Plain, warm, direct words. No jargon. No em dashes. Write in the language of their story.
+
+The way in they picked: ${str(d.name)}. ${str(d.why)} First step: ${str(d.first)}
+
+Their reading: ${str(a.name || a.type)}. ${str(m.thread)} Their edge: ${str(m.edge && m.edge.name)}. What holds them back: ${str(m.trap && m.trap.name)}.${cards ? "\n\nProblems they have solved (approved by them):\n" + cut(cards, 2000) : ""}
+
+Their story:
+"""
+${cut(S.profile, 8000)}
+"""`;
+  }
+  $("gapFind").onclick = async () => {
+    const st = $("statusGap"), d = curDoor();
+    if (busy || lsCtl) return;
+    if (S.example){ renderGaps(); return; }
+    if (!d){ setStatus(st, "Pick your door first.", "err"); reveal("doorStep"); return; }
+    if (!S.profile || S.profile.length < 30){ setStatus(st, "Add your story in step 1 first.", "err"); return; }
+    if (!sample){ setStatus(st, sampleReady ? "This works when the page is opened in Claude or on the website." : "Getting ready, try again in a moment.", "err"); return; }
+    const g = gapsNow();
+    if (g && g.list.some(x => x.lesson.length) && !confirm("Look again? Your lessons for these gaps will be cleared.")) return;
+    busy = true; $("gapFind").disabled = true; gapOpen = -1;
+    setStatus(st, "Looking at what your door asks for", "thinking");
+    try {
+      const r = await sample.json(gapPrompt(d), { cache:false });
+      const fresh = cleanGaps({ door: str(d.name), strong: r && r.strong, list: Array.isArray(r && r.gaps) ? r.gaps : [] });
+      if (!fresh) throw {code:"invalid_json"};
+      S.gaps = fresh; save(); setStatus(st, "Here is what's missing. Start with the first one, it matters most.");
+      renderGaps();
+    } catch(e){ setStatus(st, errText(e), "err"); }
+    finally { busy = false; $("gapFind").disabled = false; }
+  };
+  function lsRules(x){
+    const d = curDoor() || {};
+    return `You are a warm, practical coach inside Generalist Compass. You teach one skill in a short written lesson of about 10 minutes, to a generalist getting ready for a way into work they picked.
+
+The skill: ${x.skill}
+Why it matters for them: ${x.why}
+What they already have to build on: ${x.have}
+Their way in: ${str(d.name)}. ${str(d.why)}
+
+How the lesson goes:
+- Your first message: explain the one idea that matters most for this skill in max 90 words, with an example taken from their own story. Then give practice task 1: something small they can write right here in 2 to 5 sentences, about their own situation.
+- After each answer: say in one line what works (quote a few of their words), give one concrete fix, then the next task, a bit harder than the last. ${GAP_ROUNDS} practice tasks in total.
+- After their answer to task ${GAP_ROUNDS}: give short final feedback. Then a line that starts with "What you can say now:" followed by one or two sentences they can use in a message or call for this way in, built from their own answers. Then one real step for this week, starting with "This week:". End with the exact line LESSON DONE.
+- If they ask a question, answer it briefly, then repeat the task.
+- Max 140 words per message. Plain text, no markdown, no lists with symbols. No jargon, no flattery, no em dashes. Never invent facts about them.
+- Reply in the language of their story or their last answer.
+
+Their story:
+"""
+${cut(S.profile, 6000)}
+"""`;
+  }
+  function lsBubble(role, text){
+    const b = document.createElement("div"); b.className = "bubble " + (role === "user" ? "me" : "ai"); b.textContent = text; $("lsLog").append(b); return b;
+  }
+  function renderLesson(){
+    const g = gapsNow(), x = g && g.list[gapOpen]; if (!x) return;
+    $("lsHead").textContent = "Lesson: " + x.skill;
+    clear($("lsLog")); x.lesson.forEach(t => lsBubble(t.role, t.content));
+    const n = x.lesson.filter(t => t.role === "user").length;
+    const steps = $("lsSteps"); clear(steps);
+    for (let k = 0; k < GAP_ROUNDS; k++){ const i = document.createElement("i"); if (k < n) i.className = "on"; steps.append(i); }
+    const lab = document.createElement("span"); lab.textContent = x.done ? "Done" : "Task " + Math.min(n + 1, GAP_ROUNDS) + " of " + GAP_ROUNDS; steps.append(lab);
+    $("lsAnswer").hidden = x.done;
+    $("lsDone").hidden = x.done || n < GAP_ROUNDS;
+    $("lsReset").hidden = !x.lesson.length;
+  }
+  async function lsAsk(){
+    const g = gapsNow(), x = g && g.list[gapOpen], st = $("statusLs");
+    if (!x) return false;
+    if (!sample){ setStatus(st, sampleReady ? "The lesson works when the page is opened in Claude or on the website." : "Getting ready, try again in a moment.", "err"); return false; }
+    const hist = x.lesson.slice(-GAP_KEEP);
+    if (hist.length && hist[hist.length - 1].role !== "user") return false;
+    let turns = [{role:"user", content: lsRules(x) + "\n\nStart the lesson now."}];
+    // keep turns alternating: drop a leading answer if the history was trimmed
+    turns = turns.concat(hist[0] && hist[0].role === "user" ? hist.slice(1) : hist);
+    const out = lsBubble("assistant", "Thinking..."); out.classList.add("wait");
+    lsCtl = new AbortController(); $("lsSend").disabled = true; $("lsStop").hidden = false; setStatus(st, "");
+    try {
+      const { text } = await sample(turns, { cache:false, signal:lsCtl.signal, onText: ({text}) => { out.classList.remove("wait"); out.textContent = noDash(text).replace(/\s*LESSON DONE\s*$/, ""); } });
+      let msg = noDash(text).trim();
+      if (!msg) throw {code:"empty_completion"};
+      const fin = /\n?\s*LESSON DONE\.?\s*$/.test(msg);
+      msg = msg.replace(/\n?\s*LESSON DONE\.?\s*$/, "").trim();
+      x.lesson.push({role:"assistant", content: msg});
+      if (fin){
+        const m = /What you can say now:\s*([\s\S]*?)(?:\n\s*This week:|$)/i.exec(msg);
+        x.done = true; x.take = cut((m ? m[1] : "").trim(), 400);
+      }
+      save(); renderLesson();
+      if (fin){ setStatus(st, "Lesson done. Your line is saved on this gap."); renderGaps(); }
+      return true;
+    } catch(e){
+      out.remove();
+      if (!e || e.code !== "cancelled") setStatus(st, errText(e), "err");
+      return false;
+    } finally { lsCtl = null; $("lsSend").disabled = false; $("lsStop").hidden = true; }
+  }
+  async function openLesson(i){
+    if (busy || lsCtl) return;
+    const g = gapsNow(); if (!g || !g.list[i]) return;
+    gapOpen = i; setStatus($("statusLs"), ""); renderGaps();
+    LS.scrollIntoView({behavior:"smooth", block:"start"});
+    const x = g.list[i], last = x.lesson[x.lesson.length - 1];
+    if (!x.done && (!last || last.role === "user")) await lsAsk();
+    if (!x.done) setTimeout(() => $("lsReply").focus({preventScroll:true}), 300);
+  }
+  $("lsSend").onclick = async () => {
+    if (lsCtl || busy) return;
+    const g = gapsNow(), x = g && g.list[gapOpen]; if (!x || x.done) return;
+    const text = $("lsReply").value.trim(), last = x.lesson[x.lesson.length - 1];
+    if (!text){ if (!last || last.role === "user"){ const ok = await lsAsk(); $("lsSend").textContent = ok ? "Send" : "Try again"; } return; }
+    if (last && last.role === "user") last.content = cut(last.content + "\n" + text, 3000);
+    else x.lesson.push({role:"user", content: cut(text, 3000)});
+    $("lsReply").value = ""; save(); renderLesson();
+    const ok = await lsAsk();
+    $("lsSend").textContent = ok ? "Send" : "Try again";
+  };
+  $("lsReply").addEventListener("input", () => { $("lsSend").textContent = "Send"; });
+  $("lsReply").addEventListener("keydown", ev => { if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) $("lsSend").click(); });
+  $("lsStop").onclick = () => lsCtl && lsCtl.abort();
+  $("lsDone").onclick = () => {
+    const g = gapsNow(), x = g && g.list[gapOpen]; if (!x) return;
+    x.done = true; save(); gapOpen = -1; renderGaps(); setStatus($("statusGap"), "Marked as worked on. Nice.");
+  };
+  $("lsClose").onclick = () => { if (lsCtl) lsCtl.abort(); const at = gapOpen; gapOpen = -1; renderGaps(); const el = $("gapList").children[at]; if (el) el.scrollIntoView({behavior:"smooth", block:"nearest"}); };
+  $("lsReset").onclick = async () => {
+    if (lsCtl || busy) return;
+    const g = gapsNow(), x = g && g.list[gapOpen]; if (!x) return;
+    if (!confirm("Start this lesson over? Your answers will be cleared.")) return;
+    x.lesson = []; x.done = false; x.take = ""; save(); renderGaps(); await lsAsk();
+  };
+  $("gapTile").onclick = () => {
+    if (!S.map) return;
+    if (!curDoor()){ S.stage = Math.max(S.stage || 2, 3); applyStage(); save(); reveal("doorStep"); return; }
+    reveal("gapCard");
+  };
 
   function copyBtn(getText){
     const b = document.createElement("button"); b.type = "button"; b.className = "link"; b.textContent = "Copy";
@@ -2628,6 +2891,7 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     onText: v => { S.profile = v; save(); }});
   wireMic({btn:"mic3", label:"micLabel3", hint:"micHint3", box:"ivReply", idle:"Talk your answer",
     tipExtra:"Tell it like a story. Then press Send."});
+  wireMic({btn:"mic4", label:"micLabel4", hint:"micHint4", box:"lsReply", idle:"Talk your answer", tipExtra:"Then press Send."});
   wireMic({btn:"mic2", label:"micLabel2", hint:"micHint2", box:"reply", idle:"Talk your reply",
     tipExtra:"Say what feels off, what scares you, or what you want to know. Then press Send."});
 
@@ -3611,6 +3875,7 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     if (Array.isArray(saved.prefs)){ S.prefs = saved.prefs; setChips("prefs", S.prefs); }
     if (Array.isArray(saved.problems)) S.problems = saved.problems.map(cleanProb).filter(Boolean).slice(0, PROB_MAX);
     if (Array.isArray(saved.targets)) S.targets = saved.targets; if (saved.lastBatch) S.lastBatch = saved.lastBatch; if (Array.isArray(saved.weeks)) S.weeks = saved.weeks;
+    if (saved.gaps) S.gaps = cleanGaps(saved.gaps);
     if (saved.map && Array.isArray(saved.map.routes)){ S.map = saved.map; S.stage = Number(saved.stage) || 2; S.door = saved.door == null ? null : Number(saved.door); renderMap(S.map); applyStage(); if (S.lastBatch && (S.targets||[]).length){ showBatch(); applyStage(); } }
     if (saved.name){ S.name = saved.name; $("myName").value = saved.name; }
     if (saved.base){ S.base = saved.base; $("baseIn").value = saved.base; }
