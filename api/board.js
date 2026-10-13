@@ -51,6 +51,15 @@
 //   stores { by, at } as "hired" on the intro or pitch). Counted at most every 10 minutes and
 //   kept in gc:stats:cache; an answer or a marked hire clears it so the numbers move right away.
 
+// Moderation (admin page at /admin, see admin.html):
+//   Anyone can report a real brief or profile ("report": spam, fake, offensive, other). One report
+//   per item per visitor; reports collect in the hash gc:reports ("need:<id>" or "profile:<id>").
+//   Admins are signed-in accounts whose email is listed in the env ADMIN_EMAILS (comma separated).
+//   Without ADMIN_EMAILS nobody is an admin. Admins can hide or remove briefs, remove profiles,
+//   dismiss reports, and block the account behind a brief (gc:blocked, a set of account ids):
+//   a blocked account can no longer post, ask for intros, pitch, save a profile or send messages.
+//   Every admin action is written to gc:adminlog (last 100).
+
 import { createHash, randomBytes } from "node:crypto";
 import { userFromSession, workDomain } from "./auth.js";
 
@@ -153,6 +162,13 @@ async function owner(b, needToken) {
   if (okToken(b.token)) return { id: idOf(b.token), uid: "" };
   return { status: needToken ? 400 : 401, error: needToken ? "Bad token" : "Sign in first.", code: "no_owner" };
 }
+// Accounts an admin blocked can still read, but not post, pitch, ask or write.
+const BLOCKED = { status: 403, error: "This account can't post here any more. If you think that's a mistake, write to us through the feedback button.", code: "blocked" };
+async function isBlocked(uid) {
+  if (!uid) return false;
+  const [n] = await redis([["SISMEMBER", "gc:blocked", uid]]);
+  return Number(n) === 1;
+}
 // Who is acting as a recruiter? { uid, domain } from the session, or { uid:"", domain:"" }.
 // When verification is switched on, a missing or personal address is refused.
 const verifyOn = () => !!process.env.RESEND_API_KEY;
@@ -162,6 +178,7 @@ async function recruiter(b) {
     u = await userFromSession(b.session);
     if (!u) return { status: 401, error: "You were signed out. Sign in again.", code: "signed_out" };
   }
+  if (u && await isBlocked(u.id)) return BLOCKED;
   const domain = u ? workDomain(u.email) : "";
   if (verifyOn() && !u) return { status: 403, error: "Verify your work email first, so candidates know who you are.", code: "need_work_email" };
   if (verifyOn() && !domain) return { status: 403, error: "Sign in with your work email to post or ask for intros. Personal addresses like Gmail can't show which company you're with.", code: "need_work_email" };
@@ -331,6 +348,7 @@ export default async function handler(req, res) {
       case "profile.save": {
         const o = await owner(b, true);
         if (o.error) return fail(res, o);
+        if (await isBlocked(o.uid)) return fail(res, BLOCKED);
         if (await limited(req, "profile", 30)) return res.status(429).json({ error: "Too many changes. Try again later." });
         const p = b.profile || {};
         if (!TYPES.includes(p.type)) return res.status(400).json({ error: "Get your reading first." });
@@ -434,6 +452,7 @@ export default async function handler(req, res) {
       case "pitch.send": {
         const o = await owner(b, true);
         if (o.error) return fail(res, o);
+        if (await isBlocked(o.uid)) return fail(res, BLOCKED);
         if (await limited(req, "pitch", 20)) return res.status(429).json({ error: "Too many tries. Try again later." });
         const nid = s(b.needId, 40);
         if (!isNeedId(nid)) return res.status(400).json({ error: "That brief can't receive pitches.", code: "not_pitchable" });
@@ -606,6 +625,7 @@ export default async function handler(req, res) {
       case "msg.send": {
         const th = await threadFor(b);
         if (th.error) return fail(res, th);
+        if (b.session) { const me = await userFromSession(b.session); if (me && await isBlocked(me.id)) return fail(res, BLOCKED); }
         if (await limited(req, "msg", 60)) return res.status(429).json({ error: "That's a lot of messages in one hour. Take a breath and try again later." });
         const text = String(b.text == null ? "" : b.text).replace(/\r\n?/g, "\n").replace(/[\u0000-\u0009\u000B-\u001F]+/g, " ").replace(/\n{3,}/g, "\n\n").trim().slice(0, 1000);
         if (!text) return res.status(400).json({ error: "Write something first.", code: "empty" });
@@ -618,11 +638,143 @@ export default async function handler(req, res) {
         await redis([["HSET", "gc:msgc:" + th.tid, "seen:" + th.side, Number(otherN) || 0]]);
         return res.status(200).json({ ok: true, message: { mine: true, text: msg.text, at: msg.at }, count: mine });
       }
+      case "report": {
+        const kind = b.kind === "profile" ? "profile" : b.kind === "need" ? "need" : "";
+        const id = s(b.id, 40);
+        if (!kind || !(kind === "need" ? isNeedId(id) : /^p[0-9a-f]{16}$/.test(id)))
+          return res.status(400).json({ error: "Examples can't be reported. Thanks for looking out, though.", code: "bad_report" });
+        const why = REPORT_WHY.includes(b.why) ? b.why : "Something else";
+        const note = s(b.note, 200);
+        if (await limited(req, "report", 20)) return res.status(429).json({ error: "Thanks, that's a lot of reports in one hour. Try again later." });
+        const ip = s((req.headers["x-forwarded-for"] || "").split(",")[0] || req.socket?.remoteAddress || "x", 64);
+        const key = kind + ":" + id;
+        const [first] = await redis([["SET", "gc:rep1:" + hash(ip + "|" + key).slice(0, 24), "1", "NX", "EX", 30 * 86400]]);
+        if (first !== "OK") return res.status(200).json({ ok: true, again: true });
+        const [raw] = await redis([["HGET", "gc:reports", key]]);
+        const rep = parse(raw) || { kind, id, count: 0, reasons: [], first: Date.now() };
+        rep.count = (rep.count || 0) + 1;
+        rep.last = Date.now();
+        rep.reasons = [{ why, note, at: Date.now() }].concat(rep.reasons || []).slice(0, 10);
+        await redis([["HSET", "gc:reports", key, JSON.stringify(rep)]]);
+        return res.status(200).json({ ok: true });
+      }
       default:
+        if (typeof b.action === "string" && b.action.startsWith("admin.")) return admin(req, res, b);
         return res.status(400).json({ error: "Unknown action" });
     }
   } catch (e) {
     console.log("Board error", String(e));
     return res.status(502).json({ error: "The board is having trouble right now. Try again in a minute." });
+  }
+}
+
+// ---------- moderation ----------
+const REPORT_WHY = ["Spam", "Fake or a scam", "Rude or offensive", "Something else"];
+const adminEmails = () => String(process.env.ADMIN_EMAILS || "").toLowerCase().split(/[\s,;]+/).filter(x => x.includes("@"));
+
+async function admin(req, res, b) {
+  const list = adminEmails();
+  if (!list.length) return res.status(403).json({ error: "No admin is set up yet. Add ADMIN_EMAILS in Vercel.", code: "no_admins" });
+  const u = b.session ? await userFromSession(b.session) : null;
+  if (!u) return res.status(401).json({ error: "Sign in first, with your admin email.", code: "signed_out" });
+  if (!list.includes(String(u.email).toLowerCase())) return res.status(403).json({ error: "This account isn't an admin.", code: "not_admin" });
+  if (await limited(req, "admin", 600)) return res.status(429).json({ error: "Too many actions. Try again later." });
+  const log = (what, detail) => ["LPUSH", "gc:adminlog", JSON.stringify({ what, detail: s(detail, 160), by: u.email, at: Date.now() })];
+  const done = async (cmds, what, detail) => {
+    await redis([...cmds, log(what, detail), ["LTRIM", "gc:adminlog", 0, 99], ["DEL", "gc:stats:cache"]]);
+    return res.status(200).json({ ok: true });
+  };
+  const findNeed = async id => {
+    const [all] = await redis([["LRANGE", "gc:needs", 0, 199]]);
+    const i = (all || []).findIndex(x => { const n = parse(x); return n && n.id === id; });
+    return i < 0 ? null : { i, raw: all[i], need: parse(all[i]) };
+  };
+
+  switch (b.action) {
+    case "admin.check":
+      return res.status(200).json({ ok: true, email: u.email });
+
+    case "admin.list": {
+      const [needsRaw, profsRaw, repsRaw, blocked, logRaw, pitchesRaw, introsRaw] = await redis([
+        ["LRANGE", "gc:needs", 0, 199], ["HVALS", "gc:profiles"], ["HVALS", "gc:reports"],
+        ["SMEMBERS", "gc:blocked"], ["LRANGE", "gc:adminlog", 0, 29], ["HVALS", "gc:pitch"], ["HVALS", "gc:intro"],
+      ]);
+      const needs = (needsRaw || []).map(parse).filter(n => n && !n.example);
+      const profiles = (profsRaw || []).map(parse).filter(p => p && !p.example);
+      const pitches = (pitchesRaw || []).map(parse).filter(Boolean), introsAll = (introsRaw || []).map(parse).filter(Boolean);
+      // Emails of the accounts behind briefs, so an admin can judge who posted.
+      const uids = [...new Set(needs.map(n => n.owner).concat(blocked || []).filter(Boolean))];
+      const users = uids.length ? (await redis([["HMGET", "gc:users", ...uids]]))[0] : [];
+      const email = new Map(uids.map((x, i) => [x, (parse((users || [])[i]) || {}).email || ""]));
+      const bset = new Set(blocked || []);
+      const reports = (repsRaw || []).map(parse).filter(Boolean);
+      const repOf = (kind, id) => reports.find(r => r.kind === kind && r.id === id) || null;
+      return res.status(200).json({
+        email: u.email,
+        needs: needs.map(n => ({
+          id: n.id, title: n.title, problem: n.problem, company: n.company || "", type: n.type || "", work: n.work || [],
+          verified: n.verified || "", at: n.at || 0, hidden: !!n.hidden, owner: n.owner || "", ownerEmail: email.get(n.owner) || "",
+          ownerBlocked: !!(n.owner && bset.has(n.owner)), contact: n.contact || "",
+          pitches: pitches.filter(k => k.need === n.id).length, report: repOf("need", n.id),
+        })).sort((a, z) => (z.report ? z.report.count : 0) - (a.report ? a.report.count : 0) || z.at - a.at),
+        profiles: profiles.map(p => ({
+          id: p.id, type: p.type, second: p.second || "", name: p.name || "", thread: p.thread || "", edge: p.edge || "",
+          region: p.region || "", problems: (p.problems || []).map(x => x.title), at: p.at || 0,
+          intros: introsAll.filter(r => r.pid === p.id).length, report: repOf("profile", p.id),
+        })).sort((a, z) => (z.report ? z.report.count : 0) - (a.report ? a.report.count : 0) || z.at - a.at),
+        reports: reports.filter(r => r.kind === "need" ? needs.some(n => n.id === r.id) : profiles.some(p => p.id === r.id))
+          .sort((a, z) => (z.last || 0) - (a.last || 0)),
+        blocked: (blocked || []).map(x => ({ uid: x, email: email.get(x) || "" })),
+        log: (logRaw || []).map(parse).filter(Boolean),
+      });
+    }
+
+    case "admin.need.hide": {
+      const f = await findNeed(s(b.id, 40));
+      if (!f) return res.status(404).json({ error: "That brief is already gone." });
+      const n = { ...f.need };
+      if (b.hidden) n.hidden = true; else delete n.hidden;
+      return done([["LSET", "gc:needs", f.i, JSON.stringify(n)]], b.hidden ? "Hid a brief" : "Showed a brief again", n.title);
+    }
+
+    case "admin.need.remove": {
+      const f = await findNeed(s(b.id, 40));
+      if (!f) return res.status(404).json({ error: "That brief is already gone." });
+      const n = f.need;
+      const [kids] = await redis([["LRANGE", "gc:pitches:" + n.id, 0, 199]]);
+      const closing = (await loadPitches(kids)).filter(k => k.status === "waiting")
+        .map(k => ["HSET", "gc:pitch", k.id, JSON.stringify({ ...k, status: "closed", answeredAt: Date.now() })]);
+      const cmds = [["LREM", "gc:needs", 1, f.raw], ["HDEL", "gc:reports", "need:" + n.id], ...closing];
+      if (b.block && n.owner) cmds.push(["SADD", "gc:blocked", n.owner]);
+      return done(cmds, b.block && n.owner ? "Removed a brief and blocked its poster" : "Removed a brief", n.title);
+    }
+
+    case "admin.profile.remove": {
+      const id = s(b.id, 40);
+      if (!/^p[0-9a-f]{16}$/.test(id)) return res.status(400).json({ error: "That profile can't be found." });
+      const [p, ids, pids] = await redis([["HGET", "gc:profiles", id], ["LRANGE", "gc:intros:" + id, 0, 49], ["LRANGE", "gc:pitched:" + id, 0, 99]]);
+      const prof = parse(p);
+      if (!prof) return res.status(404).json({ error: "That profile is already gone." });
+      const closing = (await loadIntros(ids)).filter(r => r.status === "waiting")
+        .map(r => ["HSET", "gc:intro", r.id, JSON.stringify({ ...r, status: "closed", answeredAt: Date.now() })]);
+      const withdrawn = (await loadPitches(pids)).filter(k => k.status === "waiting")
+        .map(k => ["HSET", "gc:pitch", k.id, JSON.stringify({ ...k, status: "withdrawn", answeredAt: Date.now() })]);
+      return done([["HDEL", "gc:profiles", id], ["HDEL", "gc:reports", "profile:" + id], ...closing, ...withdrawn],
+        "Removed a profile", prof.name || prof.type);
+    }
+
+    case "admin.report.clear": {
+      const kind = b.kind === "profile" ? "profile" : "need", id = s(b.id, 40);
+      return done([["HDEL", "gc:reports", kind + ":" + id]], "Dismissed a report", kind + " " + id);
+    }
+
+    case "admin.unblock": {
+      const id = s(b.uid, 40);
+      const [raw] = await redis([["HGET", "gc:users", id]]);
+      return done([["SREM", "gc:blocked", id]], "Unblocked an account", (parse(raw) || {}).email || "an account");
+    }
+
+    default:
+      return res.status(400).json({ error: "Unknown action" });
   }
 }

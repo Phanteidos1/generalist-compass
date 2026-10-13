@@ -1,8 +1,18 @@
 {
   "crons": [
-    { "path": "/api/weekly", "schedule": "0 7 * * 1" }
+    {
+      "path": "/api/weekly",
+      "schedule": "0 7 * * 1"
+    }
   ],
   "rewrites": [
-    { "source": "/f2", "destination": "/f2.html" }
+    {
+      "source": "/f2",
+      "destination": "/f2.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
+    }
   ]
 }

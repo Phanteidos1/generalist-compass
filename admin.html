@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Board care</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='17' fill='none' stroke='%2318202B' stroke-width='3'/%3E%3Cpath d='M20 6 L24 20 L16 20 Z' fill='%23C9842A'/%3E%3Cpath d='M20 34 L24 20 L16 20 Z' fill='%23D9DFE6'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Board care: the admin page of Generalist Compass. Same palette as the main site. */
+:root{
+  --bg:#F1F3F5; --surface:#FFFFFF; --ink:#18202B; --muted:#5A6573; --line:#D9DFE6;
+  --accent:#22457A; --accent-soft:#E2E9F3; --on-accent:#FFFFFF; --needle:#C9842A; --needle-soft:#F6EBDC;
+  --good:#2E7A4C; --crit:#A8402F; --crit-soft:#F7E4E0;
+  --head:"Familjen Grotesk","Helvetica Neue",Arial,sans-serif;
+  --body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#10151C; --surface:#18202A; --ink:#E7EBF0; --muted:#98A3B2; --line:#2A3441;
+  --accent:#93B3E6; --accent-soft:#1D2939; --on-accent:#0F1724; --needle:#E7AA4C; --needle-soft:#2B2416;
+  --good:#6BC28F; --crit:#E58B7B; --crit-soft:#3A2420; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10151C; --surface:#18202A; --ink:#E7EBF0; --muted:#98A3B2; --line:#2A3441;
+  --accent:#93B3E6; --accent-soft:#1D2939; --on-accent:#0F1724; --needle:#E7AA4C; --needle-soft:#2B2416;
+  --good:#6BC28F; --crit:#E58B7B; --crit-soft:#3A2420; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;padding:0 16px}
+.wrap{max-width:820px;margin:0 auto;padding-block:24px 64px;display:flex;flex-direction:column;gap:20px}
+h1,h2{font-family:var(--head);margin:0;line-height:1.15}
+h1{font-size:28px} h2{font-size:20px}
+p{margin:0}
+a{color:var(--accent);text-underline-offset:3px}
+button,input,select{font:inherit}
+:focus-visible{outline:3px solid var(--needle);outline-offset:2px;border-radius:6px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.top a{font-weight:700}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.muted{color:var(--muted);font-size:14px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 14px;font-weight:700;font-size:14px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.tabs .n{font-weight:400;opacity:.85;margin-left:4px}
+input[type=search]{width:100%;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:10px 12px}
+.item{border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;background:var(--bg);min-width:0}
+.item.flagged{border-color:var(--crit);box-shadow:inset 4px 0 0 var(--crit)}
+.item.off{opacity:.72}
+.it{font-family:var(--head);font-weight:700;font-size:17px;overflow-wrap:anywhere}
+.meta{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px;overflow-wrap:anywhere}
+.body{font-size:15px;overflow-wrap:anywhere;white-space:pre-wrap}
+.tag{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;background:var(--accent-soft);color:var(--accent)}
+.tag.crit{background:var(--crit-soft);color:var(--crit)}
+.tag.needle{background:var(--needle-soft);color:var(--ink)}
+.reasons{margin:0;padding-left:18px;font-size:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn,.ghost,.danger{border-radius:10px;padding:8px 14px;font-weight:700;font-size:14px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.btn{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.danger{border-color:var(--crit);color:var(--crit)}
+.danger.sure{background:var(--crit);color:var(--surface)}
+button:disabled{opacity:.6;cursor:default}
+.status{font-size:14px;min-height:1.2em}
+.status.err{color:var(--crit)}
+.status.ok{color:var(--good)}
+.empty{color:var(--muted);font-size:15px;padding:6px 0}
+.stack{display:flex;flex-direction:column;gap:14px}
+.log li{font-size:14px;margin-bottom:4px;overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>Generalist Compass</span><a href="/">Back to the site</a></div>
+  <div>
+    <h1>Board care</h1>
+    <p class="muted" id="who">Checking who you are...</p>
+  </div>
+
+  <div class="card" id="gate" hidden>
+    <h2 id="gateHead">Sign in first</h2>
+    <p id="gateText"></p>
+    <div class="row"><a class="btn" href="/" id="gateLink" style="text-decoration:none">Go to the site to sign in</a></div>
+  </div>
+
+  <div id="main" class="stack" hidden>
+    <div class="card">
+      <div class="tabs" role="group" aria-label="What to look at">
+        <button type="button" data-tab="reports" aria-pressed="true">Reported<span class="n" id="nReports"></span></button>
+        <button type="button" data-tab="needs" aria-pressed="false">Open problems<span class="n" id="nNeeds"></span></button>
+        <button type="button" data-tab="profiles" aria-pressed="false">People<span class="n" id="nProfiles"></span></button>
+        <button type="button" data-tab="blocked" aria-pressed="false">Blocked<span class="n" id="nBlocked"></span></button>
+        <button type="button" data-tab="log" aria-pressed="false">Recent actions</button>
+      </div>
+      <label class="muted" for="q">Search titles, names, companies and emails</label>
+      <input type="search" id="q" placeholder="e.g. crypto, gmail.com, Spain" autocomplete="off">
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+      <div id="list" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+    <p class="muted">Hiding a brief takes it off the board but keeps it, so you can show it again. Removing is for good: requests and pitches still waiting on it are closed. Blocking stops that account from posting, asking for intros, pitching or writing messages.</p>
+  </div>
+</div>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const str = v => v == null ? "" : String(v);
+  let session = null, data = null, tab = "reports";
+  try { session = localStorage.getItem("gc-session"); } catch(e){}
+
+  async function api(action, payload){
+    const r = await fetch("/api/board", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify(Object.assign({action, session}, payload || {}))});
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw {status: r.status, code: d.code || "", message: d.error || "Something went wrong. Try again."};
+    return d;
+  }
+  function setStatus(text, kind){ const s = $("status"); s.textContent = text || ""; s.className = "status" + (kind ? " " + kind : ""); }
+  function gate(head, text, link){
+    $("gate").hidden = false; $("main").hidden = true;
+    $("gateHead").textContent = head; $("gateText").textContent = text;
+    $("gateLink").hidden = !link; $("who").textContent = "";
+  }
+  const when = t => {
+    if (!t) return "";
+    const d = Math.floor((Date.now() - t) / 86400000);
+    if (d < 1) return "today"; if (d === 1) return "yesterday"; if (d < 30) return d + " days ago";
+    return new Date(t).toLocaleDateString("en-GB", {day:"numeric", month:"short", year:"numeric"});
+  };
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const tag = (text, cls) => el("span", "tag" + (cls ? " " + cls : ""), text);
+
+  // A destructive button asks once more before it acts.
+  function sureBtn(label, sureLabel, run){
+    const b = el("button", "danger", label); b.type = "button";
+    let armed = false, timer = null;
+    b.onclick = async () => {
+      if (!armed){ armed = true; b.classList.add("sure"); b.textContent = sureLabel; timer = setTimeout(() => { armed = false; b.classList.remove("sure"); b.textContent = label; }, 5000); return; }
+      clearTimeout(timer); b.disabled = true; await run(b);
+    };
+    return b;
+  }
+  function plainBtn(label, run, cls){
+    const b = el("button", cls || "ghost", label); b.type = "button";
+    b.onclick = async () => { b.disabled = true; await run(b); };
+    return b;
+  }
+  async function act(action, payload, okText, b){
+    try { await api(action, payload); await load(true); setStatus(okText, "ok"); }
+    catch(e){ setStatus(e.message, "err"); if (b) b.disabled = false; }
+  }
+  function reasons(rep){
+    const wrap = el("div");
+    wrap.append(tag("Reported " + rep.count + (rep.count === 1 ? " time" : " times"), "crit"));
+    const ul = el("ul", "reasons");
+    (rep.reasons || []).slice(0, 5).forEach(r => {
+      const li = el("li"); li.textContent = str(r.why) + (r.note ? ": “" + str(r.note) + "”" : "") + " (" + when(r.at) + ")"; ul.append(li);
+    });
+    wrap.append(ul);
+    return wrap;
+  }
+
+  function needItem(n){
+    const c = el("div", "item" + (n.report ? " flagged" : "") + (n.hidden ? " off" : ""));
+    c.dataset.find = [n.title, n.problem, n.company, n.ownerEmail, n.verified, n.contact].join(" ").toLowerCase();
+    c.append(el("div", "it", n.title));
+    const m = el("div", "meta");
+    [n.company, n.type, (n.work || []).join(", "), "posted " + when(n.at), n.pitches ? n.pitches + (n.pitches === 1 ? " pitch" : " pitches") : ""].filter(Boolean).forEach(v => m.append(el("span", "", v)));
+    c.append(m);
+    const t = el("div", "row");
+    if (n.hidden) t.append(tag("Hidden from the board", "needle"));
+    if (n.verified) t.append(tag("Verified " + n.verified));
+    t.append(tag(n.ownerEmail ? "Posted by " + n.ownerEmail : n.owner ? "Posted by an account" : "Posted without an account"));
+    if (n.ownerBlocked) t.append(tag("Poster blocked", "crit"));
+    c.append(t);
+    c.append(el("p", "body", n.problem));
+    if (n.contact) c.append(el("p", "meta", "Contact they left: " + n.contact));
+    if (n.report) c.append(reasons(n.report));
+    const row = el("div", "row");
+    row.append(plainBtn(n.hidden ? "Show on the board again" : "Hide from the board", b => act("admin.need.hide", {id: n.id, hidden: !n.hidden}, n.hidden ? "It's back on the board." : "Hidden. Only you can see it here now.", b)));
+    row.append(sureBtn("Remove", "Tap again to remove for good", b => act("admin.need.remove", {id: n.id}, "Removed.", b)));
+    if (n.owner && !n.ownerBlocked) row.append(sureBtn("Remove and block poster", "Tap again to remove and block", b => act("admin.need.remove", {id: n.id, block: true}, "Removed, and the poster is blocked.", b)));
+    if (n.report) row.append(plainBtn("Looks fine, dismiss report", b => act("admin.report.clear", {kind: "need", id: n.id}, "Report dismissed.", b)));
+    c.append(row);
+    return c;
+  }
+  function profileItem(p){
+    const c = el("div", "item" + (p.report ? " flagged" : ""));
+    c.dataset.find = [p.name, p.type, p.second, p.thread, p.edge, p.region, (p.problems || []).join(" ")].join(" ").toLowerCase();
+    c.append(el("div", "it", p.name || p.type));
+    const m = el("div", "meta");
+    [p.name ? p.type : "", p.second, p.region, "on the board since " + when(p.at), p.intros ? p.intros + (p.intros === 1 ? " intro request" : " intro requests") : ""].filter(Boolean).forEach(v => m.append(el("span", "", v)));
+    c.append(m);
+    if (p.thread) c.append(el("p", "body", p.thread));
+    if (p.edge) c.append(el("p", "meta", "Edge: " + p.edge));
+    if ((p.problems || []).length) c.append(el("p", "meta", "Problem cards: " + p.problems.join(" / ")));
+    if (p.report) c.append(reasons(p.report));
+    const row = el("div", "row");
+    row.append(sureBtn("Remove from the board", "Tap again to remove for good", b => act("admin.profile.remove", {id: p.id}, "Removed from the board.", b)));
+    if (p.report) row.append(plainBtn("Looks fine, dismiss report", b => act("admin.report.clear", {kind: "profile", id: p.id}, "Report dismissed.", b)));
+    c.append(row);
+    return c;
+  }
+
+  function render(){
+    if (!data) return;
+    const reportedNeeds = data.needs.filter(n => n.report), reportedProfiles = data.profiles.filter(p => p.report);
+    $("nReports").textContent = "(" + (reportedNeeds.length + reportedProfiles.length) + ")";
+    $("nNeeds").textContent = "(" + data.needs.length + ")";
+    $("nProfiles").textContent = "(" + data.profiles.length + ")";
+    $("nBlocked").textContent = "(" + data.blocked.length + ")";
+    document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tab === tab)));
+    const noSearch = tab === "log" || tab === "blocked";
+    $("q").hidden = noSearch; document.querySelector('label[for="q"]').hidden = noSearch;
+    const box = $("list"); box.innerHTML = "";
+    let items = [];
+    if (tab === "reports"){
+      items = reportedNeeds.map(needItem).concat(reportedProfiles.map(profileItem));
+      if (!items.length) box.append(el("p", "empty", "Nothing reported. When someone taps Report on a brief or a profile, it shows up here first."));
+    } else if (tab === "needs"){
+      items = data.needs.map(needItem);
+      if (!items.length) box.append(el("p", "empty", "No real briefs yet. The examples on the board are not listed here."));
+    } else if (tab === "profiles"){
+      items = data.profiles.map(profileItem);
+      if (!items.length) box.append(el("p", "empty", "No one is findable yet. The examples on the board are not listed here."));
+    } else if (tab === "blocked"){
+      if (!data.blocked.length) box.append(el("p", "empty", "No blocked accounts."));
+      data.blocked.forEach(x => {
+        const c = el("div", "item");
+        c.append(el("div", "it", x.email || "An account without an email on file"));
+        const row = el("div", "row");
+        row.append(plainBtn("Unblock", b => act("admin.unblock", {uid: x.uid}, "Unblocked. They can post again.", b)));
+        c.append(row); box.append(c);
+      });
+    } else {
+      if (!data.log.length) box.append(el("p", "empty", "Nothing done here yet."));
+      else {
+        const ul = el("ul", "log");
+        data.log.forEach(l => ul.append(el("li", "", when(l.at) + ": " + str(l.what) + (l.detail ? " (" + str(l.detail) + ")" : "") + ", by " + str(l.by))));
+        box.append(ul);
+      }
+    }
+    items.forEach(i => box.append(i));
+    filter();
+  }
+  function filter(){
+    const q = $("q").value.trim().toLowerCase();
+    let shown = 0, total = 0;
+    document.querySelectorAll("#list .item[data-find]").forEach(i => { total++; const on = !q || i.dataset.find.includes(q); i.hidden = !on; if (on) shown++; });
+    const none = $("list").querySelector(".nomatch");
+    if (none) none.remove();
+    if (q && total && !shown) $("list").append(el("p", "empty nomatch", "Nothing matches “" + $("q").value.trim() + "”."));
+  }
+  $("q").addEventListener("input", filter);
+  document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => { tab = b.dataset.tab; render(); });
+
+  async function load(keepStatus){
+    if (!keepStatus) setStatus("Loading...");
+    try {
+      data = await api("admin.list");
+      $("who").textContent = "Signed in as " + data.email + ". Only admins can see this page.";
+      $("gate").hidden = true; $("main").hidden = false;
+      if (!keepStatus) setStatus("");
+      render();
+    } catch(e){
+      if (e.code === "signed_out") gate("Sign in first", "Sign in on the main site with your admin email, then come back to this page.", true);
+      else if (e.code === "not_admin") gate("Not an admin account", "You're signed in, but this email isn't on the admin list. Sign in with the admin email on the main site, then come back.", true);
+      else if (e.code === "no_admins") gate("No admin set up yet", "Add ADMIN_EMAILS in Vercel (Project, Settings, Environment Variables) with the email you sign in with, then redeploy.", false);
+      else if (data) setStatus(e.message, "err");
+      else gate("The board can't be reached", e.message, false);
+    }
+  }
+  if (!session) gate("Sign in first", "Sign in on the main site with your admin email, then come back to this page.", true);
+  else load();
+})();
+</script>
+</body>
+</html>

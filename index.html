@@ -348,6 +348,10 @@ details.kitd[open] .kit{margin-top:16px}
 .filepick:focus-within{outline:2px solid var(--needle);outline-offset:2px}
 .linkbox{display:flex;gap:10px;align-items:center}
 .linkbox input{flex:1;min-width:0;font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.reportbox{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.job .link.rep{font-size:13px;color:var(--muted)}
+.repform{display:flex;flex-direction:column;gap:8px;width:100%;max-width:420px}
+.repform select,.repform input{font:inherit;font-size:15px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:8px 10px;width:100%}
 .job .src{font-size:13px;color:var(--accent);font-weight:700}
 .person-ln{font-size:13px;color:var(--accent);font-weight:700}
 /* Compass Page (public view) */
@@ -3198,6 +3202,7 @@ ${cut(S.profile, 6000)}
       };
       row.append(btn); c.append(row, form, st);
     }
+    if (!p.example) reportUi(c, "profile", str(p._id || p.id));
     return c;
   }
   function needCard(n, opts){
@@ -3212,7 +3217,39 @@ ${cut(S.profile, 6000)}
     const myType = S.map && S.map.archetype && !S.example ? S.map.archetype.type : "";
     if (myType && n.type === myType){ const f = document.createElement("div"); f.className = "fitme"; f.textContent = "Fits your type"; c.append(f); }
     if (opts && opts.pitch) pitchUi(c, n);
+    if (!n.example && !myBriefs.some(b => b.id === str(n._id || n.id))) reportUi(c, "need", str(n._id || n.id));
     return c;
+  }
+
+  // ---------- report a brief or a profile (goes to the admin page, /admin) ----------
+  const REPORT_WHY = ["Spam", "Fake or a scam", "Rude or offensive", "Something else"];
+  function reportUi(c, kind, id){
+    if (!WEB.on || !id || (kind === "profile" && id === uid)) return;
+    const wrap = document.createElement("div"); wrap.className = "reportbox";
+    const open = document.createElement("button"); open.type = "button"; open.className = "link rep"; open.textContent = "Report";
+    open.setAttribute("aria-label", kind === "need" ? "Report this brief" : "Report this profile");
+    const form = document.createElement("div"); form.className = "repform"; form.hidden = true;
+    const k = kind + "-" + id.replace(/[^A-Za-z0-9_-]/g, "");
+    const lab = document.createElement("label"); lab.className = "q"; lab.htmlFor = "rw-" + k; lab.textContent = "What's wrong with it?";
+    const sel = document.createElement("select"); sel.id = "rw-" + k;
+    REPORT_WHY.forEach(w => { const o = document.createElement("option"); o.value = w; o.textContent = w; sel.append(o); });
+    const note = document.createElement("input"); note.type = "text"; note.maxLength = 200; note.placeholder = "A few words, if you like"; note.setAttribute("aria-label", "More about the problem (optional)");
+    const row = document.createElement("div"); row.className = "row";
+    const send = document.createElement("button"); send.type = "button"; send.className = "ghost"; send.textContent = "Send report";
+    const cancel = document.createElement("button"); cancel.type = "button"; cancel.className = "link"; cancel.textContent = "Cancel";
+    row.append(send, cancel);
+    const st = document.createElement("div"); st.className = "status"; st.setAttribute("role", "status");
+    form.append(lab, sel, note, row);
+    open.onclick = () => { form.hidden = false; open.hidden = true; setStatus(st, ""); sel.focus(); };
+    cancel.onclick = () => { form.hidden = true; open.hidden = false; };
+    send.onclick = async () => {
+      send.disabled = true;
+      try {
+        await api("report", {kind, id, why: sel.value, note: note.value.trim()});
+        form.hidden = true; setStatus(st, "Thanks. We'll take a look, and nobody sees who reported it.");
+      } catch(e){ send.disabled = false; setStatus(st, e.message || "That didn't go through. Try again.", "err"); }
+    };
+    wrap.append(open, form, st); c.append(wrap);
   }
 
   // ---------- pitches: a seeker writes to a brief with a plan (double opt-in) ----------
