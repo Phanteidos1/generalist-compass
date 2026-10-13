@@ -537,6 +537,17 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
 .signed{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--good);margin-right:6px;vertical-align:middle}
 #signin .mail{overflow-wrap:anywhere}
 @media (max-width:400px){header{gap:10px} header .acct .ghost{padding:6px 10px;font-size:13px}}
+.cvpromo{border-color:var(--needle);display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:16px 22px;align-items:center}
+.cvpromo .cvtext{display:flex;flex-direction:column;gap:10px;min-width:0}
+.cvpromo h3{margin:0}
+.cvpromo p{margin:0}
+.cvpromo .row a{text-decoration:none;display:inline-block}
+.cvmini{background:var(--bg);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:7px}
+.cvmini span{display:block;height:16px;border-radius:5px;background:var(--accent-soft)}
+.cvmini span.on{background:var(--needle)}
+.cvmini i{display:block;font-style:normal;font-size:12px;color:var(--muted);line-height:1.35}
+@media (max-width:640px){.cvpromo{grid-template-columns:1fr}.cvmini{display:none}}
+a.btn,a.ghost{text-decoration:none;display:inline-block}
 </style>
 
 <div class="wrap">
@@ -647,6 +658,19 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
       <div class="howstep"><span class="ico big"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg></span><b>Get your type</b><p>And the thread in your story.</p></div>
       <div class="howstep"><span class="ico big"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M3 21h18M12 12h1"/></svg></span><b>Open side doors</b><p>Ways in, with messages ready.</p></div>
       <div class="howstep"><span class="ico big"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span><b>Get help</b><p>A report your friends can forward.</p></div>
+    </div>
+
+    <div class="card cvpromo" id="cvPromo">
+      <div class="cvtext">
+        <span class="tag">New · The Living CV</span>
+        <h3>A CV you can click</h3>
+        <p>Every job opens the story behind it: the problem, what you did, what changed. Employers can ask it questions and ask you for an intro. Send it instead of, or next to, your PDF.</p>
+        <div class="row">
+          <a class="btn" href="/cv" target="_blank" rel="noopener" id="cvSeeHome">See Mike's Living CV</a>
+          <a class="ghost cvmake" href="/cv#make" target="_blank" rel="noopener" id="cvMakeHome">Make your own</a>
+        </div>
+      </div>
+      <div class="cvmini" aria-hidden="true"><span style="width:92%"></span><span class="on" style="width:70%"></span><i>The problem · What I did · What changed</i><span style="width:80%"></span><span style="width:55%"></span></div>
     </div>
 
     <div class="nums" id="homeNums" data-where="home" hidden></div>
@@ -964,6 +988,19 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
       </div>
     </div>
 
+    <div class="card cvpromo" id="cvCard">
+      <div class="cvtext">
+        <span class="tag">Your Living CV</span>
+        <h3>Turn your CV into one people can click</h3>
+        <p class="hint" style="margin:0">Each job opens its story. A short interview helps you tell it, and you get a link to send. We start you off with the story you told here, so add your full CV for the dates and titles.</p>
+        <div class="row">
+          <a class="btn cvmake" href="/cv#make" target="_blank" rel="noopener" id="cvMakeRes">Make my Living CV</a>
+          <a class="link" href="/cv" target="_blank" rel="noopener">See an example</a>
+        </div>
+      </div>
+      <div class="cvmini" aria-hidden="true"><span style="width:92%"></span><span class="on" style="width:70%"></span><i>The problem · What I did · What changed</i><span style="width:80%"></span><span style="width:55%"></span></div>
+    </div>
+
     <div class="card" id="trackCard" hidden><span class="tag">Your outreach</span>
         <div class="tracker"><div><b id="tkSent">0</b><span id="tkSentL">messages sent</span></div><div><b id="tkReply">0</b><span id="tkReplyL">replies</span></div><div><b id="tkWeeks">1</b><span id="tkWeeksL">week in a row</span></div></div>
         <p class="hint" id="tkHint"></p></div>
@@ -993,6 +1030,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
         <button type="button" class="action" id="toScanTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span><b>Check a job</b><small>Paste a job post, get your fit</small></button>
         <button type="button" class="action" id="gapTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l10-4 10 4-10 4z"/><path d="M6 9v5c0 1.7 2.7 3 6 3s6-1.3 6-3V9M22 7v6"/></svg></span><b>Close a skill gap</b><small>What your door asks, and a 10-minute lesson</small></button>
         <button type="button" class="action" id="progTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M6 16l4-5 3 3 5-7"/><path d="M15 7h3v3"/></svg></span><b>See your progress</b><small>What you're now a fit for</small></button>
+        <a class="action cvmake" href="/cv#make" target="_blank" rel="noopener" id="cvTile" style="text-decoration:none"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h5M8 16h8"/><circle cx="17" cy="12" r="1.5" fill="currentColor"/></svg></span><b>Make a Living CV</b><small>A CV where every job opens its story</small></a>
         <button type="button" class="action" id="ownReportTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15l3 3 3-3"/></svg></span><b>Download my report</b><small>Your full reading, as a PDF</small></button>
       </div>
       <div class="card net" id="netCard" hidden>
@@ -1351,6 +1389,14 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
   $("toScan").onclick = () => go(3);
   $("toScanTile").onclick = () => go(3);
   $("ownReportTile").onclick = () => S.map && openViewer("own");
+  // Living CV: hand the story told here to /cv so "Make your own" starts filled in (same browser, nothing sent anywhere)
+  document.querySelectorAll("a.cvmake").forEach(a => a.addEventListener("click", () => {
+    try {
+      if (S.example || !(S.profile || "").trim()) { localStorage.removeItem("gc-cv-prefill"); return; }
+      const pg = S.page || {};
+      localStorage.setItem("gc-cv-prefill", JSON.stringify({text: S.profile.trim(), name: ($("pgName").value || pg.name || S.name || "").trim(), contact: ($("pgContact").value || pg.contact || "").trim(), at: Date.now()}));
+    } catch(e){}
+  }));
   document.querySelectorAll(".action[data-open]").forEach(btn => {
     btn.setAttribute("aria-expanded","false");
     btn.onclick = () => {
@@ -4179,6 +4225,7 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     if (saved.map && Array.isArray(saved.map.routes)){ S.map = saved.map; S.stage = Number(saved.stage) || 2; S.door = saved.door == null ? null : Number(saved.door); renderMap(S.map); applyStage(); if (S.lastBatch && (S.targets||[]).length){ showBatch(); applyStage(); } }
     if (saved.name){ S.name = saved.name; $("myName").value = saved.name; }
     if (saved.base){ S.base = saved.base; $("baseIn").value = saved.base; }
+    if (saved.page && typeof saved.page === "object" && !Array.isArray(saved.page)) S.page = saved.page;
     if (saved.helper && saved.helper.who){ S.helper = saved.helper; $("openHelper").hidden = false; }
     if (Array.isArray(saved.interview)){ S.interview = saved.interview.filter(t => t && (t.role==="user"||t.role==="assistant") && typeof t.content === "string" && t.content.trim()).slice(-IV_KEEP); renderIv(); }
     if (Array.isArray(saved.chat)){ S.chat = saved.chat.filter(t => t && (t.role==="user"||t.role==="assistant") && t.content); renderChat(); }

@@ -183,6 +183,7 @@ footer{font-size:14px;color:var(--muted);text-align:center}
       <h2 style="font-size:26px">Paste your CV</h2>
       <p class="small">Upload your CV as a PDF or Word file, or paste the text. Nothing is stored until you choose to share it.</p>
       <div class="row"><label class="btn ghost" for="cvFile" style="display:inline-block">Upload PDF or Word</label><input id="cvFile" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" hidden><span class="small" id="fileNote">or paste below</span></div>
+      <p class="small" id="fromCompass" hidden>We brought over the story you told Generalist Compass. Add your full CV for the dates and job titles, or edit the text below.</p>
       <textarea id="cvText" placeholder="Paste your CV here"></textarea>
       <div class="row"><button class="btn" id="readCv" type="button">Read my CV</button><span class="status" id="st1" role="status"></span></div>
     </div>
@@ -401,7 +402,7 @@ Question: ${q.slice(0, 300)}`, "quick");
     window.scrollTo(0, 0);
   }
   $("tabView").onclick = () => mode("view");
-  $("tabMake").onclick = () => mode("make");
+  $("tabMake").onclick = () => { prefill(); mode("make"); };
 
   // making your own: read, interview, link
   let draft = null, ri = 0, turns = [];
@@ -419,6 +420,7 @@ CV:
 ${text.slice(0, 20000)}
 """`);
       if (!draft || !Array.isArray(draft.roles) || !draft.roles.length) throw new Error("I couldn't find the jobs in that text. Try pasting it again.");
+      if (carry && !$("fromCompass").hidden){ if (!draft.name && carry.name) draft.name = carry.name; if (!draft.contact && carry.contact) draft.contact = carry.contact; }
       draft.roles = draft.roles.slice(0, 10).map(r => ({...r, problem:"", did:"", changed:"", behind:""}));
       ri = 0; startRole(); $("mk1").hidden = true; $("mk2").hidden = false; setStatus(st, "");
     } catch(e){ setStatus(st, e.message, "err"); }
@@ -470,12 +472,23 @@ Use their own words where you can, first person. Never invent facts or numbers t
   $("copyLink").onclick = () => { const el = $("myLink"); try { navigator.clipboard.writeText(el.value).then(() => $("copyLink").textContent = "Copied", () => el.select()); } catch(e){ el.select(); } };
   $("openMine").onclick = () => { CV = draft; isExample = false; render(); mode("view"); try { history.replaceState(null, "", $("myLink").value); } catch(e){} };
 
-  // start: a shared CV in the link, or Michael's example
+  // coming from Generalist Compass: start from the story told there (kept in this browser only)
+  let carry = null;
+  try { carry = JSON.parse(localStorage.getItem("gc-cv-prefill") || "null"); } catch(e){ carry = null; }
+  if (carry && (typeof carry.text !== "string" || Date.now() - (carry.at || 0) > 30 * 864e5)) carry = null;
+  function prefill(){
+    if (!carry || $("cvText").value.trim()) return;
+    $("cvText").value = carry.text.slice(0, 20000); $("fromCompass").hidden = false;
+  }
+
+  // start: a shared CV in the link, "Make your own" (#make), or Michael's example
   (async () => {
-    const m = (location.hash || "").match(/^#cv=([A-Za-z0-9_-]+)$/);
+    const h = location.hash || "", m = h.match(/^#cv=([A-Za-z0-9_-]+)$/);
     if (m){ try { CV = await unpack(m[1]); isExample = false; } catch(e){ CV = EXAMPLE; } }
     render();
+    if (h === "#make"){ prefill(); mode("make"); }
   })();
+  window.addEventListener("hashchange", () => { if (location.hash === "#make"){ prefill(); mode("make"); } });
 })();
 </script>
 </body>
