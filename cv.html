@@ -114,11 +114,24 @@ textarea{width:100%;min-height:180px;resize:vertical}
 .linkbox{display:flex;gap:8px;flex-wrap:wrap}
 .linkbox input{flex:1 1 260px;min-width:0;font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 footer{font-size:14px;color:var(--muted);text-align:center}
+.linkbtn{border:0;background:none;color:var(--accent);font-weight:700;padding:0;font-size:inherit;text-decoration:underline;text-underline-offset:3px}
+
+/* editing your own CV in place */
+.editbar{border-color:var(--needle)}
+.editsave{position:sticky;bottom:10px;z-index:5;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;background:var(--surface);border:1.5px solid var(--needle);border-radius:999px;padding:8px;box-shadow:0 6px 24px rgba(0,0,0,.18);align-self:center}
+.editbar h2{font-size:19px}
+[data-k][contenteditable]{outline:1.5px dashed var(--needle);outline-offset:2px;border-radius:4px;cursor:text;min-width:2ch;display:inline-block}
+.what [data-k][contenteditable],.beat [data-k][contenteditable],.behind[data-k],.hero [data-k][contenteditable]{display:block}
+[data-k][contenteditable]:focus{outline-style:solid;background:var(--needle-soft)}
+[data-k]:empty::before{content:attr(data-ph);color:var(--muted);font-style:italic}
+.role.editing .head{display:grid;grid-template-columns:118px minmax(0,1fr);gap:4px 16px;align-items:start;padding:16px 18px}
+.role.editing .story{grid-template-rows:1fr}
 
 @media (max-width:640px){
   .role > button{grid-template-columns:minmax(0,1fr) auto}
   .role .when{grid-column:1 / -1;order:-1}
-  .beats{grid-template-columns:1fr}
+  .role.editing .head{grid-template-columns:minmax(0,1fr)}
+  .beats{grid-template-columns:1fr!important}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -135,6 +148,12 @@ footer{font-size:14px;color:var(--muted);text-align:center}
 
   <!-- the CV, as an employer sees it -->
   <section id="view" class="wrap" style="padding:0">
+    <div class="card editbar" id="editBar" hidden>
+      <h2 id="editTitle">You're editing your Living CV</h2>
+      <p class="small" id="editNote">Tap any dashed text to change it: your name, your headline, every story. Empty boxes are stories you can still add.</p>
+      <div class="linkbox" id="editShare" hidden><input id="editLink" readonly aria-label="Your updated link"><button class="btn" id="editCopy" type="button">Copy link</button></div>
+      <div class="row" id="editAgainRow" hidden><button class="btn ghost" id="editAgain" type="button">Edit again</button></div>
+    </div>
     <div class="card">
       <div class="hero">
         <p class="small" id="exampleNote">Example: Michael Ender's own CV</p>
@@ -174,6 +193,8 @@ footer{font-size:14px;color:var(--muted);text-align:center}
         <div class="row" id="introActions" hidden><button class="btn ghost" id="copyIntro" type="button">Copy message</button><a class="btn ghost" id="mailIntro" href="#" style="text-decoration:none">Open in email</a></div>
       </form>
     </div>
+    <div class="editsave" id="editSave" hidden><button class="btn" id="editDone" type="button">Save my changes</button><button class="btn ghost" id="editCancel" type="button">Undo</button></div>
+    <p class="small" id="ownNote" hidden style="text-align:center">Is this your Living CV? <button class="linkbtn" id="editStart" type="button">Edit the text</button> and you'll get a fresh link. The one you sent stays as it was.</p>
   </section>
 
   <!-- making your own -->
@@ -206,7 +227,7 @@ footer{font-size:14px;color:var(--muted);text-align:center}
       <h2 style="font-size:26px">Your Living CV is ready</h2>
       <p class="small">Open it to check every story. Send the link to an employer instead of, or next to, your PDF.</p>
       <div class="linkbox"><input id="myLink" readonly aria-label="Your link"><button class="btn" id="copyLink" type="button">Copy link</button></div>
-      <div class="row"><button class="btn ghost" id="openMine" type="button">Open my Living CV</button></div>
+      <div class="row"><button class="btn ghost" id="openMine" type="button">Open my Living CV</button><button class="btn ghost" id="editMine" type="button">Read it through and edit</button></div>
     </div>
   </section>
 
@@ -267,15 +288,19 @@ footer{font-size:14px;color:var(--muted);text-align:center}
     ]
   };
 
-  let CV = EXAMPLE, isExample = true;
+  let CV = EXAMPLE, isExample = true, editing = false, before = null;
+  // in edit mode a field becomes a dashed box you can type in; k is its path in the CV ("roles.2.did")
+  const ed = (k, val, ph) => editing ? ' data-k="' + k + '" data-ph="' + esc(ph) + '" contenteditable="true" spellcheck="true"' : "";
   const span = r => r.start + (r.end === null || r.end === undefined ? " – now" : r.end !== r.start ? " – " + r.end : "");
 
   function render(){
     $("exampleNote").hidden = !isExample;
-    $("cvName").textContent = CV.name || "";
-    $("cvLine").textContent = CV.line || "";
-    $("cvMeta").innerHTML = (CV.meta || []).map(m => "<span>" + esc(m) + "</span>").join("");
-    $("cvContact").textContent = CV.contact || "";
+    $("ownNote").hidden = isExample || editing; $("editBar").hidden = !editing; $("editSave").hidden = !editing;
+    const field = (el, k, ph) => { el.textContent = CV[k] || ""; el.removeAttribute("contenteditable"); delete el.dataset.k; if (editing){ el.dataset.k = k; el.dataset.ph = ph; el.contentEditable = "true"; } };
+    field($("cvName"), "name", "Your name"); field($("cvLine"), "line", "One line: what you do best");
+    field($("cvContact"), "contact", "Email and links, so people can reach you");
+    const meta = editing ? [0, 1].map(i => (CV.meta || [])[i] || "") : (CV.meta || []);
+    $("cvMeta").innerHTML = meta.map((m, i) => "<span" + ed("meta." + i, m, i ? "Languages" : "Where you're based, how you work") + ">" + esc(m) + "</span>").join("");
     document.title = (CV.name ? CV.name + " · " : "") + "Living CV";
 
     // years bar
@@ -303,17 +328,22 @@ footer{font-size:14px;color:var(--muted);text-align:center}
 
     // roles
     $("roles").innerHTML = roles.map((r, i) => {
-      const beats = [["The problem", r.problem], ["What I did", r.did], ["What changed", r.changed]].filter(b => b[1]);
-      return '<article class="role" id="role' + i + '"><button type="button" aria-expanded="false" aria-controls="st' + i + 'x">'
-        + '<span class="when">' + esc(span(r)) + '</span><span class="what"><b>' + esc(r.title) + '</b><span>' + esc([r.org, r.place].filter(Boolean).join(" · ")) + '</span></span><span class="plus" aria-hidden="true">+</span></button>'
+      const p = "roles." + i + ".";
+      const beats = [["The problem", "problem", "What was hard or broken?"], ["What I did", "did", "What did you do about it?"], ["What changed", "changed", "What was different after?"]].filter(b => editing || r[b[1]]);
+      const bullets = editing ? (r.bullets || []).concat([""]) : (r.bullets || []);
+      const head = editing
+        ? '<div class="head"><span class="when">' + esc(span(r)) + '</span><span class="what"><b' + ed(p + "title", r.title, "Job title") + '>' + esc(r.title) + '</b><span' + ed(p + "org", r.org, "Company") + '>' + esc(r.org) + '</span><span' + ed(p + "place", r.place, "Place") + '>' + esc(r.place) + '</span></span></div>'
+        : '<button type="button" aria-expanded="false" aria-controls="st' + i + 'x"><span class="when">' + esc(span(r)) + '</span><span class="what"><b>' + esc(r.title) + '</b><span>' + esc([r.org, r.place].filter(Boolean).join(" · ")) + '</span></span><span class="plus" aria-hidden="true">+</span></button>';
+      return '<article class="role' + (editing ? " editing" : "") + '" id="role' + i + '">' + head
         + '<div class="story" id="st' + i + 'x"><div><div class="in">'
-        + (beats.length ? '<div class="beats" style="grid-template-columns:repeat(' + Math.min(3, beats.length) + ',minmax(0,1fr))">' + beats.map(b => '<div class="beat"><small>' + b[0] + '</small><p>' + esc(b[1]) + '</p></div>').join("") + "</div>" : "")
-        + (r.behind ? '<p class="behind">' + esc(r.behind) + "</p>" : "")
-        + ((r.bullets || []).length ? "<ul>" + r.bullets.map(x => "<li>" + esc(x) + "</li>").join("") + "</ul>" : "")
-        + '<button class="askthis" type="button" data-i="' + i + '">Ask about this →</button>'
+        + (beats.length ? '<div class="beats" style="grid-template-columns:repeat(' + Math.min(3, beats.length) + ',minmax(0,1fr))">' + beats.map(b => '<div class="beat"><small>' + b[0] + '</small><p' + ed(p + b[1], r[b[1]], b[2]) + '>' + esc(r[b[1]]) + '</p></div>').join("") + "</div>" : "")
+        + (r.behind || editing ? '<p class="behind"' + ed(p + "behind", r.behind, "One human line in your own voice (optional)") + '>' + esc(r.behind) + "</p>" : "")
+        + (bullets.length ? "<ul>" + bullets.map((x, j) => "<li" + ed(p + "bullets." + j, x, "Add a result (optional)") + ">" + esc(x) + "</li>").join("") + "</ul>" : "")
+        + (editing ? "" : '<button class="askthis" type="button" data-i="' + i + '">Ask about this →</button>')
         + "</div></div></div></article>";
     }).join("");
-    document.querySelectorAll(".role > button").forEach((b, i) => b.onclick = () => openRole(i));
+    document.querySelectorAll(".role > button").forEach(b => b.onclick = () => openRole(Number(b.closest(".role").id.slice(4))));
+    if (editing) wireEdits();
     document.querySelectorAll(".askthis").forEach(b => b.onclick = () => { const r = roles[b.dataset.i]; $("askQ").value = "Tell me more about the time at " + r.org + "."; $("askQ").focus(); $("askQ").scrollIntoView({behavior:"smooth", block:"center"}); });
 
     const sugg = ["Has this person opened a new market?","How do they handle pressure?","What would they bring to a small startup?"];
@@ -323,7 +353,7 @@ footer{font-size:14px;color:var(--muted);text-align:center}
   }
   function openRole(i, scroll){
     const el = $("role" + i), open = !el.classList.contains("open") || scroll;
-    el.classList.toggle("open", open); el.querySelector("button").setAttribute("aria-expanded", open);
+    el.classList.toggle("open", open); const hb = el.querySelector(":scope > button"); if (hb) hb.setAttribute("aria-expanded", open);
     document.querySelectorAll(".years button").forEach(b => b.classList.toggle("on", Number(b.dataset.i) === i && open));
     if (scroll) el.scrollIntoView({behavior:"smooth", block:"center"});
   }
@@ -394,6 +424,46 @@ Question: ${q.slice(0, 300)}`, "quick");
       $("cvText").value = text; note.textContent = "Got it. Check the text below, then press Read my CV.";
     } catch(e){ note.textContent = "I couldn't read that file. Try another format, or paste the text."; }
   });
+
+  // edit in place: every change goes straight into the CV; Save packs it into a fresh link
+  const MAX = 400;
+  function setPath(k, v){
+    const parts = k.split("."), last = parts.pop(); let o = CV;
+    for (const x of parts){ if (o[x] == null) o[x] = /^\d+$/.test(x) ? {} : []; o = o[x]; }
+    if (Array.isArray(o) || /^\d+$/.test(last)){ if (!Array.isArray(o)) return; o[Number(last)] = v; } else o[last] = v;
+  }
+  function wireEdits(){
+    document.querySelectorAll("[data-k][contenteditable]").forEach(el => {
+      el.onkeydown = e => { if (e.key === "Enter"){ e.preventDefault(); el.blur(); } };
+      el.onpaste = e => { e.preventDefault(); const t = (e.clipboardData || window.clipboardData).getData("text").replace(/\s+/g, " ").slice(0, MAX); document.execCommand("insertText", false, t); };
+      el.oninput = () => { let t = el.innerText.replace(/\s+/g, " ").replace(/\u2014/g, ",").trim(); if (t.length > MAX){ t = t.slice(0, MAX); el.textContent = t; } if (!t && el.innerHTML) el.innerHTML = ""; setPath(el.dataset.k, t); $("editShare").hidden = true; };
+    });
+  }
+  function tidy(cv){
+    cv.meta = (cv.meta || []).filter(Boolean);
+    (cv.roles || []).forEach(r => { r.bullets = (r.bullets || []).filter(Boolean); });
+    return cv;
+  }
+  const EDIT_NOTE = "Tap any dashed text to change it: your name, your headline, every story. Empty boxes are stories you can still add. Save is at the bottom of the screen. Saving gives you a new link.";
+  function startEdit(){
+    if (isExample) return;
+    before = JSON.stringify(CV); editing = true; render(); mode("view");
+    $("editTitle").textContent = "You're editing your Living CV"; $("editNote").textContent = EDIT_NOTE; $("editShare").hidden = true; $("editAgainRow").hidden = true;
+  }
+  $("editStart").onclick = startEdit;
+  $("editAgain").onclick = startEdit;
+  $("editMine").onclick = () => { CV = draft; isExample = false; startEdit(); };
+  $("editCancel").onclick = () => { if (before) CV = JSON.parse(before); editing = false; render(); };
+  $("editDone").onclick = async () => {
+    tidy(CV); editing = false; render();
+    const link = location.origin + location.pathname + "#" + await pack(CV);
+    try { history.replaceState(null, "", link); } catch(e){}
+    if (draft){ draft = CV; $("myLink").value = link; }
+    $("editBar").hidden = false; $("ownNote").hidden = true; $("editShare").hidden = false; $("editAgainRow").hidden = false; $("editLink").value = link;
+    $("editTitle").textContent = "Your changes are saved"; $("editNote").textContent = "This is your new link with the changes. The old link still shows the old version, so send this one.";
+    $("editCopy").textContent = "Copy link"; window.scrollTo({top:0, behavior:"smooth"});
+  };
+  $("editCopy").onclick = () => { const el = $("editLink"); try { navigator.clipboard.writeText(el.value).then(() => $("editCopy").textContent = "Copied", () => el.select()); } catch(e){ el.select(); } };
 
   // modes
   function mode(m){
