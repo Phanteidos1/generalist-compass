@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hire Compass for F2</title>
+<meta name="description" content="For F2 founders: describe the problem you need solved and see who to hire, what they've already solved, and where to find them.">
+<meta property="og:title" content="Hire Compass, made for F2 founders">
+<meta property="og:description" content="Describe the problem, not the job title. Get the person, the proof to look for, and where to find them.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='17' fill='none' stroke='%2318202B' stroke-width='3'/%3E%3Cpath d='M20 6 L24 20 L16 20 Z' fill='%23C9842A'/%3E%3Cpath d='M20 34 L24 20 L16 20 Z' fill='%23D9DFE6'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<script defer src="/_vercel/insights/script.js"></script>
+<style>
+:root{
+  --bg:#F3F4F2; --surface:#FFFFFF; --ink:#141A22; --muted:#5A6573; --line:#DCE0E4;
+  --accent:#1F3F6E; --accent-soft:#E3E9F2; --on-accent:#FFFFFF; --needle:#C9842A; --needle-soft:#F6EBDC;
+  --good:#2E7A4C; --crit:#A8402F; --crit-soft:#F6E4E0;
+  --display:"Familjen Grotesk","Helvetica Neue",Arial,sans-serif;
+  --body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  --r:14px; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F141A; --surface:#171E27; --ink:#E7EBF0; --muted:#98A3B2; --line:#2A3441;
+    --accent:#93B3E6; --accent-soft:#1D2939; --on-accent:#0F1724; --needle:#E7AA4C; --needle-soft:#2B2416;
+    --good:#6BC28F; --crit:#E58B7B; --crit-soft:#2E1C19; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F141A; --surface:#171E27; --ink:#E7EBF0; --muted:#98A3B2; --line:#2A3441;
+  --accent:#93B3E6; --accent-soft:#1D2939; --on-accent:#0F1724; --needle:#E7AA4C; --needle-soft:#2B2416;
+  --good:#6BC28F; --crit:#E58B7B; --crit-soft:#2E1C19; color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;padding:0 16px}
+.wrap{max-width:680px;margin:0 auto;padding-block:28px 72px;display:flex;flex-direction:column;gap:24px}
+header{display:flex;align-items:center;gap:12px;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:12px;font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:-.01em}
+.brand small{display:block;font-family:var(--body);font-weight:400;font-size:13px;color:var(--muted)}
+.for{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--ink);border-radius:999px;padding:5px 11px;white-space:nowrap}
+h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-.015em;text-wrap:balance}
+h1{font-size:clamp(30px,6.4vw,42px);line-height:1.08;font-weight:700}
+h2{font-size:22px;line-height:1.2;font-weight:600}
+h3{font-size:17px;font-weight:600}
+p{margin:0}
+.lead{color:var(--muted);font-size:17px;max-width:58ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.q{font-weight:700;font-size:15px}
+.hint{font-size:14px;color:var(--muted)}
+textarea,input{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:13px 14px;line-height:1.5}
+textarea{min-height:150px;resize:vertical}
+textarea:focus-visible,input:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--needle);outline-offset:2px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:540px){.pair{grid-template-columns:1fr}}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 12px;border-radius:999px;cursor:pointer;text-align:left}
+.chip:hover{border-color:var(--accent)}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.btn{font:inherit;font-weight:700;font-size:16px;border:0;border-radius:10px;padding:13px 22px;background:var(--accent);color:var(--on-accent);cursor:pointer}
+.btn:disabled{opacity:.5;cursor:wait}
+.ghost{font:inherit;font-weight:700;font-size:15px;border:1px solid var(--accent);border-radius:10px;padding:10px 16px;background:transparent;color:var(--accent);cursor:pointer}
+.status{font-size:15px;color:var(--muted);min-height:1.5em}
+.status.err{color:var(--crit)}
+.thinking::after{content:"";display:inline-block;width:8px;height:8px;margin-left:8px;border-radius:50%;background:var(--needle);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.thinking::after{animation:none}}
+.tag{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--needle)}
+.quote{border-left:3px solid var(--needle);padding:2px 0 2px 14px;color:var(--muted);font-size:15px}
+.hero-card{border-left:4px solid var(--needle)}
+.hero-card .role{font-family:var(--display);font-size:26px;font-weight:700;line-height:1.15}
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.pill{font-size:13px;font-weight:700;background:var(--accent-soft);color:var(--ink);border-radius:999px;padding:4px 10px}
+ul.clean{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+ul.clean li{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start}
+ul.clean li::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);margin:9px 0 0 6px}
+.proof li::before{background:var(--good)}
+.trap{background:var(--crit-soft);border-color:transparent}
+.trap ul.clean li::before{background:var(--crit)}
+.trap .tag{color:var(--crit)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:600px){.grid2{grid-template-columns:1fr}}
+.where{display:flex;flex-direction:column;gap:12px}
+.place{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:4px}
+.place:first-child{border-top:0;padding-top:0}
+.place b{font-size:15px}
+.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow-wrap:anywhere;white-space:pre-wrap}
+.bigger{background:var(--needle-soft);border-color:transparent}
+.brief{white-space:pre-wrap;font-size:15px}
+ol.qs{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px}
+ol.qs li span{display:block;font-size:14px;color:var(--muted)}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+footer a{color:var(--accent)}
+@media print{body{background:#fff} #ask,.noprint,footer .noprint{display:none!important} .card{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg width="36" height="36" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="3"/><path d="M20 6 L24 20 L16 20 Z" fill="#C9842A"/><path d="M20 34 L24 20 L16 20 Z" fill="#9AA6B4"/></svg>
+      <div>Hire Compass<small>by Generalist Compass</small></div>
+    </div>
+    <span class="for">Made for F2 founders</span>
+  </header>
+
+  <section id="ask" style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <h1>Describe the problem. We'll tell you who solves it.</h1>
+      <p class="lead">Under pressure, it's easy to hire a job title and hope. Start from the problem instead: get the person you actually need, what they should already have solved, the hire to avoid, and where to find them in Israel and abroad.</p>
+    </div>
+
+    <div class="card">
+      <label class="q" for="need">What do you need solved in the next 6 to 12 months?</label>
+      <textarea id="need" placeholder="e.g. We have 4 design partners in Israel and need to close our first 10 paying enterprise customers in the US. Nobody on the team has sold there."></textarea>
+      <div>
+        <div class="hint" style="margin-bottom:8px">Or start from an example</div>
+        <div class="chips" id="examples">
+          <button type="button" class="chip" data-t="We have 4 design partners in Israel and need to close our first 10 paying enterprise customers in the US. Nobody on the team has sold there.">First US enterprise sales</button>
+          <button type="button" class="chip" data-t="Our fintech product works in Israel. We want to launch in Europe (start with one country) within 9 months: licensing questions, first partners, first customers, maybe a small local team.">Open Europe</button>
+          <button type="button" class="chip" data-t="We're an AI startup with a working model, but customers churn after the pilot because nobody turns it into a reliable product they can use every day.">Pilot to product</button>
+          <button type="button" class="chip" data-t="We just raised seed, we're 6 people and about to grow to 20. Founders are drowning in hiring, ops, finance and process, and nothing is written down.">Founders drowning in ops</button>
+        </div>
+      </div>
+      <div class="pair">
+        <div><label class="q" for="stage">Stage and team</label><input id="stage" type="text" placeholder="e.g. Seed, 7 people"></div>
+        <div><label class="q" for="space">Space</label><input id="space" type="text" placeholder="e.g. Cyber, B2B, selling to CISOs"></div>
+      </div>
+      <div class="pair">
+        <div><label class="q" for="base">Where the team is</label><input id="base" type="text" placeholder="e.g. Tel Aviv"></div>
+        <div><label class="q" for="budget">Budget, if you know it</label><input id="budget" type="text" placeholder="Optional"></div>
+      </div>
+      <div class="row"><button class="btn" id="go" type="button">Show me who to hire</button></div>
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section id="out" hidden style="display:flex;flex-direction:column;gap:18px"></section>
+
+  <footer>
+    <p>Built by Mike Ender for the founders of F2 Venture Capital. Your text goes to an AI model to write this picture and isn't stored by us. <span class="noprint">Want to meet real people who have solved problems like yours? <a href="/">Generalist Compass</a> matches by problems solved, with intros only when both sides say yes.</span></p>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const str = v => (v == null ? "" : String(v)).trim();
+  const arr = v => Array.isArray(v) ? v.filter(Boolean) : [];
+
+  $("examples").addEventListener("click", e => {
+    const b = e.target.closest(".chip"); if (!b) return;
+    $("need").value = b.dataset.t;
+    [...$("examples").children].forEach(c => c.setAttribute("aria-pressed", c === b ? "true" : "false"));
+    $("need").focus();
+  });
+
+  function prompt(){
+    const ctx = [
+      ["Stage and team", $("stage").value], ["Space", $("space").value],
+      ["Where the team is", $("base").value || "Israel"], ["Budget", $("budget").value]
+    ].filter(x => str(x[1])).map(x => x[0] + ": " + str(x[1])).join("\n");
+    return `You advise Israeli pre-seed and seed founders (portfolio of F2 Venture Capital, Tel Aviv: AI, fintech, data, cyber) on one hire. Their investor's view: hiring the wrong people under pressure is the genesis of most startup mistakes, and Israeli founders often aim too low by thinking only about Israel. Hire for the problem, not the title. Judge people by problems they have already solved, not by titles or logos.
+
+The founder's problem:
+"""${str($("need").value).slice(0, 4000)}"""
+${ctx}
+
+Write a clear, honest picture of who to hire. Be concrete and specific to this problem, never generic. Plain warm English, short sentences, no jargon without a few words of explanation, no em dashes. If the honest answer is "don't hire full-time yet" or "this is a founder job", say so in the verdict.
+
+Reply with ONLY a JSON object with exactly these keys:
+{
+ "role": "the person in 3 to 7 words, describing what they do, not a fancy title",
+ "titles": ["2 or 3 job titles to post or search under"],
+ "summary": "2 sentences: who this person is and why they solve this problem",
+ "shape": "Full-time, Fractional, Contractor, or Advisor first, with a short reason (max 15 words)",
+ "level": "seniority in a few words, e.g. 'Has done it once at a 20 to 80 person startup'",
+ "verdict": "1 sentence the founder should hear before hiring anyone for this",
+ "solved": ["4 or 5 problems this person must already have solved, each a specific past situation, starting with a verb, e.g. 'Closed the first 10 US enterprise deals for an Israeli startup with no US brand'"],
+ "trap": {"who": "the tempting wrong hire for this problem, in a few words", "why": "1 or 2 sentences on why founders under pressure pick them and why it fails", "flags": ["3 red flags to notice in an interview"]},
+ "questions": [{"q": "interview question that tests a real past solve", "listen": "what a strong answer contains"}],
+ "trial": "a small paid trial task (a few days) that shows whether they can do it",
+ "where": [{"place": "a specific place to find them: community, company alumni, program, network, city", "why": "1 short sentence", "region": "Israel, US, Europe, or Global"}],
+ "search": "one LinkedIn boolean search string to find these people",
+ "bigger": "2 sentences on what changes if they hire this person from outside Israel or aim for a bigger market, and when that's the better call",
+ "brief": "a short problem-first brief to share with candidates or the network: 5 to 7 lines, starting with the problem, then what success looks like in 12 months, then who will love this"
+}
+"questions": exactly 3. "where": 5 or 6 items, at least 2 outside Israel.`;
+  }
+
+  async function callClaude(input){
+    let res;
+    try { res = await fetch("/api/claude", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ input, tier: "default" }) }); }
+    catch (e) { throw new Error("We couldn't reach the server. Check your connection and try again."); }
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 429) throw new Error("A lot of people are asking right now. Give it a minute and try again.");
+    if (!res.ok) throw new Error("Something went wrong on our side. Please try again.");
+    return { text: String(data.text || ""), truncated: !!data.truncated };
+  }
+  function parse(text){
+    try { return JSON.parse(text); } catch (e) {}
+    const a = text.indexOf("{"), b = text.lastIndexOf("}");
+    if (a >= 0 && b > a) { try { return JSON.parse(text.slice(a, b + 1)); } catch (e) {} }
+    return null;
+  }
+
+  const steps = ["Reading your problem", "Picturing the person who has solved it", "Spotting the hire to avoid", "Looking for where they are"];
+  let ticker;
+  function busy(on){
+    $("go").disabled = on;
+    const st = $("status");
+    clearInterval(ticker);
+    if (!on) { st.classList.remove("thinking"); return; }
+    let i = 0; st.className = "status thinking"; st.textContent = steps[0] + ". This takes about half a minute.";
+    ticker = setInterval(() => { i = Math.min(i + 1, steps.length - 1); st.textContent = steps[i] + "."; }, 7000);
+  }
+
+  $("go").onclick = async () => {
+    const need = str($("need").value);
+    if (need.length < 25) { $("status").className = "status err"; $("status").textContent = "Tell us a bit more: what needs to be true in 6 to 12 months that isn't true today?"; $("need").focus(); return; }
+    busy(true);
+    try {
+      let r = await callClaude(prompt());
+      let data = !r.truncated && parse(r.text);
+      if (!data) { r = await callClaude(prompt() + "\n\nImportant: keep every value short so the whole answer fits. Reply with ONLY the JSON."); data = parse(r.text); }
+      if (!data || !str(data.role)) throw new Error("The answer came back incomplete. Please try again.");
+      busy(false); $("status").textContent = "";
+      render(data, need);
+    } catch (e) {
+      busy(false); $("status").className = "status err"; $("status").textContent = e.message || "Something went wrong. Please try again.";
+    }
+  };
+
+  function card(cls, tag, title){
+    const c = el("div", "card" + (cls ? " " + cls : ""));
+    if (tag) c.append(el("span", "tag", tag));
+    if (title) c.append(el("h2", null, title));
+    return c;
+  }
+  function list(items, cls){ const u = el("ul", "clean" + (cls ? " " + cls : "")); items.forEach(t => u.append(el("li", null, str(t)))); return u; }
+
+  function render(d, need){
+    const out = $("out"); out.replaceChildren();
+
+    const top = el("div", "row noprint"); top.style.justifyContent = "space-between";
+    const back = el("button", "ghost", "Try another problem"); back.type = "button";
+    back.onclick = () => { out.hidden = true; $("ask").hidden = false; window.scrollTo({ top: 0, behavior: "smooth" }); };
+    const tools = el("div", "row");
+    const copy = el("button", "ghost", "Copy as text"); copy.type = "button";
+    copy.onclick = () => navigator.clipboard.writeText(asText(d, need)).then(() => { copy.textContent = "Copied"; setTimeout(() => copy.textContent = "Copy as text", 1800); }, () => {});
+    const pr = el("button", "ghost", "Save as PDF"); pr.type = "button"; pr.onclick = () => window.print();
+    tools.append(copy, pr); top.append(back, tools);
+    out.append(top);
+
+    const q = el("p", "quote", need); out.append(q);
+
+    const hero = card("hero-card", "The person you need");
+    hero.append(el("div", "role", str(d.role)));
+    if (str(d.summary)) hero.append(el("p", null, str(d.summary)));
+    const meta = el("div", "meta");
+    [str(d.shape), str(d.level)].filter(Boolean).forEach(t => meta.append(el("span", "pill", t)));
+    if (meta.children.length) hero.append(meta);
+    if (arr(d.titles).length) hero.append(el("p", "hint", "Post or search as: " + arr(d.titles).join(" · ")));
+    if (str(d.verdict)) { const v = el("p"); v.append(el("b", null, "Before you hire: "), document.createTextNode(str(d.verdict))); hero.append(v); }
+    out.append(hero);
+
+    if (arr(d.solved).length) { const c = card("", "Proof to look for", "What they've already solved"); c.append(list(arr(d.solved), "proof")); out.append(c); }
+
+    if (d.trap && str(d.trap.who)) {
+      const c = card("trap", "The pressure hire", "Who you'll be tempted to hire instead");
+      c.append(el("h3", null, str(d.trap.who)));
+      if (str(d.trap.why)) c.append(el("p", null, str(d.trap.why)));
+      if (arr(d.trap.flags).length) { c.append(el("p", "q", "Red flags in the interview")); c.append(list(arr(d.trap.flags))); }
+      out.append(c);
+    }
+
+    const g = el("div", "grid2");
+    if (arr(d.questions).length) {
+      const c = card("", "Test before you commit", "Three questions");
+      const ol = el("ol", "qs");
+      arr(d.questions).forEach(x => { const li = el("li", null, str(x.q)); if (str(x.listen)) li.append(el("span", null, "Listen for: " + str(x.listen))); ol.append(li); });
+      c.append(ol);
+      if (str(d.trial)) { c.append(el("p", "q", "Paid trial")); c.append(el("p", null, str(d.trial))); }
+      g.append(c);
+    }
+    if (arr(d.where).length) {
+      const c = card("", "Where to find them", "Where they are");
+      const w = el("div", "where");
+      arr(d.where).forEach(x => {
+        const p = el("div", "place");
+        const h = el("div", "row"); h.style.gap = "8px"; h.style.justifyContent = "space-between"; h.style.flexWrap = "nowrap"; h.style.alignItems = "flex-start";
+        h.append(el("b", null, str(x.place)));
+        if (str(x.region)) { const s = el("span", "pill", str(x.region)); s.style.flex = "none"; h.append(s); }
+        p.append(h);
+        if (str(x.why)) p.append(el("span", "hint", str(x.why)));
+        w.append(p);
+      });
+      c.append(w);
+      g.append(c);
+    }
+    if (g.children.length) out.append(g);
+
+    if (str(d.search)) {
+      const c = card("", "Search tonight", "A LinkedIn search to start with");
+      c.append(el("div", "code", str(d.search)));
+      const b = el("button", "ghost noprint", "Copy search"); b.type = "button"; b.style.alignSelf = "flex-start";
+      b.onclick = () => navigator.clipboard.writeText(str(d.search)).then(() => { b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy search", 1800); }, () => {});
+      c.append(b); out.append(c);
+    }
+
+    if (str(d.bigger)) { const c = card("bigger", "Think bigger than Israel", "If you hired this person abroad"); c.append(el("p", null, str(d.bigger))); out.append(c); }
+
+    if (str(d.brief)) {
+      const c = card("", "Share it", "A problem-first brief for your network");
+      c.append(el("p", "brief", str(d.brief)));
+      const b = el("button", "ghost noprint", "Copy brief"); b.type = "button"; b.style.alignSelf = "flex-start";
+      b.onclick = () => navigator.clipboard.writeText(str(d.brief)).then(() => { b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy brief", 1800); }, () => {});
+      c.append(b); out.append(c);
+    }
+
+    $("ask").hidden = true; out.hidden = false;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function asText(d, need){
+    const L = [];
+    L.push("THE PROBLEM", need, "", "THE PERSON YOU NEED: " + str(d.role), str(d.summary));
+    if (str(d.shape)) L.push("Shape: " + str(d.shape));
+    if (str(d.level)) L.push("Level: " + str(d.level));
+    if (arr(d.titles).length) L.push("Titles: " + arr(d.titles).join(", "));
+    if (str(d.verdict)) L.push("Before you hire: " + str(d.verdict));
+    L.push("", "WHAT THEY'VE ALREADY SOLVED", ...arr(d.solved).map(x => "- " + str(x)));
+    if (d.trap) L.push("", "THE PRESSURE HIRE: " + str(d.trap.who), str(d.trap.why), ...arr(d.trap.flags).map(x => "- " + str(x)));
+    L.push("", "THREE QUESTIONS", ...arr(d.questions).map((x, i) => (i + 1) + ". " + str(x.q) + "\n   Listen for: " + str(x.listen)));
+    if (str(d.trial)) L.push("Paid trial: " + str(d.trial));
+    L.push("", "WHERE TO FIND THEM", ...arr(d.where).map(x => "- " + str(x.place) + (str(x.region) ? " (" + str(x.region) + ")" : "") + ": " + str(x.why)));
+    if (str(d.search)) L.push("", "LINKEDIN SEARCH", str(d.search));
+    if (str(d.bigger)) L.push("", "THINK BIGGER THAN ISRAEL", str(d.bigger));
+    if (str(d.brief)) L.push("", "BRIEF TO SHARE", str(d.brief));
+    return L.join("\n");
+  }
+})();
+</script>
+</body>
+</html>
