@@ -421,6 +421,22 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
 .gap .lsteps i.on{background:var(--needle)}
 .gap .btn{padding:9px 16px;font-size:15px}
 .gap .row{gap:14px}
+.fit{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--bg);display:flex;flex-direction:column;gap:8px;min-width:0}
+.fit.now{border-color:var(--good)}
+.fit .gh{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.fit .gt{font-family:var(--display);font-weight:700;font-size:17px;line-height:1.3;overflow-wrap:anywhere;unicode-bidi:plaintext}
+.fit .badges{display:flex;gap:6px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+.fit .gsize{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;padding:2px 7px;background:var(--needle-soft);color:var(--needle);white-space:nowrap}
+.fit.now .gsize.st{background:transparent;color:var(--good);border:1px solid var(--good)}
+.fit .gsize.nw{background:var(--accent-soft);color:var(--accent)}
+.fit p{margin:0;font-size:15px;overflow-wrap:anywhere;unicode-bidi:plaintext}
+.fit .glabel{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:1px}
+.progcard .glist{display:flex;flex-direction:column;gap:12px}
+.progchg{background:var(--bg);border-radius:10px;padding:10px 14px;font-size:15px}
+.progchg b{display:block;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.progchg ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+.progchg li{overflow-wrap:anywhere}
+@media (max-width:420px){.fit .gh{flex-direction:column}.fit .badges{justify-content:flex-start}.progcard .tracker b{font-size:20px}.progcard .tracker div{padding:10px 6px}}
 .ivbox{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--bg);display:flex;flex-direction:column;gap:12px;min-width:0}
 .ivbox .bubble{background:var(--surface)}
 .ivbox .bubble.me{background:var(--accent-soft)}
@@ -892,6 +908,22 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
           <div class="status" id="statusLs" role="status"></div>
         </div>
       </div>
+      <div class="card progcard" id="progCard">
+        <span class="tag">Your progress</span>
+        <h3>What you're now a fit for</h3>
+        <p class="hint" id="progLead">Every lesson you finish and every problem card you approve makes your story stronger. Check here to see which kinds of work you're ready for now, and which are one step away.</p>
+        <div class="tracker" id="progStats">
+          <div><b id="pgCards">0</b><span id="pgCardsL">problem cards approved</span></div>
+          <div><b id="pgGaps">0</b><span id="pgGapsL">gaps worked on</span></div>
+          <div><b id="pgReady">0</b><span id="pgReadyL">ready now</span></div>
+        </div>
+        <div class="progchg" id="progChanged" hidden></div>
+        <p class="gapstrong" id="progSummary" hidden></p>
+        <div class="glist" id="progList"></div>
+        <div id="progBriefsWrap" hidden><div class="q" style="margin:6px 0 4px">Open problems you could pitch now</div><div class="joblist" id="progBriefs"></div></div>
+        <div class="row"><button class="ghost" id="progCheck" type="button">Check what I'm a fit for now</button></div>
+        <div class="status" id="statusProg" role="status"></div>
+      </div>
       <div class="pathnext" id="toDoneRow" hidden><button class="btn big" id="toDone" type="button">I've picked who to message &rarr;</button></div>
     </div>
 
@@ -943,6 +975,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
         <button type="button" class="action" data-open="shareCard"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span><b>Ask someone for help</b><small>A one-page report, made for them</small></button>
         <button type="button" class="action" id="toScanTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span><b>Check a job</b><small>Paste a job post, get your fit</small></button>
         <button type="button" class="action" id="gapTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l10-4 10 4-10 4z"/><path d="M6 9v5c0 1.7 2.7 3 6 3s6-1.3 6-3V9M22 7v6"/></svg></span><b>Close a skill gap</b><small>What your door asks, and a 10-minute lesson</small></button>
+        <button type="button" class="action" id="progTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M6 16l4-5 3 3 5-7"/><path d="M15 7h3v3"/></svg></span><b>See your progress</b><small>What you're now a fit for</small></button>
         <button type="button" class="action" id="ownReportTile"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15l3 3 3-3"/></svg></span><b>Download my report</b><small>Your full reading, as a PDF</small></button>
       </div>
       <div class="card net" id="netCard" hidden>
@@ -1227,7 +1260,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
 
   // ---------- storage (convenience only) ----------
   const load = () => { try { return JSON.parse(localStorage.getItem("gc-state-2")||"null"); } catch(e){ return null; } };
-  const save = () => { if (S.example) return; try { localStorage.setItem("gc-state-2", JSON.stringify({profile:S.profile,stuck:S.stuck,prefs:S.prefs,map:S.example?null:S.map,name:S.name||"",base:S.base||"",page:S.page||null,helper:S.example?null:(S.helper||null),chat:S.example?[]:(S.chat||[]).slice(-20),stage:S.stage||2,door:(S.door==null?null:S.door),targets:S.example?[]:(S.targets||[]).slice(-60),lastBatch:S.lastBatch||0,weeks:S.weeks||[],problems:S.problems||[],interview:(S.interview||[]).slice(-40),gaps:S.example?null:(S.gaps||null)})); } catch(e){} };
+  const save = () => { if (S.example) return; try { localStorage.setItem("gc-state-2", JSON.stringify({profile:S.profile,stuck:S.stuck,prefs:S.prefs,map:S.example?null:S.map,name:S.name||"",base:S.base||"",page:S.page||null,helper:S.example?null:(S.helper||null),chat:S.example?[]:(S.chat||[]).slice(-20),stage:S.stage||2,door:(S.door==null?null:S.door),targets:S.example?[]:(S.targets||[]).slice(-60),lastBatch:S.lastBatch||0,weeks:S.weeks||[],problems:S.problems||[],interview:(S.interview||[]).slice(-40),gaps:S.example?null:(S.gaps||null),progress:S.example?null:(S.progress||null)})); } catch(e){} };
 
   // ---------- helpers ----------
   const clear = el => { while(el.firstChild) el.removeChild(el.firstChild); };
@@ -1542,6 +1575,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
   const probNote = t => setStatus($("statusProb"), t.trim());
   function renderProblems(){
     if (typeof renderOpt === "function" && $("optProbs")) try { renderOpt(); } catch(e){}
+    try { renderProg(); } catch(e){}
     const list = $("probList"); clear(list);
     const ex = !!S.example, cards = ex ? EXAMPLE_PROBLEMS : (S.problems || []);
     cards.forEach((p, i) => list.append(!ex && i === probEditing ? probEdit(p, i) : probView(p, i)));
@@ -1956,7 +1990,7 @@ ${cut(job, 10000)}
     try {
       const m = await sample.json(mapPrompt());
       if (!m || !Array.isArray(m.routes)) throw {code:"invalid_json"};
-      S.example = false; S.map = m; S.chat = []; S.stage = 2; S.door = null; S.gaps = null; clear($("targetList")); renderChat(); applyStage(); save();
+      S.example = false; S.map = m; S.chat = []; S.stage = 2; S.door = null; S.gaps = null; S.progress = null; clear($("targetList")); renderChat(); applyStage(); save();
       setStatus(st, "");
       stopSteps(true);
       renderMap(m); go(2); showFeedback();
@@ -2304,6 +2338,7 @@ ${talk ? "\nWhat they added in conversation (overrides the reading where they di
     $("doneStep").hidden = st < 5;
     try { renderOpt(); } catch(e){}
     try { renderGaps(); } catch(e){}
+    try { renderProg(); } catch(e){}
     $("toDoneRow").hidden = st >= 5 || !$("targetList").children.length;
   }
   const reveal = id => setTimeout(() => $(id).scrollIntoView({behavior:"smooth", block:"start"}), 60);
@@ -2423,7 +2458,7 @@ ${cut(S.profile, 8000)}
       const fresh = cleanGaps({ door: str(d.name), strong: r && r.strong, list: Array.isArray(r && r.gaps) ? r.gaps : [] });
       if (!fresh) throw {code:"invalid_json"};
       S.gaps = fresh; save(); setStatus(st, "Here is what's missing. Start with the first one, it matters most.");
-      renderGaps();
+      renderGaps(); renderProg();
     } catch(e){ setStatus(st, errText(e), "err"); }
     finally { busy = false; $("gapFind").disabled = false; }
   };
@@ -2487,7 +2522,7 @@ ${cut(S.profile, 6000)}
         x.done = true; x.take = cut((m ? m[1] : "").trim(), 400);
       }
       save(); renderLesson();
-      if (fin){ setStatus(st, "Lesson done. Your line is saved on this gap."); renderGaps(); }
+      if (fin){ setStatus(st, "Lesson done. Your line is saved on this gap. See below what you're now a fit for."); renderGaps(); renderProg(); }
       return true;
     } catch(e){
       out.remove();
@@ -2520,7 +2555,7 @@ ${cut(S.profile, 6000)}
   $("lsStop").onclick = () => lsCtl && lsCtl.abort();
   $("lsDone").onclick = () => {
     const g = gapsNow(), x = g && g.list[gapOpen]; if (!x) return;
-    x.done = true; save(); gapOpen = -1; renderGaps(); setStatus($("statusGap"), "Marked as worked on. Nice.");
+    x.done = true; save(); gapOpen = -1; renderGaps(); renderProg(); setStatus($("statusGap"), "Marked as worked on. Nice.");
   };
   $("lsClose").onclick = () => { if (lsCtl) lsCtl.abort(); const at = gapOpen; gapOpen = -1; renderGaps(); const el = $("gapList").children[at]; if (el) el.scrollIntoView({behavior:"smooth", block:"nearest"}); };
   $("lsReset").onclick = async () => {
@@ -2891,6 +2926,144 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     onText: v => { S.profile = v; save(); }});
   wireMic({btn:"mic3", label:"micLabel3", hint:"micHint3", box:"ivReply", idle:"Talk your answer",
     tipExtra:"Tell it like a story. Then press Send."});
+  // ---------- progress: what you're now a fit for ----------
+  const PROG_KEEP = 8;
+  let progBusy = false;
+  const approvedCards = () => (S.problems || []).filter(p => p && p.ok && p.title);
+  const doneGaps = () => { const g = gapsNow(); return g ? g.list.filter(x => x.done) : []; };
+  function cleanFit(x){
+    if (!x || typeof x !== "object") return null;
+    const role = cut(noDash(x.role).trim(), 90); if (!role) return null;
+    const change = ["new", "up", "same"].includes(x.change) ? x.change : "same";
+    return { role, status: x.status === "ready" ? "ready" : "close", why: cut(noDash(x.why).trim(), 300), because: cut(noDash(x.because).trim(), 300), next: cut(noDash(x.next).trim(), 300), change };
+  }
+  function cleanCheck(c){
+    if (!c || typeof c !== "object") return null;
+    const fits = (Array.isArray(c.fits) ? c.fits : []).map(cleanFit).filter(Boolean).slice(0, 5);
+    if (!fits.length) return null;
+    const strs = a => (Array.isArray(a) ? a : []).map(v => cut(str(v), 120)).filter(Boolean).slice(0, 12);
+    return { at: Number(c.at) || Date.now(), door: cut(str(c.door), 120), summary: cut(noDash(c.summary).trim(), 300), fits, cards: strs(c.cards), gaps: strs(c.gaps), briefs: strs(c.briefs).slice(0, 3) };
+  }
+  function cleanProg(p){
+    if (!p || typeof p !== "object") return null;
+    const checks = (Array.isArray(p.checks) ? p.checks : []).map(cleanCheck).filter(Boolean).slice(-PROG_KEEP);
+    return checks.length ? { checks } : null;
+  }
+  const lastCheck = () => S.progress && S.progress.checks.length ? S.progress.checks[S.progress.checks.length - 1] : null;
+  const dayLabel = t => { try { return new Date(t).toLocaleDateString("en-GB", {day:"numeric", month:"short"}); } catch(e){ return ""; } };
+  // What grew since the last check, worked out here (no AI needed).
+  function progChanges(){
+    const c = lastCheck(); if (!c) return [];
+    const out = [];
+    approvedCards().forEach(p => { if (!c.cards.includes(cut(str(p.title), 120))) out.push("New problem card: " + p.title); });
+    doneGaps().forEach(x => { if (!c.gaps.includes(cut(str(x.skill), 120))) out.push("Lesson done: " + x.skill); });
+    return out;
+  }
+  function fitView(x, showChange){
+    const c = document.createElement("div"); c.className = "fit" + (x.status === "ready" ? " now" : "");
+    const h = document.createElement("div"); h.className = "gh";
+    const t = document.createElement("div"); t.className = "gt"; t.textContent = x.role;
+    const bs = document.createElement("div"); bs.className = "badges";
+    if (showChange && x.change !== "same"){ const n = document.createElement("span"); n.className = "gsize nw"; n.textContent = x.change === "up" ? "Moved up" : "New"; bs.append(n); }
+    const st = document.createElement("span"); st.className = "gsize st"; st.textContent = x.status === "ready" ? "Ready now" : "One step away"; bs.append(st);
+    h.append(t, bs); c.append(h);
+    [["Why it fits", x.why], ["What tipped it", x.because], [x.status === "ready" ? "Your next move" : "The step left", x.next]].forEach(([lab, v]) => {
+      if (!v) return; const p = document.createElement("p"); const l = document.createElement("span"); l.className = "glabel"; l.textContent = lab; p.append(l, v); c.append(p);
+    });
+    return c;
+  }
+  function renderProg(){
+    if (!$("progCard")) return;
+    const ex = !!S.example, c = ex ? null : lastCheck();
+    const cards = ex ? 0 : approvedCards().length, g = ex ? null : gapsNow(), gd = g ? g.list.filter(x => x.done).length : 0;
+    $("pgCards").textContent = cards; $("pgCardsL").textContent = cards === 1 ? "problem card approved" : "problem cards approved";
+    $("pgGaps").textContent = gd; $("pgGapsL").textContent = g ? "of " + g.list.length + " gaps worked on" : "gaps worked on";
+    const ready = c ? c.fits.filter(f => f.status === "ready").length : 0;
+    $("pgReady").textContent = c ? ready : "?"; $("pgReadyL").textContent = c ? "kinds of work ready now" : "not checked yet";
+    const chg = ex ? [] : progChanges(), box = $("progChanged"); clear(box); box.hidden = !c;
+    if (c){
+      const b = document.createElement("b"); b.textContent = "Since your last check (" + dayLabel(c.at) + ")"; box.append(b);
+      if (chg.length){ const ul = document.createElement("ul"); chg.slice(0, 6).forEach(t => { const li = document.createElement("li"); li.textContent = t; ul.append(li); }); box.append(ul); }
+      else { const p = document.createElement("span"); p.textContent = "Nothing new yet. Finish a lesson or approve a problem card, then check again."; box.append(p); }
+    }
+    const sm = $("progSummary"); clear(sm); sm.hidden = !(c && c.summary);
+    if (c && c.summary){ const b = document.createElement("b"); b.textContent = "How your fit has grown"; sm.append(b, c.summary); }
+    const list = $("progList"); clear(list);
+    const showChange = !!(S.progress && S.progress.checks.length > 1);
+    if (c) c.fits.slice().sort((a, z) => (a.status === "ready" ? 0 : 1) - (z.status === "ready" ? 0 : 1)).forEach(x => list.append(fitView(x, showChange)));
+    const pb = $("progBriefs"); clear(pb);
+    const open = c ? c.briefs.map(id => (typeof needs !== "undefined" ? needs : []).find(n => str(n._id) === id)).filter(Boolean) : [];
+    open.forEach(n => pb.append(needCard(n, {pitch: true})));
+    $("progBriefsWrap").hidden = !open.length;
+    $("progCheck").textContent = c ? "Check again" : "Check what I'm a fit for now";
+    $("progLead").textContent = !c
+      ? "Every lesson you finish and every problem card you approve makes your story stronger. Check here to see which kinds of work you're ready for now, and which are one step away."
+      : (chg.length ? "Your story grew since " + dayLabel(c.at) + ". Check again to see what that opens up." : "Last checked " + dayLabel(c.at) + ". Here is where you stand.");
+    if (ex) setStatus($("statusProg"), "Your progress is made from your own story. Get your own reading to see yours.");
+    else if ($("statusProg").textContent.startsWith("Your progress is made")) setStatus($("statusProg"), "");
+  }
+  function progPrompt(d, briefs){
+    const a = (S.map && S.map.archetype) || {}, m = S.map || {};
+    const cards = approvedCards().map(p => "- " + p.title + ": " + str(p.result)).join("\n");
+    const g = gapsNow();
+    const gaps = g ? g.list.map(x => "- " + x.skill + (x.done ? " (worked on" + (x.take ? "; what they can say now: " + x.take : "") + ")" : " (not worked on yet)")).join("\n") : "";
+    const c = lastCheck();
+    const before = c ? c.fits.map(f => "- " + f.role + " (" + (f.status === "ready" ? "ready now" : "one step away") + ")").join("\n") : "";
+    const bl = briefs.map((n, i) => i + ". " + cut(str(n.title), 100) + ": " + cut(str(n.problem), 200)).join("\n");
+    return `You help a generalist see what kinds of work they are a fit for right now, based on everything they have built up so far. Be honest: only call something "ready" if their story and work clearly back it.
+
+Reply with ONLY a JSON object like:
+{"summary":"...","fits":[{"role":"...","status":"ready","why":"...","because":"...","next":"...","change":"new"}],"briefs":[0]}
+
+Rules:
+- summary: max 30 words, how their fit has grown${c ? " since their last check" : ""}, from what they actually did. If little changed, say so kindly and plainly.
+- fits: 3 to 5 kinds of work or roles, said plainly (e.g. "Founder's associate at a seed-stage startup"). Mix "ready" (they can go for it this week) and "close" (one step away). At least one must be "ready".
+- why: max 25 words, why it fits their story.
+- because: max 22 words, which lesson or problem card makes this fit stronger now. Empty string if none.
+- next: max 22 words. For "ready": the first move to go for it. For "close": the one step left to be ready.
+- change: ${c ? `"new" if it was not in their last check, "up" if it moved from one step away to ready, else "same". Keep roles from the last check when they still fit, using the same wording.` : `always "same".`}
+- briefs: the numbers of up to 3 open problems below that they could pitch a plan for now. Empty list if none fits well.${bl ? "" : " There are none, so use []."}
+- Never invent facts about them. Plain, warm, direct words. No jargon. No em dashes. Write in the language of their story.
+
+Their reading: ${str(a.name || a.type)}. ${str(m.thread)} Their edge: ${str(m.edge && m.edge.name)}.
+The way in they picked: ${d ? str(d.name) + ". " + str(d.why) : "not picked yet"}${cards ? "\n\nProblems they have solved (approved by them):\n" + cut(cards, 2000) : ""}${gaps ? "\n\nSkill gaps for their way in:\n" + cut(gaps, 2000) : ""}${before ? "\n\nTheir last check (" + dayLabel(c.at) + "):\n" + before : ""}${bl ? "\n\nOpen problems on the board:\n" + bl : ""}
+
+Their story:
+"""
+${cut(S.profile, 6000)}
+"""`;
+  }
+  $("progCheck").onclick = async () => {
+    const st = $("statusProg");
+    if (busy || progBusy) return;
+    if (S.example){ renderProg(); return; }
+    if (!S.map || !S.profile || S.profile.length < 30){ setStatus(st, "Add your story in step 1 first.", "err"); return; }
+    if (!sample){ setStatus(st, sampleReady ? "This works when the page is opened in Claude or on the website." : "Getting ready, try again in a moment.", "err"); return; }
+    const briefs = (typeof needs !== "undefined" ? needs : []).filter(n => n && !n.example && n._id).slice().sort((a, z) => (z.at || 0) - (a.at || 0)).slice(0, 15);
+    progBusy = true; $("progCheck").disabled = true;
+    setStatus(st, "Looking at everything you've built up", "thinking");
+    try {
+      const d = curDoor();
+      const r = await sample.json(progPrompt(d, briefs), { cache:false });
+      const idx = (Array.isArray(r && r.briefs) ? r.briefs : []).map(Number).filter(i => Number.isInteger(i) && briefs[i]);
+      const check = cleanCheck({ at: Date.now(), door: d ? str(d.name) : "", summary: r && r.summary, fits: r && r.fits,
+        cards: approvedCards().map(p => cut(str(p.title), 120)), gaps: doneGaps().map(x => cut(str(x.skill), 120)),
+        briefs: [...new Set(idx)].map(i => str(briefs[i]._id)) });
+      if (!check) throw {code:"invalid_json"};
+      if (!lastCheck()) check.fits.forEach(f => f.change = "same");
+      S.progress = { checks: ((S.progress && S.progress.checks) || []).concat(check).slice(-PROG_KEEP) };
+      save(); renderProg();
+      const ready = check.fits.filter(f => f.status === "ready").length;
+      setStatus(st, ready === 1 ? "1 kind of work you're ready for now." : ready + " kinds of work you're ready for now.");
+    } catch(e){ setStatus(st, errText(e), "err"); }
+    finally { progBusy = false; $("progCheck").disabled = false; }
+  };
+  $("progTile").onclick = () => {
+    if (!S.map) return;
+    if (!curDoor()){ S.stage = Math.max(S.stage || 2, 3); applyStage(); save(); reveal("doorStep"); return; }
+    reveal("progCard");
+  };
+
   wireMic({btn:"mic4", label:"micLabel4", hint:"micHint4", box:"lsReply", idle:"Talk your answer", tipExtra:"Then press Send."});
   wireMic({btn:"mic2", label:"micLabel2", hint:"micHint2", box:"reply", idle:"Talk your reply",
     tipExtra:"Say what feels off, what scares you, or what you want to know. Then press Send."});
@@ -3369,6 +3542,7 @@ ${(S.chat||[]).length ? "\nWhat they added in conversation (overrides the readin
     if (!$("boardSec").hidden) renderBoardPage();
     renderMyBriefs();
     renderMyIntros();
+    try { renderProg(); } catch(e){}
   }
   function renderMyBriefs(){
     const box = $("rMine"); clear(box);
@@ -3876,6 +4050,7 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     if (Array.isArray(saved.problems)) S.problems = saved.problems.map(cleanProb).filter(Boolean).slice(0, PROB_MAX);
     if (Array.isArray(saved.targets)) S.targets = saved.targets; if (saved.lastBatch) S.lastBatch = saved.lastBatch; if (Array.isArray(saved.weeks)) S.weeks = saved.weeks;
     if (saved.gaps) S.gaps = cleanGaps(saved.gaps);
+    if (saved.progress) S.progress = cleanProg(saved.progress);
     if (saved.map && Array.isArray(saved.map.routes)){ S.map = saved.map; S.stage = Number(saved.stage) || 2; S.door = saved.door == null ? null : Number(saved.door); renderMap(S.map); applyStage(); if (S.lastBatch && (S.targets||[]).length){ showBatch(); applyStage(); } }
     if (saved.name){ S.name = saved.name; $("myName").value = saved.name; }
     if (saved.base){ S.base = saved.base; $("baseIn").value = saved.base; }
