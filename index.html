@@ -491,6 +491,17 @@ details.tools .toolsin{display:flex;flex-direction:column;gap:16px;margin-top:16
 .wkleft{font-size:14px;color:var(--muted);margin:0}
 .reach{overflow-wrap:anywhere}
 .chat{display:flex;flex-direction:column;gap:8px;margin-top:6px;padding-top:10px;border-top:1px solid var(--line)}
+.hire{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:14px;color:var(--muted)}
+.hire .ist{margin-right:2px}
+.nums{display:flex;flex-direction:column;gap:12px}
+.nums .numgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+@media (max-width:640px){.nums .numgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.nums .numtile:last-child{grid-column:1/-1}}
+.numtile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.numtile b{font-family:var(--display);font-size:28px;line-height:1.1;font-weight:700;font-variant-numeric:tabular-nums}
+.numtile span{font-size:13px;color:var(--muted);line-height:1.3}
+.numtile.key{border-color:var(--needle);background:var(--needle-soft)}
+.numtile.key b{color:var(--needle)}
+.nums .numhead{display:flex;flex-direction:column;gap:4px}
 .chat .ctog{align-self:flex-start;font-weight:700}
 .chat .cnew{display:inline-block;margin-left:6px;font-size:12px;font-weight:700;border-radius:999px;padding:2px 8px;background:var(--needle);color:var(--surface);text-decoration:none}
 .chatpanel{display:flex;flex-direction:column;gap:8px}
@@ -633,6 +644,8 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
       <div class="howstep"><span class="ico big"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17"/><path d="M3 21h18M12 12h1"/></svg></span><b>Open side doors</b><p>Ways in, with messages ready.</p></div>
       <div class="howstep"><span class="ico big"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span><b>Get help</b><p>A report your friends can forward.</p></div>
     </div>
+
+    <div class="nums" id="homeNums" data-where="home" hidden></div>
 
     <div class="faq">
       <h2>Good to know</h2>
@@ -1108,6 +1121,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
       <p class="wkleft" id="rWeek"></p>
       <div class="joblist" id="rSent"></div>
     </div>
+    <div class="nums" id="rNums" data-where="recruit" hidden></div>
     <h2 class="sech">On the board</h2>
     <p class="lead" style="margin-top:-12px">What recruiters are looking for right now.</p>
     <div class="joblist" id="rBoard"></div>
@@ -1119,6 +1133,7 @@ header .acct .ghost{padding:7px 14px;font-size:14px;white-space:nowrap}
     <span class="stepno">The board</span>
     <h1>Open problems</h1>
     <p class="lead">What companies need solved right now, in their own words. Look for one that sounds like something you've already done.</p>
+    <div class="nums" id="bNums" data-where="board" hidden></div>
     <div class="example-flag" id="bFlag" hidden>Briefs marked <b>Example</b> are made up to show how it works, until real ones fill the board.</div>
     <div class="card" role="search" aria-label="Filter the board">
       <div><label class="q" for="bQ">Search</label><input id="bQ" type="search" placeholder="e.g. Spain, partners, community" autocomplete="off"></div>
@@ -3129,7 +3144,7 @@ ${cut(S.profile, 6000)}
   document.querySelectorAll("#rWork .chip").forEach(c => c.onclick = () => c.setAttribute("aria-pressed", String(c.getAttribute("aria-pressed") !== "true")));
   function showRecruit(){
     go(-1); ["home","step1","step2","step3"].forEach(id => $(id).hidden = true);
-    $("recruit").hidden = false; $("navR").setAttribute("aria-current","step"); film.stop();
+    $("recruit").hidden = false; $("navR").setAttribute("aria-current","step"); film.stop(); loadNums();
     window.scrollTo({top:0, behavior:"smooth"});
   }
   $("navR").onclick = showRecruit;
@@ -3298,7 +3313,7 @@ ${cut(S.profile, 6000)}
     const h = Math.floor(m / 60); if (h < 24) return h + (h === 1 ? " hour ago" : " hours ago");
     return new Date(Number(at)).toLocaleDateString("en-GB", {day: "numeric", month: "short"});
   }
-  function chatBox(id, otherName){
+  function chatBox(id, otherName, rec){
     id = str(id); const other = str(otherName).trim() || "them";
     const w = document.createElement("div"); w.className = "chat"; w.dataset.chat = id;
     const tog = document.createElement("button"); tog.type = "button"; tog.className = "link ctog"; tog.setAttribute("aria-expanded", "false");
@@ -3367,7 +3382,80 @@ ${cut(S.profile, 6000)}
     send.onclick = doSend;
     ta.onkeydown = e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)){ e.preventDefault(); doSend(); } };
     if (CHAT.open.has(id)) show(true); else label();
+    if (rec) w.append(hireRow(rec));
     return w;
+  }
+  // After a yes: either side can say it turned into work. It only moves the public count, no names.
+  function hireRow(rec){
+    const r = document.createElement("div"); r.className = "hire";
+    const draw = () => {
+      clear(r);
+      const st = document.createElement("span"); st.className = "status"; st.setAttribute("role", "status");
+      const b = document.createElement("button"); b.type = "button"; b.className = "link";
+      if (rec.hired){
+        const t = document.createElement("span"); t.className = "ist yes"; t.textContent = "Working together";
+        b.textContent = "Undo";
+        r.append(t, "Counted in our public numbers, without names.", b, st);
+      } else {
+        b.textContent = "We're working together";
+        r.append("Did this turn into a job or a project?", b, st);
+      }
+      b.onclick = async () => {
+        b.disabled = true; setStatus(st, "Saving", "thinking");
+        try {
+          const x = await boardApi("hire.mark", Object.assign(who(false), {id: str(rec.id), hired: !rec.hired}));
+          if (x.hired) rec.hired = {at: Date.now()}; else delete rec.hired;
+          draw(); loadNums(true);
+          if (rec.hired) setStatus(r.querySelector(".status"), "Wonderful. Thank you for telling us.");
+        } catch(e){ b.disabled = false; setStatus(st, e && e.message ? e.message : "That didn't save. Try again.", "err"); }
+      };
+    };
+    draw();
+    return r;
+  }
+  // ---------- public numbers: real activity only, never the examples ----------
+  const NUMS = { data: null, at: 0, busy: null };
+  function loadNums(fresh){
+    if (!WEB.on) return Promise.resolve();
+    if (NUMS.busy) return NUMS.busy;
+    if (!fresh && NUMS.data && Date.now() - NUMS.at < 120000){ renderNums(); return Promise.resolve(); }
+    NUMS.busy = api("stats").then(r => { NUMS.data = r.stats || null; NUMS.at = Date.now(); renderNums(); })
+      .catch(() => {}).finally(() => { NUMS.busy = null; });
+    return NUMS.busy;
+  }
+  function renderNums(){
+    const d = NUMS.data;
+    document.querySelectorAll(".nums").forEach(box => {
+      if (!d){ box.hidden = true; return; }
+      clear(box); box.hidden = false;
+      const head = document.createElement("div"); head.className = "numhead";
+      const h = document.createElement(box.dataset.where === "home" ? "h2" : "h3");
+      h.textContent = "So far, for real";
+      const p = document.createElement("p"); p.className = "hint";
+      p.textContent = (d.asked ? "Every number counts real people and real companies only. The examples never count." : "We're just starting, so these begin at zero. Every number counts real people and real companies only, never the examples.") + " Updated every few minutes.";
+      head.append(h, p);
+      const g = document.createElement("div"); g.className = "numgrid";
+      const n = v => (Number(v) || 0).toLocaleString("en-US");
+      [
+        [d.findable, d.findable === 1 ? "person findable" : "people findable"],
+        [d.problems, d.problems === 1 ? "open problem" : "open problems"],
+        [d.asked, d.asked === 1 ? "introduction asked" : "introductions asked"],
+        [d.yes, "both said yes"],
+        [d.hires, d.hires === 1 ? "job or project" : "jobs and projects", true],
+      ].forEach(([v, label, key]) => {
+        const t = document.createElement("div"); t.className = "numtile" + (key ? " key" : "");
+        const b = document.createElement("b"); b.textContent = n(v);
+        const s = document.createElement("span"); s.textContent = label;
+        t.append(b, s); g.append(t);
+      });
+      box.append(head, g);
+      if (d.asked){
+        const q = document.createElement("p"); q.className = "hint";
+        const pct = Math.round(100 * (Number(d.yes) || 0) / d.asked);
+        q.textContent = pct + "% of introductions so far ended with both sides saying yes. Asked means a company asked for an intro or a person pitched a plan.";
+        box.append(q);
+      }
+    });
   }
   // While a conversation is open, check for new messages every 20 seconds (only when the tab is visible).
   function chatPoll(){
@@ -3395,7 +3483,7 @@ ${cut(S.profile, 6000)}
       if (x.status === "yes" && x.reply){
         const r = document.createElement("p"); r.className = "reach"; const k = document.createElement("b"); k.textContent = "Reach them at: "; r.append(k, str(x.reply.contact)); d.append(r);
         if (x.reply.note){ const n = document.createElement("p"); n.className = "why"; n.textContent = "Their note: " + str(x.reply.note); d.append(n); }
-        const hh = document.createElement("p"); hh.className = "hint"; hh.textContent = "They now see your name and how to reach you. Write to them soon, while it's warm."; d.append(hh, chatBox(x.id, str(x.company) || "the company"));
+        const hh = document.createElement("p"); hh.className = "hint"; hh.textContent = "They now see your name and how to reach you. Write to them soon, while it's warm."; d.append(hh, chatBox(x.id, str(x.company) || "the company", x));
       } else if (x.status === "no"){
         const n = document.createElement("p"); n.className = "hint"; n.textContent = "They passed on this one. They never learned who you are."; d.append(n);
       } else if (x.status === "closed"){
@@ -3418,7 +3506,7 @@ ${cut(S.profile, 6000)}
       const b = document.createElement("span"); b.className = "ist yes"; b.textContent = "You said yes";
       const r = document.createElement("p"); r.className = "reach"; const k = document.createElement("b"); k.textContent = str(x.name) + " · reach them at: "; r.append(k, str(x.contact));
       const h = document.createElement("p"); h.className = "hint"; h.textContent = "They now see how to reach you" + (x.reply && x.reply.contact ? " (" + str(x.reply.contact) + ")" : "") + ".";
-      c.append(b, r, h, chatBox(x.id, str(x.name) || "them")); return c;
+      c.append(b, r, h, chatBox(x.id, str(x.name) || "them", x)); return c;
     }
     if (x.status === "no" || x.status === "closed"){ const b = document.createElement("span"); b.className = "ist no"; b.textContent = x.status === "no" ? "You passed" : "Closed"; c.append(b); return c; }
     if (x.gone){ const b = document.createElement("span"); b.className = "ist no"; b.textContent = "Left the board"; c.append(b); return c; }
@@ -3521,7 +3609,7 @@ ${cut(S.profile, 6000)}
   function showBoard(type){
     go(-1); ["home","step1","step2","step3"].forEach(id => $(id).hidden = true);
     if (typeof type === "string"){ BF.type = type; $("bType").value = type; BF.shown = 12; }
-    $("boardSec").hidden = false; $("navB").setAttribute("aria-current","step"); film.stop();
+    $("boardSec").hidden = false; $("navB").setAttribute("aria-current","step"); film.stop(); loadNums();
     renderBoardPage(); window.scrollTo({top:0, behavior:"smooth"});
   }
   $("navB").onclick = () => showBoard();
@@ -3598,7 +3686,7 @@ ${cut(S.profile, 6000)}
       const b = document.createElement("span"); b.className = "ist yes"; b.textContent = "You said yes";
       const r = document.createElement("p"); r.className = "reach"; const k = document.createElement("b"); k.textContent = "Reach them at: "; r.append(k, str(x.contact));
       const n = document.createElement("p"); n.className = "hint"; n.textContent = "They now see your name and how to reach you" + (x.seeker && x.seeker.contact ? " (" + str(x.seeker.contact) + ")" : "") + ".";
-      d.append(b, r, n, chatBox(x.id, str(x.company) || "the recruiter")); return d;
+      d.append(b, r, n, chatBox(x.id, str(x.company) || "the recruiter", x)); return d;
     }
     if (x.status === "no"){
       d.classList.add("done");
@@ -3806,7 +3894,7 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
       if (x.status === "yes" && x.seeker){
         const r = document.createElement("p"); r.className = "reach"; const b = document.createElement("b"); b.textContent = "Reach them at: "; r.append(b, str(x.seeker.contact)); c.append(r);
         if (x.seeker.note){ const n = document.createElement("p"); n.className = "hint"; n.textContent = "Their note: " + str(x.seeker.note); c.append(n); }
-        const h = document.createElement("p"); h.className = "hint"; h.textContent = "They said yes to your note. Write to them soon, while it's warm."; c.append(h, chatBox(x.id, str(x.seeker.name) || "them"));
+        const h = document.createElement("p"); h.className = "hint"; h.textContent = "They said yes to your note. Write to them soon, while it's warm."; c.append(h, chatBox(x.id, str(x.seeker.name) || "them", x));
       } else if (x.status === "no"){
         const h = document.createElement("p"); h.className = "hint"; h.textContent = "They passed on this one. Their name stays private."; c.append(h);
       } else if (x.gone){
@@ -3820,7 +3908,7 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
   async function startDb(){
     if (!(window.claude && typeof window.claude.use === "function")){
       try { const r = await fetch("/api/board", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify({action:"needs"})}); if (!r.ok) return; } catch(e){ return; }
-      WEB.on = true; $("navR").hidden = false; $("navB").hidden = false; renderVerify(); renderWk();
+      WEB.on = true; $("navR").hidden = false; $("navB").hidden = false; renderVerify(); renderWk(); loadNums();
       $("recruit").querySelector(".example-flag").textContent = "Early version. Profiles and requests marked Example are made up to show how it works, until real ones fill the board.";
       webRefresh(); setInterval(() => { if (!document.hidden) webRefresh(); }, 60000);
       return;

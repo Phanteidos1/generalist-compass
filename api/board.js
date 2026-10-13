@@ -44,6 +44,12 @@
 //   gc:msg:<thread id> is a list of JSON messages {by, text, at}, the last 200 kept.
 //   gc:msgc:<thread id> is a hash of counters: <side> = messages that side sent,
 //   seen:<side> = how many of the other side's messages that side has opened.
+//
+// Public numbers ("stats"): counted from the real records, never the examples.
+//   Introductions asked = intro requests + pitches; "both said yes" = those with status yes;
+//   hires = yes conversations where either side tapped "We're working together" ("hire.mark"
+//   stores { by, at } as "hired" on the intro or pitch). Counted at most every 10 minutes and
+//   kept in gc:stats:cache; an answer or a marked hire clears it so the numbers move right away.
 
 import { createHash, randomBytes } from "node:crypto";
 import { userFromSession, workDomain } from "./auth.js";
@@ -193,6 +199,27 @@ async function chatMeta(items) {
   });
   return out;
 }
+// The public numbers, worked out from the records themselves so they can't drift.
+const STATS_TTL = 600;
+async function computeStats() {
+  const [intros, pitches, findable, needs] = await redis([
+    ["HVALS", "gc:intro"], ["HVALS", "gc:pitch"], ["HLEN", "gc:profiles"], ["LRANGE", "gc:needs", 0, 199],
+  ]);
+  const I = (intros || []).map(parse).filter(Boolean), K = (pitches || []).map(parse).filter(Boolean);
+  const yes = x => x.status === "yes";
+  const out = {
+    findable: Number(findable) || 0,
+    problems: (needs || []).map(parse).filter(n => n && !n.hidden && !n.example).length,
+    intros: I.length, introsYes: I.filter(yes).length,
+    pitches: K.length, pitchesYes: K.filter(yes).length,
+    hires: I.concat(K).filter(x => yes(x) && x.hired).length,
+    at: Date.now(),
+  };
+  out.asked = out.intros + out.pitches;
+  out.yes = out.introsYes + out.pitchesYes;
+  return out;
+}
+
 const fail = (res, o) => res.status(o.status).json({ error: o.error, code: o.code });
 const needPublic = ({ contact, token, owner, ...pub }) => ({ ...pub, pitchable: !!owner });
 
@@ -278,6 +305,28 @@ export default async function handler(req, res) {
         const real = (all || []).map(parse).filter(n => n && !n.hidden).map(needPublic);
         const needs = real.length >= 3 ? real : real.concat(EXAMPLE_NEEDS);
         return res.status(200).json({ needs });
+      }
+      case "stats": {
+        const [cached] = await redis([["GET", "gc:stats:cache"]]);
+        let stats = parse(cached);
+        if (!stats) {
+          stats = await computeStats();
+          await redis([["SET", "gc:stats:cache", JSON.stringify(stats), "EX", STATS_TTL]]);
+        }
+        res.setHeader("Cache-Control", "public, max-age=60");
+        return res.status(200).json({ stats });
+      }
+      case "hire.mark": {
+        // Either side of a yes conversation can say it turned into work (or take that back).
+        const th = await threadFor(b);
+        if (th.error) return fail(res, th);
+        if (await limited(req, "hire", 30)) return res.status(429).json({ error: "Too many changes. Try again later." });
+        const key = isIntroId(th.tid) ? "gc:intro" : "gc:pitch";
+        const rec = th.rec;
+        if (b.hired) { if (!rec.hired) rec.hired = { by: th.side, at: Date.now() }; }
+        else delete rec.hired;
+        await redis([["HSET", key, th.tid, JSON.stringify(rec)], ["DEL", "gc:stats:cache"]]);
+        return res.status(200).json({ hired: !!rec.hired });
       }
       case "profile.save": {
         const o = await owner(b, true);
@@ -379,7 +428,7 @@ export default async function handler(req, res) {
           rec.status = "yes"; rec.seeker = { name, contact, note: s(b.note, 300) };
         } else rec.status = "no";
         rec.answeredAt = Date.now();
-        await redis([["HSET", "gc:intro", iid, JSON.stringify(rec)]]);
+        await redis([["HSET", "gc:intro", iid, JSON.stringify(rec)], ["DEL", "gc:stats:cache"]]);
         return res.status(200).json({ intro: forSeeker(rec) });
       }
       case "pitch.send": {
@@ -436,7 +485,7 @@ export default async function handler(req, res) {
           rec.status = "yes"; rec.reply = { contact, note: s(b.note, 300) };
         } else rec.status = "no";
         rec.answeredAt = Date.now();
-        await redis([["HSET", "gc:pitch", kid, JSON.stringify(rec)]]);
+        await redis([["HSET", "gc:pitch", kid, JSON.stringify(rec)], ["DEL", "gc:stats:cache"]]);
         const [p] = await redis([["HGET", "gc:profiles", rec.from]]);
         return res.status(200).json({ pitch: forBriefOwner(rec, parse(p)) });
       }
