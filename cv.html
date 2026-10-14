@@ -124,6 +124,8 @@ footer{font-size:14px;color:var(--muted);text-align:center}
 .danger,.btn.ghost.danger{--danger:#B4442E;color:var(--danger);border-color:var(--danger)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .danger{--danger:#F08A74}}
 :root[data-theme="dark"] .danger{--danger:#F08A74}
+.tick{display:flex;gap:10px;align-items:flex-start;font-size:15px;color:var(--muted);margin:4px 0 12px;cursor:pointer}
+.tick input{width:20px;height:20px;margin:2px 0 0;flex:none;accent-color:var(--accent)}
 .linkbtn{border:0;background:none;color:var(--accent);font-weight:700;padding:0;font-size:inherit;text-decoration:underline;text-underline-offset:3px}
 
 /* editing your own CV in place */
@@ -202,14 +204,16 @@ footer{font-size:14px;color:var(--muted);text-align:center}
       <p id="cvContact"></p>
       <div class="row"><button class="btn" id="introBtn" type="button">Ask for an intro</button></div>
       <form id="introForm" hidden style="display:flex;flex-direction:column;gap:10px">
-        <div class="ask" style="display:flex;gap:8px;flex-wrap:wrap"><input id="inName" placeholder="Your name and company" autocomplete="organization"><input id="inWhy" placeholder="The problem you'd like help with"></div>
-        <div class="row"><button class="btn" type="submit">Write my intro</button></div>
+        <p class="small" id="introVia" hidden></p>
+        <div class="ask" style="display:flex;gap:8px;flex-wrap:wrap"><input id="inName" placeholder="Your name and company" autocomplete="organization" aria-label="Your name and company"><input id="inWhy" placeholder="The problem you'd like help with" aria-label="The problem you'd like help with"><input id="inReach" placeholder="How they can reach you: email or LinkedIn" autocomplete="email" aria-label="How they can reach you" hidden></div>
+        <div class="row"><button class="btn" type="submit" id="introGo">Write my intro</button><button class="linkbtn" id="introSelf" type="button" hidden>Or write the message yourself</button></div>
+        <p class="status" id="stIntro" role="status"></p>
         <textarea id="introMsg" style="min-height:120px" hidden aria-label="Your intro message"></textarea>
         <div class="row" id="introActions" hidden><button class="btn ghost" id="copyIntro" type="button">Copy message</button><a class="btn ghost" id="mailIntro" href="#" style="text-decoration:none">Open in email</a></div>
       </form>
     </div>
     <div class="editsave" id="editSave" hidden><button class="btn" id="editDone" type="button">Save my changes</button><button class="btn ghost" id="editCancel" type="button">Undo</button></div>
-    <p class="small" id="ownSaved" hidden style="text-align:center">This is your saved Living CV<span id="ownViews"></span>. <button class="linkbtn" id="editSavedStart" type="button">Edit the text</button> and the short link stays the same. <button class="linkbtn danger" id="delSaved" type="button">Delete it from Compass</button></p>
+    <p class="small" id="ownSaved" hidden style="text-align:center">This is your saved Living CV<span id="ownViews"></span>. <button class="linkbtn" id="editSavedStart" type="button">Edit the text</button> and the short link stays the same. <button class="linkbtn danger" id="delSaved" type="button">Delete it from Compass</button><span id="ownIntro" hidden><br><span id="ownIntroText"></span> <button class="linkbtn" id="ownIntroToggle" type="button"></button></span></p>
     <p class="status" id="stOwn" role="status" style="text-align:center"></p>
     <p class="small" id="ownNote" hidden style="text-align:center">Is this your Living CV? <button class="linkbtn" id="editStart" type="button">Edit the text</button> and you'll get a fresh link. The one you sent stays as it was.</p>
   </section>
@@ -254,6 +258,7 @@ footer{font-size:14px;color:var(--muted);text-align:center}
       <div class="savebox" id="saveBox">
         <h3 id="saveTitle">Want a short link?</h3>
         <p class="small" id="saveNote">The link above carries your whole CV, so it's long. Save it on Generalist Compass and you get a short one instead. Anyone with the link can read it, it isn't listed anywhere, and you can delete it anytime.</p>
+        <label class="tick" id="introTick" hidden><input type="checkbox" id="introOk" checked> <span>Let employers ask for an intro through Compass. Their request comes to your Compass account with a note; you say yes or no, and only after a yes do they see how to reach you.</span></label>
         <div class="row"><button class="btn" id="saveShort" type="button">Save and get a short link</button><button class="btn ghost danger" id="delShort" type="button" hidden>Delete it from Compass</button><span class="status" id="stSave" role="status"></span></div>
       </div>
     </div>
@@ -317,7 +322,9 @@ footer{font-size:14px;color:var(--muted);text-align:center}
   };
 
   let CV = EXAMPLE, isExample = true, editing = false, before = null;
-  let SAVED = null; // { id, views } when this page shows a Living CV you saved on Compass
+  let SAVED = null; // { id, views, linked, live } when this page shows a Living CV you saved on Compass
+  let INTRO = null; // { id } when this saved CV takes intro requests through Compass (and isn't yours)
+  let selfIntro = false, HAS_BOARD = null;
   // in edit mode a field becomes a dashed box you can type in; k is its path in the CV ("roles.2.did")
   const ed = (k, val, ph) => editing ? ' data-k="' + k + '" data-ph="' + esc(ph) + '" contenteditable="true" spellcheck="true"' : "";
   const span = r => r.start + (r.end === null || r.end === undefined ? " – now" : r.end !== r.start ? " – " + r.end : "");
@@ -327,6 +334,7 @@ footer{font-size:14px;color:var(--muted);text-align:center}
     $("ownNote").hidden = isExample || editing || !!SAVED; $("editBar").hidden = !editing; $("editSave").hidden = !editing;
     $("ownSaved").hidden = !SAVED || editing;
     if (SAVED) $("ownViews").textContent = SAVED.views ? ", opened " + SAVED.views + (SAVED.views === 1 ? " time" : " times") + " by others so far" : "";
+    renderOwnIntro(); introUi();
     const field = (el, k, ph) => { el.textContent = CV[k] || ""; el.removeAttribute("contenteditable"); delete el.dataset.k; if (editing){ el.dataset.k = k; el.dataset.ph = ph; el.contentEditable = "true"; } };
     field($("cvName"), "name", "Your name"); field($("cvLine"), "line", "One line: what you do best");
     field($("cvContact"), "contact", "Email and links, so people can reach you");
@@ -454,21 +462,85 @@ Question: ${q.slice(0, 300)}`, "quick");
   }
   const dateStr = t => new Date(t).toLocaleDateString("en-GB", {day:"numeric", month:"short", year:"numeric"});
   async function saveNew(cv){
-    const r = await cvApi("save", {cv});
+    const intro = !$("introTick").hidden && $("introOk").checked;
+    const r = await cvApi("save", Object.assign({cv}, intro ? {intro: true, boardToken: boardToken(false)} : {}));
     putKeys([{id: r.id, key: r.key, name: cv.name || "", at: r.at}].concat(savedKeys()));
-    return {id: r.id, views: 0};
+    return {id: r.id, views: 0, linked: !!r.introable, live: !!r.introable};
   }
+  // the same board key Generalist Compass keeps in this browser (made here if there is none yet)
+  function boardToken(create){
+    let tok = ""; try { tok = localStorage.getItem("gc-board-token") || ""; } catch(e){}
+    if (!tok && create){
+      const a = new Uint8Array(24); crypto.getRandomValues(a); tok = b64u(a.buffer);
+      try { localStorage.setItem("gc-board-token", tok); } catch(e){}
+    }
+    return tok;
+  }
+  // does the person making or owning this CV have a board profile intro requests could reach?
+  async function checkBoard(){
+    if (HAS_BOARD !== null) return HAS_BOARD;
+    try { HAS_BOARD = !!(await cvApi("board", {boardToken: boardToken(false)})).hasProfile; } catch(e){ return false; }
+    return HAS_BOARD;
+  }
+  function renderOwnIntro(){
+    const box = $("ownIntro"), on = !!(SAVED && SAVED.linked && SAVED.live);
+    box.hidden = !SAVED || !(on || HAS_BOARD);
+    if (box.hidden) return;
+    $("ownIntroText").textContent = on ? "Employers can ask you for an intro through Compass." : "Employers can't ask for an intro through Compass yet.";
+    $("ownIntroToggle").textContent = on ? "Turn that off" : "Turn it on";
+  }
+  $("ownIntroToggle").onclick = async () => {
+    const st = $("stOwn"), on = !!(SAVED.linked && SAVED.live); setStatus(st, "Saving", "thinking"); $("ownIntroToggle").disabled = true;
+    try {
+      const r = await cvApi("link", {id: SAVED.id, key: keyFor(SAVED.id), intro: !on, boardToken: boardToken(false)});
+      SAVED.linked = r.linked; SAVED.live = r.introable; render();
+      setStatus(st, r.linked ? "Done. Intro requests from this CV now come to your Compass account, under your intro requests." : "Done. This CV no longer takes intro requests through Compass.");
+    } catch(e){ setStatus(st, e.message, "err"); }
+    finally { $("ownIntroToggle").disabled = false; }
+  };
   async function removeSaved(id){
     await cvApi("delete", {id, key: keyFor(id)}); forget(id);
     if (draftSaved && draftSaved.id === id) draftUnsaved();
   }
 
-  // ask for an intro: a short, warm message the employer can send
-  $("introBtn").onclick = () => { $("introForm").hidden = false; $("introBtn").hidden = true; $("inName").focus(); };
-  $("introForm").addEventListener("submit", e => {
+  // ask for an intro: through Compass when this person takes requests there (double opt-in),
+  // otherwise a short, warm message the employer sends themselves
+  const firstName = () => (CV.name || "").split(" ")[0] || "";
+  function introUi(){
+    const board = !!INTRO && !selfIntro;
+    $("introVia").hidden = !board;
+    if (board) $("introVia").textContent = "This goes to " + (firstName() || "them") + " on Generalist Compass. They read your note and say yes or no. Only after a yes do you both see each other's contact details.";
+    $("inReach").hidden = !board; $("introSelf").hidden = !board;
+    $("introGo").textContent = board ? "Send intro request" : "Write my intro";
+    $("inWhy").placeholder = board ? "The problem you'd like their help with, in a sentence or two" : "The problem you'd like help with";
+  }
+  $("introBtn").onclick = () => { $("introForm").hidden = false; $("introBtn").hidden = true; introUi(); $("inName").focus(); };
+  $("introSelf").onclick = () => { selfIntro = true; setStatus($("stIntro"), ""); introUi(); $("inName").focus(); };
+  function statusLink(st, text, href, label){
+    setStatus(st, text + " ");
+    const a = document.createElement("a"); a.href = href; a.textContent = label; st.append(a);
+  }
+  $("introForm").addEventListener("submit", async e => {
     e.preventDefault();
-    const who = $("inName").value.trim(), why = $("inWhy").value.trim(), first = (CV.name || "").split(" ")[0] || "there";
+    const who = $("inName").value.trim(), why = $("inWhy").value.trim(), first = firstName() || "there", st = $("stIntro");
+    if (INTRO && !selfIntro){
+      const reach = $("inReach").value.trim();
+      if (who.length < 2 || why.length < 15 || reach.length < 5){ setStatus(st, "Add your name and company, the problem in a sentence or two, and how they can reach you.", "err"); return; }
+      setStatus(st, "Sending", "thinking"); $("introGo").disabled = true;
+      try {
+        await cvApi("intro", {id: INTRO.id, company: who, note: why, contact: reach, boardToken: boardToken(true)});
+        $("introGo").hidden = true; $("introSelf").hidden = true;
+        ["inName", "inWhy", "inReach"].forEach(k => $(k).disabled = true);
+        statusLink(st, "Sent. " + (firstName() || "They") + " sees your note on Compass and decides. If they say yes, their contact shows up under Your intro requests.", "/#recruit", "Open your intro requests");
+      } catch(err){
+        if (err.code === "need_work_email") statusLink(st, "Compass only passes on intros from verified company emails. It takes a minute, then come back to this page.", "/#recruit", "Verify your work email");
+        else if (err.code === "not_introable" || err.code === "no_profile"){ INTRO = null; introUi(); setStatus(st, (firstName() || "This person") + " isn't taking requests through Compass right now. You can still write to them yourself.", "err"); }
+        else setStatus(st, err.message, "err");
+      } finally { $("introGo").disabled = false; }
+      return;
+    }
     if (!who || !why){ $("inWhy").placeholder = "Add both, so the intro makes sense"; return; }
+    setStatus(st, "");
     const msg = "Hi " + first + ",\n\nI'm " + who + ". I read your Living CV and I think you could help us with this: " + why + ".\n\nWould you be open to a short call this week?\n\nBest,\n" + who.split(",")[0];
     $("introMsg").value = msg; $("introMsg").hidden = false; $("introActions").hidden = false;
     const mail = ((CV.contact || "").match(/[^\s@·,;]+@[^\s@·,;]+\.[a-z]{2,}/i) || [""])[0];
@@ -527,7 +599,7 @@ Question: ${q.slice(0, 300)}`, "quick");
   }
   $("editStart").onclick = startEdit;
   $("editAgain").onclick = startEdit;
-  $("editMine").onclick = () => { CV = draft; isExample = false; SAVED = draftSaved; startEdit(); };
+  $("editMine").onclick = () => { CV = draft; isExample = false; SAVED = draftSaved; INTRO = null; startEdit(); };
   $("editSavedStart").onclick = startEdit;
   $("editCancel").onclick = () => { if (before) CV = JSON.parse(before); editing = false; render(); };
   $("editDone").onclick = async () => {
@@ -607,11 +679,11 @@ Question: ${q.slice(0, 300)}`, "quick");
   const SAVE_NOTE = $("saveNote").textContent;
   function draftIsSaved(){
     $("myLink").value = shortLink(draftSaved.id); $("copyLink").textContent = "Copy link";
-    $("saveShort").hidden = true; $("delShort").hidden = false;
+    $("saveShort").hidden = true; $("delShort").hidden = false; $("introTick").hidden = true;
     $("saveTitle").textContent = "Saved on Compass"; $("saveNote").textContent = "The link above is now your short link. When you edit your CV, it updates in place.";
   }
   async function draftUnsaved(){
-    draftSaved = null; $("saveShort").hidden = false; $("delShort").hidden = true; $("saveNote").textContent = SAVE_NOTE; $("saveTitle").textContent = "Want a short link?";
+    draftSaved = null; $("saveShort").hidden = false; $("delShort").hidden = true; $("introTick").hidden = !HAS_BOARD; $("saveNote").textContent = SAVE_NOTE; $("saveTitle").textContent = "Want a short link?";
     if (draft) $("myLink").value = hashBase() + "#" + await pack(draft);
   }
   $("saveShort").onclick = async () => {
@@ -660,7 +732,7 @@ ${text.slice(0, 20000)}
     ri++;
     if (ri < draft.roles.length) return startRole();
     const tok = await pack(draft), link = hashBase() + "#" + tok;
-    $("myLink").value = link; $("mk2").hidden = true; $("mk3").hidden = false; draftSaved = null; $("saveShort").hidden = false; $("delShort").hidden = true; $("saveNote").textContent = SAVE_NOTE; $("saveTitle").textContent = "Want a short link?"; setStatus($("stSave"), "");
+    $("myLink").value = link; $("mk2").hidden = true; $("mk3").hidden = false; draftSaved = null; $("introTick").hidden = true; checkBoard().then(h => { if (!draftSaved) $("introTick").hidden = !h; }); $("saveShort").hidden = false; $("delShort").hidden = true; $("saveNote").textContent = SAVE_NOTE; $("saveTitle").textContent = "Want a short link?"; setStatus($("stSave"), "");
   }
   $("ivSkip").onclick = () => nextRole();
   $("ivSend").onclick = async () => {
@@ -691,7 +763,7 @@ Use their own words where you can, first person. Never invent facts or numbers t
     finally { $("ivSend").disabled = false; }
   };
   $("copyLink").onclick = () => { const el = $("myLink"); try { navigator.clipboard.writeText(el.value).then(() => $("copyLink").textContent = "Copied", () => el.select()); } catch(e){ el.select(); } };
-  $("openMine").onclick = () => { CV = draft; isExample = false; SAVED = draftSaved; $("goneNote").hidden = true; render(); mode("view"); try { history.replaceState(null, "", $("myLink").value); } catch(e){} };
+  $("openMine").onclick = () => { CV = draft; isExample = false; SAVED = draftSaved; INTRO = null; $("goneNote").hidden = true; render(); mode("view"); try { history.replaceState(null, "", $("myLink").value); } catch(e){} };
 
   // coming from Generalist Compass: start from the story told there (kept in this browser only)
   let carry = null;
@@ -709,7 +781,9 @@ Use their own words where you can, first person. Never invent facts or numbers t
     else if (sp){
       try {
         const r = await cvApi("get", {id: sp[1], key: keyFor(sp[1])});
-        CV = r.cv; isExample = false; SAVED = r.mine ? {id: r.id, views: r.views || 0} : null;
+        CV = r.cv; isExample = false; SAVED = r.mine ? {id: r.id, views: r.views || 0, linked: !!r.linked, live: !!r.introable} : null;
+        INTRO = !r.mine && r.introable ? {id: r.id} : null;
+        if (r.mine) await checkBoard();
       } catch(e){
         CV = EXAMPLE; $("goneNote").hidden = false;
         if (e.code !== "gone"){ $("goneNote").querySelector("h2").textContent = "We couldn't open this Living CV just now"; $("goneNote").querySelector("p").textContent = "Try again in a minute. Below is an example while you wait."; }

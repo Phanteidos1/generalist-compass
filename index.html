@@ -4238,17 +4238,17 @@ ${cut(JSON.stringify(pool), 20000)}`, { cache:false });
     AUTH.on = true; AUTH.enabled = true; verifyLogin(loginCode[1]); startAuth();
   } else if (/^c[pq]\.[A-Za-z0-9_-]+$/.test(hashTok)){
     unpackPage(hashTok).then(pg => { renderPage(pg); showPageView(); document.title = (pg.name ? pg.name + " · " : "") + "Generalist Compass"; }).catch(() => go(0));
-  } else if (hashTok === "account" || hashTok === "problems"){
+  } else if (hashTok === "account" || hashTok === "problems" || hashTok === "recruit"){
     history.replaceState(null, "", location.pathname + location.search);
-    if (hashTok === "account") showSignin(); else showBoard();
+    if (hashTok === "account") showSignin(); else if (hashTok === "recruit") showRecruit(); else showBoard();
   } else go(0);
   if (!loginCode) startAuth();
   window.addEventListener("hashchange", () => {
     const m = /^#login\.([A-Za-z0-9_-]{40,60})$/.exec(location.hash || "");
     if (m) verifyLogin(m[1]);
-    else if (location.hash === "#account" || location.hash === "#problems"){
+    else if (location.hash === "#account" || location.hash === "#problems" || location.hash === "#recruit"){
       const to = location.hash; history.replaceState(null, "", location.pathname + location.search);
-      if (to === "#account") showSignin(); else showBoard();
+      if (to === "#account") showSignin(); else if (to === "#recruit") showRecruit(); else showBoard();
     }
   });
 

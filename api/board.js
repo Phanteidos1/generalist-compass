@@ -305,6 +305,60 @@ export async function weeklyData(uid, since = 0) {
   return { profile: profile ? { type: profile.type, second: profile.second || "", name: profile.name || "" } : null, matches, requests, briefFits, hasBriefs: myBriefs.length > 0, counts };
 }
 
+// One intro request from a recruiter (the caller) to a board profile. Shared with the Living CV
+// (cv.js), which passes the profile linked to a saved CV without ever showing its id.
+//   extra: { title, company, via } set by the caller instead of the request body.
+// Returns { status, body } for the response.
+export async function introRequest(req, b, pid, extra = {}) {
+  const no = (status, error, code, more) => ({ status, body: { error, ...(code ? { code } : {}), ...(more || {}) } });
+  const r = await recruiter(b);
+  if (r.error) return no(r.status, r.error, r.code);
+  const o = await owner(b, true);
+  if (o.error) return no(o.status, o.error, o.code);
+  if (await limited(req, "intro", 20)) return no(429, "Too many requests. Try again later.");
+  if (!/^p[0-9a-f]{16}$/.test(pid)) return no(400, "That profile can't receive requests.");
+  if (pid === o.id) return no(400, "That's your own profile.", "own");
+  const [exists, sentIds] = await redis([["HEXISTS", "gc:profiles", pid], ["LRANGE", "gc:sent:" + o.id, 0, 99]]);
+  if (!Number(exists)) return no(404, "That profile is no longer on the board.", "no_profile");
+  const note = s(b.note, 300);
+  if (note.length < 15) return no(400, "Add a line or two on why them: what made you pick this person.", "need_note");
+  const contact = s(b.contact, 120);
+  if (contact.length < 5) return no(400, "Add how candidates can reach you.", "need_contact");
+  const sent = await loadIntros(sentIds);
+  if (sent.some(x => x.pid === pid && x.status !== "no")) return no(409, "You already asked this person. Their answer will show under Your intro requests.", "already");
+  // Weekly limit: count first, give the slot back if we went over.
+  const wk = "gc:wk:intro:" + o.id + ":" + weekNo();
+  const [used] = await redis([["INCR", wk], ["EXPIRE", wk, 8 * 86400]]);
+  if (used > INTROS_PER_WEEK) {
+    await redis([["DECR", wk]]);
+    return no(429, `You've used your ${INTROS_PER_WEEK} intro requests for this week. New ones open on Monday, so pick the people you're surest about.`, "week_limit", { left: 0, limit: INTROS_PER_WEEK });
+  }
+  const intro = {
+    id: "i" + randomBytes(8).toString("hex"), pid, from: o.id,
+    need: extra.via ? "" : s(b.needId, 40), title: s(extra.title != null ? extra.title : b.title, 120),
+    company: s(extra.company != null ? extra.company : b.company, 80), note, contact,
+    at: Date.now(), status: "waiting", ...(r.domain ? { verified: r.domain } : {}), ...(extra.via ? { via: s(extra.via, 20) } : {}),
+  };
+  await redis([
+    ["HSET", "gc:intro", intro.id, JSON.stringify(intro)],
+    ["LPUSH", "gc:intros:" + pid, intro.id], ["LTRIM", "gc:intros:" + pid, 0, 49],
+    ["LPUSH", "gc:sent:" + o.id, intro.id], ["LTRIM", "gc:sent:" + o.id, 0, 99],
+    ["DEL", "gc:stats:cache"],
+  ]);
+  return { status: 200, body: { ok: true, id: intro.id, left: INTROS_PER_WEEK - used, limit: INTROS_PER_WEEK } };
+}
+
+// The board profile id that belongs to a caller (signed-in account first, else the browser key),
+// and whether that profile is on the board. Used by cv.js to link a saved CV to it.
+export async function boardProfileOf(b) {
+  let id = "";
+  if (b.session) { const u = await userFromSession(b.session); if (u) id = idOf("user:" + u.id); }
+  if (!id && okToken(b.token)) id = idOf(b.token);
+  if (!id) return { id: "", exists: false };
+  const [n] = await redis([["HEXISTS", "gc:profiles", id]]);
+  return { id, exists: Number(n) === 1 };
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Use POST" });
   if (!URL_ || !TOKEN) return res.status(503).json({ error: "The board isn't connected to its database yet." });
@@ -394,40 +448,8 @@ export default async function handler(req, res) {
         return res.status(200).json({ id: need.id });
       }
       case "intro.request": {
-        const r = await recruiter(b);
-        if (r.error) return fail(res, r);
-        const o = await owner(b, true);
-        if (o.error) return fail(res, o);
-        if (await limited(req, "intro", 20)) return res.status(429).json({ error: "Too many requests. Try again later." });
-        const pid = s(b.profileId, 40);
-        if (!/^p[0-9a-f]{16}$/.test(pid)) return res.status(400).json({ error: "That profile can't receive requests." });
-        if (pid === o.id) return res.status(400).json({ error: "That's your own profile." });
-        const [exists, sentIds] = await redis([["HEXISTS", "gc:profiles", pid], ["LRANGE", "gc:sent:" + o.id, 0, 99]]);
-        if (!exists) return res.status(404).json({ error: "That profile is no longer on the board." });
-        const note = s(b.note, 300);
-        if (note.length < 15) return res.status(400).json({ error: "Add a line or two on why them: what made you pick this person.", code: "need_note" });
-        const contact = s(b.contact, 120);
-        if (contact.length < 5) return res.status(400).json({ error: "Add how candidates can reach you.", code: "need_contact" });
-        const sent = await loadIntros(sentIds);
-        if (sent.some(x => x.pid === pid && x.status !== "no")) return res.status(409).json({ error: "You already asked this person. Their answer will show under Your intro requests.", code: "already" });
-        // Weekly limit: count first, give the slot back if we went over.
-        const wk = "gc:wk:intro:" + o.id + ":" + weekNo();
-        const [used] = await redis([["INCR", wk], ["EXPIRE", wk, 8 * 86400]]);
-        if (used > INTROS_PER_WEEK) {
-          await redis([["DECR", wk]]);
-          return res.status(429).json({ error: `You've used your ${INTROS_PER_WEEK} intro requests for this week. New ones open on Monday, so pick the people you're surest about.`, code: "week_limit", left: 0, limit: INTROS_PER_WEEK });
-        }
-        const intro = {
-          id: "i" + randomBytes(8).toString("hex"), pid, from: o.id,
-          need: s(b.needId, 40), title: s(b.title, 120), company: s(b.company, 80), note, contact,
-          at: Date.now(), status: "waiting", ...(r.domain ? { verified: r.domain } : {}),
-        };
-        await redis([
-          ["HSET", "gc:intro", intro.id, JSON.stringify(intro)],
-          ["LPUSH", "gc:intros:" + pid, intro.id], ["LTRIM", "gc:intros:" + pid, 0, 49],
-          ["LPUSH", "gc:sent:" + o.id, intro.id], ["LTRIM", "gc:sent:" + o.id, 0, 99],
-        ]);
-        return res.status(200).json({ ok: true, id: intro.id, left: INTROS_PER_WEEK - used, limit: INTROS_PER_WEEK });
+        const out = await introRequest(req, b, s(b.profileId, 40));
+        return res.status(out.status).json(out.body);
       }
       case "intro.answer": {
         const o = await owner(b, true);
