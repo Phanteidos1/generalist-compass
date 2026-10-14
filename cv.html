@@ -114,6 +114,16 @@ textarea{width:100%;min-height:180px;resize:vertical}
 .linkbox{display:flex;gap:8px;flex-wrap:wrap}
 .linkbox input{flex:1 1 260px;min-width:0;font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 footer{font-size:14px;color:var(--muted);text-align:center}
+.savebox{border-top:1px dashed var(--line);padding-top:14px;display:flex;flex-direction:column;gap:10px}
+.savebox h3{font-size:19px}
+.mine{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.mine li{display:flex;gap:8px 14px;align-items:center;flex-wrap:wrap;justify-content:space-between;background:var(--bg);border-radius:12px;padding:10px 14px}
+.mine li > div{min-width:0;flex:1 1 200px}
+.mine b{font-family:var(--head);display:block;overflow-wrap:anywhere}
+.mine .row{gap:14px}
+.danger,.btn.ghost.danger{--danger:#B4442E;color:var(--danger);border-color:var(--danger)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .danger{--danger:#F08A74}}
+:root[data-theme="dark"] .danger{--danger:#F08A74}
 .linkbtn{border:0;background:none;color:var(--accent);font-weight:700;padding:0;font-size:inherit;text-decoration:underline;text-underline-offset:3px}
 
 /* editing your own CV in place */
@@ -148,11 +158,16 @@ footer{font-size:14px;color:var(--muted);text-align:center}
 
   <!-- the CV, as an employer sees it -->
   <section id="view" class="wrap" style="padding:0">
+    <div class="card editbar" id="goneNote" hidden>
+      <h2 style="font-size:19px">This Living CV isn't here any more</h2>
+      <p class="small">Its owner may have deleted it. Below is an example, Michael's own. You can <a href="#make">make your own</a> in a few minutes.</p>
+    </div>
     <div class="card editbar" id="editBar" hidden>
       <h2 id="editTitle">You're editing your Living CV</h2>
       <p class="small" id="editNote">Tap any dashed text to change it: your name, your headline, every story. Empty boxes are stories you can still add.</p>
       <div class="linkbox" id="editShare" hidden><input id="editLink" readonly aria-label="Your updated link"><button class="btn" id="editCopy" type="button">Copy link</button></div>
-      <div class="row" id="editAgainRow" hidden><button class="btn ghost" id="editAgain" type="button">Edit again</button></div>
+      <div class="row" id="editAgainRow" hidden><button class="btn ghost" id="editAgain" type="button">Edit again</button><button class="btn ghost" id="editShort" type="button" hidden>Get a short link instead</button></div>
+      <p class="status" id="stEditShort" role="status"></p>
     </div>
     <div class="card">
       <div class="hero">
@@ -194,11 +209,19 @@ footer{font-size:14px;color:var(--muted);text-align:center}
       </form>
     </div>
     <div class="editsave" id="editSave" hidden><button class="btn" id="editDone" type="button">Save my changes</button><button class="btn ghost" id="editCancel" type="button">Undo</button></div>
+    <p class="small" id="ownSaved" hidden style="text-align:center">This is your saved Living CV<span id="ownViews"></span>. <button class="linkbtn" id="editSavedStart" type="button">Edit the text</button> and the short link stays the same. <button class="linkbtn danger" id="delSaved" type="button">Delete it from Compass</button></p>
+    <p class="status" id="stOwn" role="status" style="text-align:center"></p>
     <p class="small" id="ownNote" hidden style="text-align:center">Is this your Living CV? <button class="linkbtn" id="editStart" type="button">Edit the text</button> and you'll get a fresh link. The one you sent stays as it was.</p>
   </section>
 
   <!-- making your own -->
   <section id="make" class="wrap" style="padding:0" hidden>
+    <div class="card" id="mineCard" hidden>
+      <h2 style="font-size:20px">Your saved Living CVs</h2>
+      <p class="small">Short links you saved on Generalist Compass. Deleting one removes it from our side for good; the link stops working.</p>
+      <ul class="mine" id="mineList"></ul>
+      <p class="status" id="stMine" role="status"></p>
+    </div>
     <div class="card" id="mk1">
       <span class="progress">Step 1 of 3 · Your CV</span>
       <h2 style="font-size:26px">Paste your CV</h2>
@@ -228,6 +251,11 @@ footer{font-size:14px;color:var(--muted);text-align:center}
       <p class="small">Open it to check every story. Send the link to an employer instead of, or next to, your PDF.</p>
       <div class="linkbox"><input id="myLink" readonly aria-label="Your link"><button class="btn" id="copyLink" type="button">Copy link</button></div>
       <div class="row"><button class="btn ghost" id="openMine" type="button">Open my Living CV</button><button class="btn ghost" id="editMine" type="button">Read it through and edit</button></div>
+      <div class="savebox" id="saveBox">
+        <h3 id="saveTitle">Want a short link?</h3>
+        <p class="small" id="saveNote">The link above carries your whole CV, so it's long. Save it on Generalist Compass and you get a short one instead. Anyone with the link can read it, it isn't listed anywhere, and you can delete it anytime.</p>
+        <div class="row"><button class="btn" id="saveShort" type="button">Save and get a short link</button><button class="btn ghost danger" id="delShort" type="button" hidden>Delete it from Compass</button><span class="status" id="stSave" role="status"></span></div>
+      </div>
     </div>
   </section>
 
@@ -289,13 +317,16 @@ footer{font-size:14px;color:var(--muted);text-align:center}
   };
 
   let CV = EXAMPLE, isExample = true, editing = false, before = null;
+  let SAVED = null; // { id, views } when this page shows a Living CV you saved on Compass
   // in edit mode a field becomes a dashed box you can type in; k is its path in the CV ("roles.2.did")
   const ed = (k, val, ph) => editing ? ' data-k="' + k + '" data-ph="' + esc(ph) + '" contenteditable="true" spellcheck="true"' : "";
   const span = r => r.start + (r.end === null || r.end === undefined ? " – now" : r.end !== r.start ? " – " + r.end : "");
 
   function render(){
     $("exampleNote").hidden = !isExample;
-    $("ownNote").hidden = isExample || editing; $("editBar").hidden = !editing; $("editSave").hidden = !editing;
+    $("ownNote").hidden = isExample || editing || !!SAVED; $("editBar").hidden = !editing; $("editSave").hidden = !editing;
+    $("ownSaved").hidden = !SAVED || editing;
+    if (SAVED) $("ownViews").textContent = SAVED.views ? ", opened " + SAVED.views + (SAVED.views === 1 ? " time" : " times") + " by others so far" : "";
     const field = (el, k, ph) => { el.textContent = CV[k] || ""; el.removeAttribute("contenteditable"); delete el.dataset.k; if (editing){ el.dataset.k = k; el.dataset.ph = ph; el.contentEditable = "true"; } };
     field($("cvName"), "name", "Your name"); field($("cvLine"), "line", "One line: what you do best");
     field($("cvContact"), "contact", "Email and links, so people can reach you");
@@ -387,7 +418,50 @@ Question: ${q.slice(0, 300)}`, "quick");
   const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
   async function pack(obj){ const s = new Blob([JSON.stringify(obj)]).stream().pipeThrough(new CompressionStream("deflate-raw")); return "cv=" + b64u(await new Response(s).arrayBuffer()); }
+  const hashBase = () => location.origin + location.pathname.replace(/\/cv\/[A-Za-z0-9]{8}\/?$/, "/cv");
   async function unpack(tok){ const s = new Blob([unb64u(tok)]).stream().pipeThrough(new DecompressionStream("deflate-raw")); return JSON.parse(await new Response(s).text()); }
+
+  // saved Living CVs: an optional short link (/cv/k3P9xQ2a). Only this browser's key, or the
+  // signed-in account it was saved with, can change or delete it.
+  const shortLink = id => location.origin + "/cv/" + id;
+  const getSession = () => { try { return localStorage.getItem("gc-session") || ""; } catch(e){ return ""; } };
+  const savedKeys = () => { try { const v = JSON.parse(localStorage.getItem("gc-cv-saved") || "[]"); return Array.isArray(v) ? v.filter(x => x && x.id && x.key) : []; } catch(e){ return []; } };
+  const putKeys = v => { try { localStorage.setItem("gc-cv-saved", JSON.stringify(v.slice(0, 30))); } catch(e){} };
+  const keyFor = id => (savedKeys().find(x => x.id === id) || {}).key || "";
+  const forget = id => putKeys(savedKeys().filter(x => x.id !== id));
+  async function cvApi(action, payload, noSession){
+    const sess = noSession ? "" : getSession();
+    const r = await fetch("/api/cv", {method:"POST", headers:{"content-type":"application/json"}, body: JSON.stringify(Object.assign({action}, sess ? {session: sess} : {}, payload || {}))});
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok){
+      if (d.code === "signed_out" && sess) return cvApi(action, payload, true);
+      const e = new Error(d.error || "Couldn't reach Compass right now. Your long link still works."); e.code = d.code; throw e;
+    }
+    if (d.gone === true){ const e = new Error("That Living CV isn't here any more."); e.code = "gone"; throw e; }
+    return d;
+  }
+  // deleting takes two taps, so nothing goes by accident
+  function confirmTap(btn, fn){
+    const label = btn.textContent;
+    btn.onclick = async () => {
+      if (btn.dataset.armed !== "1"){
+        btn.dataset.armed = "1"; btn.textContent = "Tap again to delete for good"; clearTimeout(btn._t);
+        btn._t = setTimeout(() => { btn.dataset.armed = ""; btn.textContent = label; }, 5000); return;
+      }
+      clearTimeout(btn._t); btn.dataset.armed = ""; btn.textContent = label; btn.disabled = true;
+      try { await fn(); } finally { btn.disabled = false; }
+    };
+  }
+  const dateStr = t => new Date(t).toLocaleDateString("en-GB", {day:"numeric", month:"short", year:"numeric"});
+  async function saveNew(cv){
+    const r = await cvApi("save", {cv});
+    putKeys([{id: r.id, key: r.key, name: cv.name || "", at: r.at}].concat(savedKeys()));
+    return {id: r.id, views: 0};
+  }
+  async function removeSaved(id){
+    await cvApi("delete", {id, key: keyFor(id)}); forget(id);
+    if (draftSaved && draftSaved.id === id) draftUnsaved();
+  }
 
   // ask for an intro: a short, warm message the employer can send
   $("introBtn").onclick = () => { $("introForm").hidden = false; $("introBtn").hidden = true; $("inName").focus(); };
@@ -449,20 +523,48 @@ Question: ${q.slice(0, 300)}`, "quick");
     if (isExample) return;
     before = JSON.stringify(CV); editing = true; render(); mode("view");
     $("editTitle").textContent = "You're editing your Living CV"; $("editNote").textContent = EDIT_NOTE; $("editShare").hidden = true; $("editAgainRow").hidden = true;
+    $("editShort").hidden = true; setStatus($("stEditShort"), ""); setStatus($("stOwn"), "");
   }
   $("editStart").onclick = startEdit;
   $("editAgain").onclick = startEdit;
-  $("editMine").onclick = () => { CV = draft; isExample = false; startEdit(); };
+  $("editMine").onclick = () => { CV = draft; isExample = false; SAVED = draftSaved; startEdit(); };
+  $("editSavedStart").onclick = startEdit;
   $("editCancel").onclick = () => { if (before) CV = JSON.parse(before); editing = false; render(); };
   $("editDone").onclick = async () => {
     tidy(CV); editing = false; render();
-    const link = location.origin + location.pathname + "#" + await pack(CV);
+    let link = "", note = "This is your new link with the changes. The old link still shows the old version, so send this one.";
+    if (SAVED){
+      try { await cvApi("update", {id: SAVED.id, key: keyFor(SAVED.id), cv: CV}); link = shortLink(SAVED.id); note = "Your short link stays the same, and it now shows this version."; }
+      catch(e){ if (e.code === "gone" || e.code === "not_owner"){ forget(SAVED.id); if (draftSaved && draftSaved.id === SAVED.id) draftUnsaved(); SAVED = null; } note = "Couldn't update your short link just now, so here is a long link with your changes. It works the same."; }
+    }
+    if (!link) link = hashBase() + "#" + await pack(CV);
     try { history.replaceState(null, "", link); } catch(e){}
     if (draft){ draft = CV; $("myLink").value = link; }
-    $("editBar").hidden = false; $("ownNote").hidden = true; $("editShare").hidden = false; $("editAgainRow").hidden = false; $("editLink").value = link;
-    $("editTitle").textContent = "Your changes are saved"; $("editNote").textContent = "This is your new link with the changes. The old link still shows the old version, so send this one.";
+    $("editBar").hidden = false; $("ownNote").hidden = true; $("ownSaved").hidden = true; $("editShare").hidden = false; $("editAgainRow").hidden = false; $("editLink").value = link;
+    $("editShort").hidden = !!SAVED;
+    $("editTitle").textContent = "Your changes are saved"; $("editNote").textContent = note;
     $("editCopy").textContent = "Copy link"; window.scrollTo({top:0, behavior:"smooth"});
   };
+  $("editShort").onclick = async () => {
+    const st = $("stEditShort"); setStatus(st, "Saving", "thinking"); $("editShort").disabled = true;
+    try {
+      SAVED = await saveNew(CV); const link = shortLink(SAVED.id);
+      if (draft && draft === CV){ draftSaved = SAVED; draftIsSaved(); }
+      $("editLink").value = link; $("editCopy").textContent = "Copy link"; $("editShort").hidden = true;
+      try { history.replaceState(null, "", link); } catch(e){}
+      $("editNote").textContent = "Saved on Compass. This short link always shows your latest version. You can delete it anytime at the bottom of the page.";
+      setStatus(st, "");
+    } catch(e){ setStatus(st, e.message, "err"); }
+    finally { $("editShort").disabled = false; }
+  };
+  confirmTap($("delSaved"), async () => {
+    const st = $("stOwn"); setStatus(st, "Deleting", "thinking");
+    try {
+      await removeSaved(SAVED.id); SAVED = null;
+      try { history.replaceState(null, "", hashBase() + "#" + await pack(CV)); } catch(e){}
+      render(); setStatus(st, "Deleted from Compass. The short link no longer works. This page now uses a long link that stores nothing.");
+    } catch(e){ setStatus(st, e.message, "err"); }
+  });
   $("editCopy").onclick = () => { const el = $("editLink"); try { navigator.clipboard.writeText(el.value).then(() => $("editCopy").textContent = "Copied", () => el.select()); } catch(e){ el.select(); } };
 
   // modes
@@ -472,10 +574,60 @@ Question: ${q.slice(0, 300)}`, "quick");
     window.scrollTo(0, 0);
   }
   $("tabView").onclick = () => mode("view");
-  $("tabMake").onclick = () => { prefill(); mode("make"); };
+  $("tabMake").onclick = () => { prefill(); mode("make"); loadMine(); };
+
+  // your saved Living CVs, on the Make your own tab
+  async function loadMine(){
+    const keys = savedKeys();
+    if (!keys.length && !getSession()){ $("mineCard").hidden = true; return; }
+    try {
+      const r = await cvApi("mine", {keys: keys.map(x => ({id: x.id, key: x.key}))});
+      if (r.gone && r.gone.length) putKeys(savedKeys().filter(x => !r.gone.includes(x.id)));
+      renderMine(r.items || []);
+    } catch(e){ $("mineCard").hidden = true; }
+  }
+  function renderMine(items){
+    $("mineCard").hidden = !items.length; setStatus($("stMine"), "");
+    $("mineList").innerHTML = items.map(it => '<li data-id="' + esc(it.id) + '"><div><b>' + esc(it.name) + '</b><span class="small">'
+      + esc(shortLink(it.id).replace(/^https?:\/\//, "")) + " · saved " + esc(dateStr(it.upd)) + (it.views ? " · opened " + it.views + (it.views === 1 ? " time" : " times") : "")
+      + '</span></div><div class="row"><a href="/cv/' + esc(it.id) + '">Open</a><button class="linkbtn danger" type="button">Delete</button></div></li>').join("");
+    $("mineList").querySelectorAll("li").forEach(li => confirmTap(li.querySelector("button"), async () => {
+      const id = li.dataset.id;
+      try {
+        await removeSaved(id); li.remove();
+        if (SAVED && SAVED.id === id){ SAVED = null; render(); }
+        if (!$("mineList").children.length) $("mineCard").hidden = true;
+        else setStatus($("stMine"), "Deleted. That short link no longer works.");
+      } catch(e){ setStatus($("stMine"), e.message, "err"); }
+    }));
+  }
 
   // making your own: read, interview, link
-  let draft = null, ri = 0, turns = [];
+  let draft = null, ri = 0, turns = [], draftSaved = null;
+  const SAVE_NOTE = $("saveNote").textContent;
+  function draftIsSaved(){
+    $("myLink").value = shortLink(draftSaved.id); $("copyLink").textContent = "Copy link";
+    $("saveShort").hidden = true; $("delShort").hidden = false;
+    $("saveTitle").textContent = "Saved on Compass"; $("saveNote").textContent = "The link above is now your short link. When you edit your CV, it updates in place.";
+  }
+  async function draftUnsaved(){
+    draftSaved = null; $("saveShort").hidden = false; $("delShort").hidden = true; $("saveNote").textContent = SAVE_NOTE; $("saveTitle").textContent = "Want a short link?";
+    if (draft) $("myLink").value = hashBase() + "#" + await pack(draft);
+  }
+  $("saveShort").onclick = async () => {
+    const st = $("stSave"); setStatus(st, "Saving", "thinking"); $("saveShort").disabled = true;
+    try { draftSaved = await saveNew(tidy(draft)); draftIsSaved(); setStatus(st, ""); }
+    catch(e){ setStatus(st, e.message, "err"); }
+    finally { $("saveShort").disabled = false; }
+  };
+  confirmTap($("delShort"), async () => {
+    const st = $("stSave"); setStatus(st, "Deleting", "thinking");
+    try {
+      const id = draftSaved.id; await removeSaved(id);
+      if (SAVED && SAVED.id === id) SAVED = null;
+      setStatus(st, "Deleted from Compass. The short link no longer works. The long link above still does, and it stores nothing.");
+    } catch(e){ setStatus(st, e.message, "err"); }
+  });
   $("readCv").onclick = async () => {
     const text = $("cvText").value.trim(), st = $("st1");
     if (text.length < 200){ setStatus(st, "Paste the whole CV, it looks too short.", "err"); return; }
@@ -507,9 +659,8 @@ ${text.slice(0, 20000)}
   async function nextRole(){
     ri++;
     if (ri < draft.roles.length) return startRole();
-    $("mk2").hidden = true; $("mk3").hidden = false;
-    const tok = await pack(draft), link = location.origin + location.pathname + "#" + tok;
-    $("myLink").value = link;
+    const tok = await pack(draft), link = hashBase() + "#" + tok;
+    $("myLink").value = link; $("mk2").hidden = true; $("mk3").hidden = false; draftSaved = null; $("saveShort").hidden = false; $("delShort").hidden = true; $("saveNote").textContent = SAVE_NOTE; $("saveTitle").textContent = "Want a short link?"; setStatus($("stSave"), "");
   }
   $("ivSkip").onclick = () => nextRole();
   $("ivSend").onclick = async () => {
@@ -540,7 +691,7 @@ Use their own words where you can, first person. Never invent facts or numbers t
     finally { $("ivSend").disabled = false; }
   };
   $("copyLink").onclick = () => { const el = $("myLink"); try { navigator.clipboard.writeText(el.value).then(() => $("copyLink").textContent = "Copied", () => el.select()); } catch(e){ el.select(); } };
-  $("openMine").onclick = () => { CV = draft; isExample = false; render(); mode("view"); try { history.replaceState(null, "", $("myLink").value); } catch(e){} };
+  $("openMine").onclick = () => { CV = draft; isExample = false; SAVED = draftSaved; $("goneNote").hidden = true; render(); mode("view"); try { history.replaceState(null, "", $("myLink").value); } catch(e){} };
 
   // coming from Generalist Compass: start from the story told there (kept in this browser only)
   let carry = null;
@@ -553,12 +704,22 @@ Use their own words where you can, first person. Never invent facts or numbers t
 
   // start: a shared CV in the link, "Make your own" (#make), or Michael's example
   (async () => {
-    const h = location.hash || "", m = h.match(/^#cv=([A-Za-z0-9_-]+)$/);
+    const h = location.hash || "", m = h.match(/^#cv=([A-Za-z0-9_-]+)$/), sp = location.pathname.match(/\/cv\/([A-Za-z0-9]{8})\/?$/);
     if (m){ try { CV = await unpack(m[1]); isExample = false; } catch(e){ CV = EXAMPLE; } }
+    else if (sp){
+      try {
+        const r = await cvApi("get", {id: sp[1], key: keyFor(sp[1])});
+        CV = r.cv; isExample = false; SAVED = r.mine ? {id: r.id, views: r.views || 0} : null;
+      } catch(e){
+        CV = EXAMPLE; $("goneNote").hidden = false;
+        if (e.code !== "gone"){ $("goneNote").querySelector("h2").textContent = "We couldn't open this Living CV just now"; $("goneNote").querySelector("p").textContent = "Try again in a minute. Below is an example while you wait."; }
+        else forget(sp[1]);
+      }
+    }
     render();
-    if (h === "#make"){ prefill(); mode("make"); }
+    if (h === "#make"){ prefill(); mode("make"); loadMine(); }
   })();
-  window.addEventListener("hashchange", () => { if (location.hash === "#make"){ prefill(); mode("make"); } });
+  window.addEventListener("hashchange", () => { if (location.hash === "#make"){ prefill(); mode("make"); loadMine(); } });
 })();
 </script>
 </body>

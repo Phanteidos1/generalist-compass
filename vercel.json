@@ -17,6 +17,21 @@
     {
       "source": "/cv",
       "destination": "/cv.html"
+    },
+    {
+      "source": "/cv/:id",
+      "destination": "/cv.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/cv/:id",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
     }
   ]
 }
